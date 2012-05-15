@@ -2,12 +2,13 @@ ENTRY (main)
 
 MEMORY
 {
-ram : ORIGIN = 0x00200000, LENGTH = 32M
+ram : ORIGIN = 0x00000000, LENGTH = 32M
 rom : ORIGIN = 0x60000000, LENGTH = 8M
 }
 
 SECTIONS
 {
+    . = 0x200000;
     .text :
     {
         *(.text)
