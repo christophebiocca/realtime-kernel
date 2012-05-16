@@ -7,7 +7,7 @@ AS	= as
 ASFLAGS	= -mcpu=arm920t -mapcs-32
 
 LD      = ld
-LDFLAGS = -init main -Map kernel.map -N -T linker.ld
+LDFLAGS = -init main -Map kernel.map -N -T linker.ld -L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2
 
 .SUFFIXES:
 .DEFAULT:
@@ -28,7 +28,7 @@ hand_assemblies := $(filter-out $(assembled_sources),$(wildcard *.s))
 objects := $(patsubst %.c,%.o,$(sources)) $(patsubst %.s,%.o,$(hand_assemblies))
 
 kernel.elf : $(objects) linker.ld
-	$(LD) $(LDFLAGS) -o $@ $(filter-out linker.ld,$^)
+	$(LD) $(LDFLAGS) -o $@ $(filter-out linker.ld,$^) -lgcc
 
 %.s: %.c
 	$(CC) -S $(CFLAGS) $<
