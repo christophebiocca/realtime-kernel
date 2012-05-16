@@ -23,9 +23,10 @@ static void initTask(struct TaskDescriptor *task){
     for(int i = 0; i < 16; ++i){
         *(((unsigned int *) task->sp) + i + 1) = 0;
     }
-    *(((unsigned int *) 0x300000) + 15) = 
+    *(((unsigned int *) task->sp) + 15) = 
         ((unsigned int) &userModeTask) + 0x200000;
-    *(((unsigned int *) 0x300000) + 13) = 0x300000;
+    *(((unsigned int *) task->sp) + 13) = 0x300000;
+    *(((unsigned int *) task->sp) + 11) = 0x300000;
     bwprintf(COM2, "%x %x %x\r\n", task->ret, task->spsr, task->sp);
     bwputstr(COM2, "Stack:\r\n");
     for(int i = 0; i < 16; ++i){
@@ -44,7 +45,6 @@ int main(){
     for(unsigned int i=0; i < 0x40; i+=4){
         bwprintf(COM2, "%x: %x\r\n", i, *((unsigned int *)i));
     }
-    /* TODO: Fill in the first task descriptor */
     bwputstr(COM2, "Altering jump table.\r\n");
     unsigned int jump_addr;
     asm volatile(
@@ -58,15 +58,15 @@ int main(){
     for(unsigned int i = 0; i < 3; ++i){
         active = &desc;
         bwputstr(COM2, "kerxitEntry\r\n");
+        bwprintf(COM2, "Entering a process with: sp: %x,"
+            " ret: %x, cpsr: %x\r\n", active->sp, active->ret, active->spsr);
+        bwputstr(COM2, "Stack:\r\n");
+        for(int i = 0; i < 16; ++i){
+            bwprintf(COM2, "\t%x(%x): %x\r\n", active->sp+i, i, *(((unsigned int *) active->sp) + i));
+        }
         register unsigned int sp asm("r0") = active->sp;
         register unsigned int spsr asm("r1") = active->spsr;
         register unsigned int ret asm("r2") = active->ret;
-        bwprintf(COM2, "Entering a process with: sp: %x,"
-            " ret: %x, cpsr: %x\r\n", sp, ret, spsr);
-        bwputstr(COM2, "Stack:\r\n");
-        for(int i = 0; i < 16; ++i){
-            bwprintf(COM2, "\t%x(%x): %x\r\n", sp+i, i, *(((unsigned int *) sp) + i));
-        }
         asm volatile(
             "msr spsr_all, %1\n\t"          // Replace spsr with active's cpsr
             "stmfd sp!, {r3-r12,r14}\n\t"   // Store kernel registers.
