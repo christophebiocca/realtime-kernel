@@ -75,7 +75,14 @@ int main(){
         active->spsr = spsr;
         unsigned int call = *(((unsigned int *) *sp) - 1) & 0x00FFFFFF;
         bwprintf(COM2, "Call %u: %x %x %x %x\r\n", call, arg0, arg1, arg2, arg3);
-        struct Request req;
+        struct Request req = {
+            .task = active,
+            .callID = call,
+            .arg0 = arg0,
+            .arg1 = arg1,
+            .arg2 = arg2,
+            .arg3 = arg3
+        };
         handle(&req);
     }
 }
