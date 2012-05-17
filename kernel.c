@@ -29,10 +29,10 @@ int main(){
     *((unsigned int *)0x28) = jump_addr + 0x200000;
 
     bwprintf(COM2, "0x28: %x\r\n", *((unsigned int *)0x28));
-    initTask(&desc);
+    initTaskSystem(&userModeTask);
 
-    for(unsigned int i = 0; i < 150; ++i){
-        struct TaskDescriptor* active = &desc;
+    struct TaskDescriptor* active;
+    for(active = scheduleTask(); active; active = scheduleTask()){
         bwputstr(COM2, "kerxitEntry\r\n");
 
         register unsigned int *sp asm("r4") = active->sp;
