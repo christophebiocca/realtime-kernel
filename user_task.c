@@ -1,16 +1,26 @@
 #include "user_task.h"
 #include "bwio.h"
+#include "syscalls.h"
 
 void userModeTask(){
-    while(1){
-        bwputstr(COM2, "START -> USER TASK!\r\n");
-        asm volatile("swi 0");
-        int i = 10;
-        while(--i > 0) {
-            bwprintf(COM2, "%d -> USER TASK!\r\n", i);
-            asm volatile("swi 0");
+    bwputstr(COM2, "Start\r\n");
+    int tid = MyTid();
+    bwprintf(COM2, "Start %d\r\n", tid);
+    int p_tid = MyParentTid();
+    bwprintf(COM2, "Start %d, parent %d\r\n", tid, p_tid);
+    if(tid < 4){
+        for(int j=0; j < 3; ++j){
+            int p = tid % 3 + 1 + j;
+            bwprintf(COM2, "%d creating ? (%d)\r\n", tid, p);
+            int c = Create(p, &userModeTask);
+            bwprintf(COM2, "%d created %d (%d)\r\n", tid, c, p);
         }
-        bwputstr(COM2, "END -> USER TASK!\r\n");
+        for(int i = 0; i < 2; ++i) {
+            bwprintf(COM2, "%d: Pass\r\n", tid);
+            Pass();
+        }
     }
+    bwprintf(COM2, "%d: Exit\r\n", tid);
+    Exit();
 }
 
