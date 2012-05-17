@@ -41,19 +41,16 @@ int main(){
     unsigned int jump_addr;
 
     bwsetfifo(COM2, false);
-    bwputstr(COM2, "Initializing\r\n");
 
     asm volatile(
         "ldr %0, =kerlabel" // Load the label from a literal pool
     : "=r"(jump_addr));
     *((unsigned int *)0x28) = jump_addr + 0x200000;
 
-    bwprintf(COM2, "0x28: %x\r\n", *((unsigned int *)0x28));
     initTaskSystem(&userModeTask);
 
     struct TaskDescriptor* active;
     for(active = scheduleTask(); active; active = scheduleTask()){
-        bwputstr(COM2, "kerxitEntry\r\n");
 
         register unsigned int *sp asm("r4") = active->sp;
         *(sp + 1) = active->ret;
@@ -94,7 +91,7 @@ int main(){
         active->sp = sp;
         active->spsr = spsr;
         unsigned int call = *(((unsigned int *) *sp) - 1) & 0x00FFFFFF;
-        bwprintf(COM2, "Call %u: %x %x %x %x\r\n", call, arg0, arg1, arg2, arg3);
+        //bwprintf(COM2, "Call %u: %x %x %x %x\r\n", call, arg0, arg1, arg2, arg3);
         struct Request req = {
             .task = active,
             .callID = call,
