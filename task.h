@@ -1,10 +1,16 @@
 #ifndef TASK_H
 #define TASK_H 1
 
+#include <stdbool.h>
+
 struct TaskDescriptor {
+    unsigned int id;
     unsigned int ret;
     unsigned int spsr;
     unsigned int *sp;
+
+    bool active;
+    int parent_task_id;
 };
 
 void initTaskSystem(void);
@@ -26,7 +32,8 @@ int createTask(
 /* Returns false iff task_id is invalid */
 bool exitTask(int task_id);
 
-/* Returns the new active task */
+/* Returns the new active task or NULL if there are no tasks left on the system
+ * (at which point the kernel must return cleanly to RedBoot */
 struct TaskDescriptor *scheduleTask(void);
 
 int getActiveTaskId(void);

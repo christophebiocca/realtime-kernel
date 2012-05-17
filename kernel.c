@@ -7,36 +7,6 @@ struct Request {
     char dummy;
 };
 
-static struct TaskDescriptor desc;
-static void initTask(struct TaskDescriptor *task){
-    // By default, 1 process owning 0x250000 to 0x300000
-    // with stack at 0x300000
-
-    // Stored sp points to bottom of stack
-    // Stack storage
-    // sp + 0 = r15 (pc)
-    // sp + 1 = r0
-    // ...
-    // sp + 12 = r11 (fp)
-    // sp + 13 = r12
-    // sp + 14 = r14 (lr)
-
-    task->ret = 1;
-    task->spsr = UserMode | DisableIRQ | DisableFIQ;
-    task->sp = ((unsigned int *) 0x300000) - 15;
-
-    for(int i = 0; i < 15; ++i){
-        *(task->sp + i) = i;
-    }
-    *(task->sp) = ((unsigned int) &userModeTask) + 0x200000; // Set starting pc
-    *(task->sp + 12) = 0x300000; // For now, set frame to same as sp
-    bwprintf(COM2, "%x %x %x\r\n", task->ret, task->spsr, task->sp);
-    bwputstr(COM2, "Stack:\r\n");
-    for(int i = 0; i < 15; ++i){
-        bwprintf(COM2, "\t%x(sp+%x): %x\r\n", task->sp+i, i, *(task->sp+i));
-    }
-}
-
 static void handle(struct Request *req){
     (void) req;
 }
@@ -65,7 +35,7 @@ int main(){
         unsigned int arg1;
         unsigned int arg2;
         unsigned int arg3;
-        
+
         register unsigned int spsr asm("r5") = active->spsr;
 
         asm volatile(
