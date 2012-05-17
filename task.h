@@ -28,6 +28,7 @@ int createTask(
     unsigned int stack_size,
     int parent_task_id
 );
+#define DEFAULT_STACK_SIZE 0x400
 
 /* Returns false iff task_id is invalid */
 bool exitTask(unsigned int task_id);
