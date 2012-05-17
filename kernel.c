@@ -2,6 +2,7 @@
 #include "bwio.h"
 #include "cpsr.h"
 #include "user_task.h"
+#include "task.h"
 
 struct Request {
     char dummy;
