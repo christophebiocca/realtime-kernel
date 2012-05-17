@@ -103,6 +103,6 @@ bool exitTask(unsigned int task_id) {
         return false;
     }
 
-    g_task_table[task_id]->active = false;
+    g_task_table[task_id].active = false;
     return true;
 }
