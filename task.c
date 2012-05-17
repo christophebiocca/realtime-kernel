@@ -87,7 +87,7 @@ int createTask(unsigned int priority, void (*code)(void),
 
     // see trap frame layout above TRAP_FRAME_SIZE
     *(t->sp) = ((unsigned int) code) + RELOCATION_CONSTANT;
-    *(t->sp + 12) = t->sp;  // for now, set frame pointer = stack pointer
+    *(t->sp + 12) = (unsigned int) t->sp;  // for now, set frame pointer = stack pointer
 
     struct TaskQueue *queue = &g_task_queue[priority];
     queue->buffer[queue->tail++] = t;
