@@ -15,6 +15,7 @@ struct TaskQueue {
     int head;
     int tail;
 } g_task_queue[MAX_PRIORITY];
+unsigned int g_task_queue_mask;
 
 #define STACK_HIGH      0x300000
 #define STACK_LOW       0x250000
@@ -37,6 +38,7 @@ void initTaskSystem(void) {
         g_task_queue[i].head = 0;
         g_task_queue[i].tail = 0;
     }
+    g_task_queue_mask = 0;
 
     // Priority 0 because init task must run to completion before anything else
     // it may even issue multiple syscalls and must be guaranteed to run after
@@ -86,6 +88,12 @@ int createTask(unsigned int priority, void (*code)(void),
     // see trap frame layout above TRAP_FRAME_SIZE
     *(t->sp) = ((unsigned int) code) + RELOCATION_CONSTANT;
     *(t->sp + 12) = t->sp;  // for now, set frame pointer = stack pointer
+
+    struct TaskQueue *queue = &g_task_queue[priority];
+    queue->buffer[queue->tail++] = t;
+    queue->tail %= MAX_QUEUE_SIZE;
+
+    g_task_queue_mask |= 1 << priority;
 
     return t->id;
 }
