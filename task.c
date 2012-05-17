@@ -29,7 +29,7 @@ static void initialTask(void) {
 
 void initTaskSystem(void) {
     // FIXME: write bzero and zero out g_task_table
-    next_task_id = 0;
+    g_next_task_id = 0;
     g_active_task_id = -1;
     g_current_stack = (unsigned int *) STACK_HIGH;
 
