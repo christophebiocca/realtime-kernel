@@ -2,7 +2,9 @@
 #include "bwio.h"
 
 void userModeTask(){
-    bwputstr(COM2, "-> -> USER TASK!\r\n");
-    asm volatile("swi 0");
+    while(1) {
+      bwputstr(COM2, "-> -> USER TASK!\r\n");
+      asm volatile("swi 0");
+    }
 }
 

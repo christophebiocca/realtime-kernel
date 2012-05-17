@@ -14,7 +14,7 @@ LDFLAGS = -init main -Map kernel.map -N -T linker.ld -L/u/wbcowan/gnuarm-4.0.2/l
 
 .PRECIOUS: %.s
 
-.PHONY: all clean
+.PHONY: all clean rdeploy
 
 VPATH = include/
 
@@ -26,6 +26,9 @@ assembled_sources := $(patsubst %c,%s,$(sources))
 hand_assemblies := $(filter-out $(assembled_sources),$(wildcard *.s))
 
 objects := $(patsubst %.c,%.o,$(sources)) $(patsubst %.s,%.o,$(hand_assemblies))
+
+rdeploy: kernel.elf
+	cp kernel.elf /u/cs452/tftp/ARM/cs452_05/rraval.elf
 
 kernel.elf : $(objects) linker.ld
 	$(LD) $(LDFLAGS) -o $@ $(filter-out linker.ld,$^) -lgcc
