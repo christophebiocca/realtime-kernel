@@ -77,6 +77,7 @@ int main(){
         bwputr(COM2, arg3);
         active->sp = sp;
         active->spsr = spsr;
+        unsigned int call = *(((unsigned int *) *sp) - 1) & 0x00FFFFFF;
         struct Request req;
         handle(&req);
     }
