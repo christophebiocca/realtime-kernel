@@ -13,7 +13,7 @@ struct TaskDescriptor {
     int parent_task_id;
 };
 
-void initTaskSystem(void);
+void initTaskSystem(void (*initialTask)(void));
 
 /*
  * Returns:

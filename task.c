@@ -21,13 +21,8 @@ unsigned int g_task_queue_mask;
 #define STACK_LOW       0x250000
 static unsigned int *g_current_stack;
 
-static void initialTask(void) {
-    bwputstr("I AM THE INITIAL TASK\n");
-    // FIXME: use Exit() syscall instead
-    exitTask(0);
-}
 
-void initTaskSystem(void) {
+void initTaskSystem(void (*initialTask)(void)) {
     // FIXME: write bzero and zero out g_task_table
     g_next_task_id = 0;
     g_active_task_id = -1;
@@ -43,7 +38,7 @@ void initTaskSystem(void) {
     // Priority 0 because init task must run to completion before anything else
     // it may even issue multiple syscalls and must be guaranteed to run after
     // them.
-    int ret = createTask(0, &initialTask, DEFAULT_STACK_SIZE, -1);
+    int ret = createTask(0, initialTask, DEFAULT_STACK_SIZE, -1);
     if(ret < 0){
         bwprintf(COM2, "Fatal error, %d when setting up initial task");
     }
