@@ -5,7 +5,12 @@
 #include "task.h"
 
 struct Request {
-    char dummy;
+    struct TaskDescriptor *task;
+    unsigned int callID;
+    unsigned int arg0;
+    unsigned int arg1;
+    unsigned int arg2;
+    unsigned int arg3;
 };
 
 static void handle(struct Request *req){
