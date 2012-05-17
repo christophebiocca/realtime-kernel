@@ -80,7 +80,6 @@ int createTask(unsigned int priority, void (*code)(void),
 
     struct TaskDescriptor *t = &g_task_table[g_next_task_id];
     t->id = g_next_task_id++;
-    t->ret = 0;
     t->spsr = UserMode | DisableIRQ | DisableFIQ;
     t->active = true;
     t->parent_task_id = parent_task_id;
@@ -111,6 +110,10 @@ bool exitTask(unsigned int task_id) {
 
     g_task_table[task_id].active = false;
     return true;
+}
+
+void setReturnValue(struct TaskDescriptor *td, int ret){
+    *(td->sp + 1) = ret;
 }
 
 struct TaskDescriptor *scheduleTask(void){

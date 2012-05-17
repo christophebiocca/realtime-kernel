@@ -17,14 +17,14 @@ struct Request {
 static void handle(struct Request *req){
     switch(req->callID){
         case SYS_CREATE:
-            req->task->ret = createTask(req->arg0, (void (*)(void)) req->arg1,
-                DEFAULT_STACK_SIZE, req->task->id);
+            setReturnValue(req->task, createTask(req->arg0, (void (*)(void)) req->arg1,
+                DEFAULT_STACK_SIZE, req->task->id));
             break;
         case SYS_MY_TID:
-            req->task->ret = req->task->id;
+            setReturnValue(req->task, req->task->id);
             break;
         case SYS_MY_PARENT_TID:
-            req->task->ret = req->task->parent_task_id;
+            setReturnValue(req->task, req->task->parent_task_id);
             break;
         case SYS_PASS:
             break;
@@ -53,7 +53,6 @@ int main(){
     for(active = scheduleTask(); active; active = scheduleTask()){
 
         register unsigned int *sp asm("r4") = active->sp;
-        *(sp + 1) = active->ret;
         unsigned int arg0;
         unsigned int arg1;
         unsigned int arg2;

@@ -5,7 +5,6 @@
 
 struct TaskDescriptor {
     unsigned int id;
-    unsigned int ret;
     unsigned int spsr;
     unsigned int *sp;
 
@@ -32,6 +31,9 @@ int createTask(
 
 /* Returns false iff task_id is invalid */
 bool exitTask(unsigned int task_id);
+
+/* Sets the return value of the task */
+void setReturnValue(struct TaskDescriptor *td, int ret);
 
 /* Returns the new active task or NULL if there are no tasks left on the system
  * (at which point the kernel must return cleanly to RedBoot */
