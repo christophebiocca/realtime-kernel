@@ -30,7 +30,7 @@ int createTask(
 );
 
 /* Returns false iff task_id is invalid */
-bool exitTask(int task_id);
+bool exitTask(unsigned int task_id);
 
 /* Returns the new active task or NULL if there are no tasks left on the system
  * (at which point the kernel must return cleanly to RedBoot */
@@ -39,6 +39,6 @@ struct TaskDescriptor *scheduleTask(void);
 int getActiveTaskId(void);
 
 /* Returns NULL on invalid task_id */
-struct TaskDescriptor *getTask(int task_id);
+struct TaskDescriptor *getTask(unsigned int task_id);
 
 #endif

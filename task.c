@@ -97,3 +97,12 @@ int createTask(unsigned int priority, void (*code)(void),
 
     return t->id;
 }
+
+bool exitTask(unsigned int task_id) {
+    if (task_id >= MAX_TASKS) {
+        return false;
+    }
+
+    g_task_table[task_id]->active = false;
+    return true;
+}
