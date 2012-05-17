@@ -3,6 +3,7 @@
 #include "cpsr.h"
 #include "user_task.h"
 #include "task.h"
+#include "syscall_ids.h"
 
 struct Request {
     struct TaskDescriptor *task;
@@ -14,7 +15,26 @@ struct Request {
 };
 
 static void handle(struct Request *req){
-    (void) req;
+    switch(req->callID){
+        case SYS_CREATE:
+            req->task->ret = createTask(req->arg0, (void (*)(void)) req->arg1,
+                DEFAULT_STACK_SIZE, req->task->id);
+            break;
+        case SYS_MY_TID:
+            req->task->ret = req->task->id;
+            break;
+        case SYS_MY_PARENT_TID:
+            req->task->ret = req->task->parent_task_id;
+            break;
+        case SYS_PASS:
+            break;
+        case SYS_EXIT:
+            exitTask(req->task->id);
+            break;
+        default:
+            bwprintf(COM2, "Invalid call %u!\r\n", req->callID);
+            break;
+    }
 }
 
 int main(){
