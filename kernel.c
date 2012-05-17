@@ -66,8 +66,13 @@ int main(){
         bwputstr(COM2, "kerxitEntry\r\n");
 
         register unsigned int *sp asm("r4") = active->sp;
-        register unsigned int spsr asm("r5") = active->spsr;
         *(sp + 1) = active->ret;
+        unsigned int arg0;
+        unsigned int arg1;
+        unsigned int arg2;
+        unsigned int arg3;
+        
+        register unsigned int spsr asm("r5") = active->spsr;
 
         asm volatile(
             "stmfd sp!, {r6-r12, r14}\n\t"  // save kregs on kstack
@@ -86,13 +91,20 @@ int main(){
             "stmfd %0!, {r14}\n\t"          // Store the task's pc on it's stack
             "mrs %1, spsr\n\t"              // Obtain activity's spsr
             "ldmfd sp!, {r6-r12, r14}\n\t"  // unroll kregs from kstack
-            : "+r"(sp), "+r"(spsr)
+            "mov %2, r0\n\t"
+            "mov %3, r1\n\t"
+            "mov %4, r2\n\t"
+            "mov %5, r3\n\t"
+            : "+r"(sp), "+r"(spsr), "=r"(arg0),
+                "=r"(arg1), "=r"(arg2), "=r"(arg3)
             :
             : "r0", "r1", "r2", "r3"
         );
 
-        bwputstr(COM2, "kerxitExit\r\n");
-
+        bwputr(COM2, arg0);
+        bwputr(COM2, arg1);
+        bwputr(COM2, arg2);
+        bwputr(COM2, arg3);
         active->sp = sp;
         active->spsr = spsr;
         struct Request req;
