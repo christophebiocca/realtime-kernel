@@ -55,10 +55,10 @@ int main(){
             "stmfd %0!, {r14}\n\t"          // Store the task's pc on it's stack
             "mrs %1, spsr\n\t"              // Obtain activity's spsr
             "ldmfd sp!, {r6-r12, r14}\n\t"  // unroll kregs from kstack
-            "mov %2, r0\n\t"
-            "mov %3, r1\n\t"
-            "mov %4, r2\n\t"
-            "mov %5, r3\n\t"
+            "mov %2, r0\n\t"                // Move args to appropriate spaces
+            "mov %3, r1\n\t"                // Move args to appropriate spaces
+            "mov %4, r2\n\t"                // Move args to appropriate spaces
+            "mov %5, r3\n\t"                // Move args to appropriate spaces
             : "+r"(sp), "+r"(spsr), "=r"(arg0),
                 "=r"(arg1), "=r"(arg2), "=r"(arg3)
             :
