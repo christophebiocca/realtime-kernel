@@ -20,24 +20,25 @@ static void initTask(struct TaskDescriptor *task){
 
     // Stored sp points to bottom of stack
     // Stack storage
-    // sp - 1 = r15 (pc)
-    // sp + 0 = r0
+    // sp + 0 = r15 (pc)
+    // sp + 1 = r0
     // ...
-    // sp + 12 = r12
-    // sp + 13 = r14 (lr)
+    // sp + 12 = r11 (fp)
+    // sp + 13 = r12
+    // sp + 14 = r14 (lr)
 
     task->ret = 1;
     task->spsr = UserMode | DisableIRQ | DisableFIQ;
-    task->sp = ((unsigned int *) 0x300000) - 14;
+    task->sp = ((unsigned int *) 0x300000) - 15;
 
-    for(int i = -1; i < 14; ++i){
+    for(int i = 0; i < 15; ++i){
         *(task->sp + i) = i;
     }
-    *(task->sp - 1) = ((unsigned int) &userModeTask) + 0x200000; // Set starting pc
-    *(task->sp + 11) = 0x300000; // For now, set frame to same as sp
+    *(task->sp) = ((unsigned int) &userModeTask) + 0x200000; // Set starting pc
+    *(task->sp + 12) = 0x300000; // For now, set frame to same as sp
     bwprintf(COM2, "%x %x %x\r\n", task->ret, task->spsr, task->sp);
     bwputstr(COM2, "Stack:\r\n");
-    for(int i = -1; i < 14; ++i){
+    for(int i = 0; i < 15; ++i){
         bwprintf(COM2, "\t%x(sp+%x): %x\r\n", task->sp+i, i, *(task->sp+i));
     }
 }
@@ -63,14 +64,14 @@ int main(){
     for(unsigned int i = 0; i < 150; ++i){
         struct TaskDescriptor* active = &desc;
         bwputstr(COM2, "kerxitEntry\r\n");
-        
+
         register unsigned int *sp asm("r4") = active->sp;
         register unsigned int spsr asm("r5") = active->spsr;
-        *sp = active->ret;
+        *(sp + 1) = active->ret;
 
         asm volatile(
             "stmfd sp!, {r6-r12, r14}\n\t"  // save kregs on kstack
-            "ldr r14, [%0, #-4]\n\t"        // Get the stored pc
+            "ldmfd %0!, {r14}\n\t"          // Get the stored pc
             "msr spsr, %1\n\t"              // set active's spsr
             "msr cpsr_c, #0xdf\n\t"         // Switch to system mode
             "mov sp, %0\n\t"                // Set sp.
@@ -82,13 +83,15 @@ int main(){
             "stmfd sp!, {r0-r12, r14}\n\t"  // Store user registers.
             "mov %0, sp\n\t"                // Save user's stack pointer
             "msr cpsr_c, #0xd3\n\t"         // Switch to supervisor mode
-            "str r14, [%0, #-4]\n\t"        // Store the task's pc on it's stack
+            "stmfd %0!, {r14}\n\t"          // Store the task's pc on it's stack
             "mrs %1, spsr\n\t"              // Obtain activity's spsr
             "ldmfd sp!, {r6-r12, r14}\n\t"  // unroll kregs from kstack
             : "+r"(sp), "+r"(spsr)
             :
             : "r0", "r1", "r2", "r3"
         );
+
+        bwputstr(COM2, "kerxitExit\r\n");
 
         active->sp = sp;
         active->spsr = spsr;
