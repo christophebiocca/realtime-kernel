@@ -60,20 +60,12 @@ int main(){
     bwprintf(COM2, "0x28: %x\r\n", *((unsigned int *)0x28));
     initTask(&desc);
 
-    for(unsigned int i = 0; i < 3; ++i){
+    for(unsigned int i = 0; i < 150; ++i){
         struct TaskDescriptor* active = &desc;
         bwputstr(COM2, "kerxitEntry\r\n");
         
-        {
-            bwprintf(COM2, "%x %x %x\r\n", active->ret, active->spsr, active->sp);
-            bwputstr(COM2, "Stack:\r\n");
-            for(int i = -1; i < 14; ++i){
-                bwprintf(COM2, "\t%x(sp+%x): %x\r\n", active->sp+i, i, *(active->sp+i));
-            }
-        }
-
-        register unsigned int *sp  = active->sp;
-        register unsigned int spsr = active->spsr;
+        register unsigned int *sp asm("r4") = active->sp;
+        register unsigned int spsr asm("r5") = active->spsr;
         *sp = active->ret;
 
         asm volatile(
@@ -100,9 +92,6 @@ int main(){
 
         active->sp = sp;
         active->spsr = spsr;
-        active->ret = 0;
-        bwputstr(COM2, "kerxitExit\r\n");
-
         struct Request req;
         handle(&req);
     }
