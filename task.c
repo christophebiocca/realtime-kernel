@@ -21,8 +21,16 @@ unsigned int g_task_queue_mask;
 #define STACK_LOW       0x250000
 static unsigned int *g_current_stack;
 
+#define BRUJIN_SEQUENCE 0x077CB531U
+static int LOOKUP[32];
 
 void initTaskSystem(void (*initialTask)(void)) {
+
+    for(unsigned int i = 0; i < 32; ++i){
+        // Fill in the lookup table.
+        LOOKUP[((1u << i) * BRUJIN_SEQUENCE) >> 27] = i;
+    }
+
     // FIXME: write bzero and zero out g_task_table
     g_next_task_id = 0;
     g_active_task_id = -1;
@@ -103,4 +111,25 @@ bool exitTask(unsigned int task_id) {
 
     g_task_table[task_id].active = false;
     return true;
+}
+
+struct TaskDescriptor *scheduleTask(void){
+    struct TaskDescriptor *desc;
+    while(g_task_queue_mask){
+        int priority = LOOKUP[(((unsigned int) g_task_queue_mask & -g_task_queue_mask)
+            * BRUJIN_SEQUENCE) >> 27];
+        struct TaskQueue *queue = &g_task_queue[priority];
+        do {
+            desc = queue->buffer[queue->head];
+            queue->head = (queue->head+1) % MAX_QUEUE_SIZE;
+            if(desc->active){
+                queue->buffer[queue->tail] = desc;
+                queue->tail = (queue->tail+1) % MAX_QUEUE_SIZE;
+                return desc;
+            }
+        } while(queue->head != queue->tail);
+        // We emptied the queue.
+        g_task_queue_mask &= ~(1 << priority);
+    }
+    return 0;
 }
