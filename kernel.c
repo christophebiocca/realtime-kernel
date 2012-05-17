@@ -71,13 +71,10 @@ int main(){
             : "r0", "r1", "r2", "r3"
         );
 
-        bwputr(COM2, arg0);
-        bwputr(COM2, arg1);
-        bwputr(COM2, arg2);
-        bwputr(COM2, arg3);
         active->sp = sp;
         active->spsr = spsr;
         unsigned int call = *(((unsigned int *) *sp) - 1) & 0x00FFFFFF;
+        bwprintf(COM2, "Call %u: %x %x %x %x\r\n", call, arg0, arg1, arg2, arg3);
         struct Request req;
         handle(&req);
     }
