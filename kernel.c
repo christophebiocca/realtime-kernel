@@ -3,12 +3,6 @@
 #include "cpsr.h"
 #include "user_task.h"
 
-struct TaskDescriptor {
-    unsigned int ret;
-    unsigned int spsr;
-    unsigned int *sp;
-};
-
 struct Request {
     char dummy;
 };
