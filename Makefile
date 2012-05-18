@@ -1,20 +1,22 @@
 PATH := /u/wbcowan/gnuarm-4.0.2/libexec/gcc/arm-elf/4.0.2:/u/wbcowan/gnuarm-4.0.2/arm-elf/bin:${PATH}
 
 CC      = gcc
-CFLAGS  = -c -fPIC -Wall -Wextra -Werror -I. -mcpu=arm920t -msoft-float -std=gnu99
+CFLAGS  = -c -fPIC -Wall -Wextra -Werror -I. -Iinclude -mcpu=arm920t -msoft-float -std=gnu99
 
 AS	= as
 ASFLAGS	= -mcpu=arm920t -mapcs-32
 
 LD      = ld
-LDFLAGS = -init main -Map kernel.map -N -T linker.ld
+LDFLAGS = -init main -Map kernel.map -N -T linker.ld -L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2
 
 .SUFFIXES:
 .DEFAULT:
 
 .PRECIOUS: %.s
 
-.PHONY: all clean
+.PHONY: all clean rdeploy
+
+VPATH = include/
 
 all = kernel.elf
 
@@ -25,8 +27,11 @@ hand_assemblies := $(filter-out $(assembled_sources),$(wildcard *.s))
 
 objects := $(patsubst %.c,%.o,$(sources)) $(patsubst %.s,%.o,$(hand_assemblies))
 
+rdeploy: kernel.elf
+	cp kernel.elf /u/cs452/tftp/ARM/cs452_05/rraval.elf
+
 kernel.elf : $(objects) linker.ld
-	$(LD) $(LDFLAGS) -o $@ $(filter-out linker.ld,$^)
+	$(LD) $(LDFLAGS) -o $@ $(filter-out linker.ld,$^) -lgcc
 
 %.s: %.c
 	$(CC) -S $(CFLAGS) $<
