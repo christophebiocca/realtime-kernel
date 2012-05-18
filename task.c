@@ -12,8 +12,8 @@ static int g_active_task_id;
 #define MAX_QUEUE_SIZE  16
 struct TaskQueue {
     struct TaskDescriptor *buffer[MAX_QUEUE_SIZE];
-    int head;
-    int tail;
+    unsigned int head;
+    unsigned int tail;
 } g_task_queue[MAX_PRIORITY];
 unsigned int g_task_queue_mask;
 
