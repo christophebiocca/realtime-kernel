@@ -81,7 +81,6 @@ int createTask(unsigned int priority, void (*code)(void),
     struct TaskDescriptor *t = &g_task_table[g_next_task_id];
     t->id = g_next_task_id++;
     t->spsr = UserMode | DisableIRQ | DisableFIQ;
-    t->active = true;
     t->parent_task_id = parent_task_id;
 
     t->sp = g_current_stack - TRAP_FRAME_SIZE;
@@ -103,13 +102,15 @@ int createTask(unsigned int priority, void (*code)(void),
     return t->id;
 }
 
-bool exitTask(unsigned int task_id) {
-    if (task_id >= MAX_TASKS) {
-        return false;
+void exitCurrentTask(void){
+    int priority = LOOKUP[(((unsigned int) g_task_queue_mask & -g_task_queue_mask)
+        * BRUJIN_SEQUENCE) >> 27];
+    struct TaskQueue *queue = &g_task_queue[priority];
+    queue->tail = (queue->tail - 1) % MAX_QUEUE_SIZE; // Drop the tail of the queue.
+    if(queue->tail == queue->head){
+        // And if the queue is empty, clear the ready bit of the queue.
+        g_task_queue_mask &= ~(1 << priority);
     }
-
-    g_task_table[task_id].active = false;
-    return true;
 }
 
 void setReturnValue(struct TaskDescriptor *td, int ret){
@@ -118,21 +119,14 @@ void setReturnValue(struct TaskDescriptor *td, int ret){
 
 struct TaskDescriptor *scheduleTask(void){
     struct TaskDescriptor *desc;
-    while(g_task_queue_mask){
+    if(g_task_queue_mask){
         int priority = LOOKUP[(((unsigned int) g_task_queue_mask & -g_task_queue_mask)
             * BRUJIN_SEQUENCE) >> 27];
         struct TaskQueue *queue = &g_task_queue[priority];
-        do {
-            desc = queue->buffer[queue->head];
-            queue->head = (queue->head+1) % MAX_QUEUE_SIZE;
-            if(desc->active){
-                queue->buffer[queue->tail] = desc;
-                queue->tail = (queue->tail+1) % MAX_QUEUE_SIZE;
-                return desc;
-            }
-        } while(queue->head != queue->tail);
-        // We emptied the queue.
-        g_task_queue_mask &= ~(1 << priority);
+        queue->buffer[queue->tail] = desc = queue->buffer[queue->head];
+        queue->head = (queue->head+1) % MAX_QUEUE_SIZE;
+        queue->tail = (queue->tail+1) % MAX_QUEUE_SIZE;
+        return desc;
     }
     return 0;
 }

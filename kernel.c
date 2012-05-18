@@ -29,7 +29,7 @@ static void handle(struct Request *req){
         case SYS_PASS:
             break;
         case SYS_EXIT:
-            exitTask(req->task->id);
+            exitCurrentTask();
             break;
         default:
             bwprintf(COM2, "Invalid call %u!\r\n", req->callID);
