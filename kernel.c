@@ -52,16 +52,11 @@ int main(){
     struct TaskDescriptor* active;
     for(active = scheduleTask(); active; active = scheduleTask()){
 
-        register unsigned int *sp asm("r4") = active->sp;
-        unsigned int arg0;
-        unsigned int arg1;
-        unsigned int arg2;
-        unsigned int arg3;
-
-        register unsigned int spsr asm("r5") = active->spsr;
+        register unsigned int *sp asm("r0") = active->sp;
+        register unsigned int spsr asm("r1") = active->spsr;
 
         asm volatile(
-            "stmfd sp!, {r6-r12, r14}\n\t"  // save kregs on kstack
+            "stmfd sp!, {r2-r12, r14}\n\t"  // save kregs on kstack
             "ldmfd %0!, {r14}\n\t"          // Get the stored pc
             "msr spsr, %1\n\t"              // set active's spsr
             "msr cpsr_c, #0xdf\n\t"         // Switch to system mode
@@ -76,15 +71,8 @@ int main(){
             "msr cpsr_c, #0xd3\n\t"         // Switch to supervisor mode
             "stmfd %0!, {r14}\n\t"          // Store the task's pc on it's stack
             "mrs %1, spsr\n\t"              // Obtain activity's spsr
-            "ldmfd sp!, {r6-r12, r14}\n\t"  // unroll kregs from kstack
-            "mov %2, r0\n\t"                // Move args to appropriate spaces
-            "mov %3, r1\n\t"                // Move args to appropriate spaces
-            "mov %4, r2\n\t"                // Move args to appropriate spaces
-            "mov %5, r3\n\t"                // Move args to appropriate spaces
-            : "+r"(sp), "+r"(spsr), "=r"(arg0),
-                "=r"(arg1), "=r"(arg2), "=r"(arg3)
-            :
-            : "r0", "r1", "r2", "r3"
+            "ldmfd sp!, {r2-r12, r14}\n\t"  // unroll kregs from kstack
+            : "+r"(sp), "+r"(spsr)
         );
 
         active->sp = sp;
@@ -93,10 +81,10 @@ int main(){
         struct Request req = {
             .task = active,
             .callID = call,
-            .arg0 = arg0,
-            .arg1 = arg1,
-            .arg2 = arg2,
-            .arg3 = arg3
+            .arg0 = *(sp+1),
+            .arg1 = *(sp+2),
+            .arg2 = *(sp+3),
+            .arg3 = *(sp+4)
         };
         handle(&req);
     }
