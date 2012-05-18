@@ -112,6 +112,17 @@ bool exitTask(unsigned int task_id) {
     return true;
 }
 
+void exitCurrentTask(void){
+    int priority = LOOKUP[(((unsigned int) g_task_queue_mask & -g_task_queue_mask)
+        * BRUJIN_SEQUENCE) >> 27];
+    struct TaskQueue *queue = &g_task_queue[priority];
+    queue->tail = (queue->tail - 1) % MAX_QUEUE_SIZE; // Drop the tail of the queue.
+    if(queue->tail == queue->head){
+        // And if the queue is empty, clear the ready bit of the queue.
+        g_task_queue_mask &= ~(1 << priority);
+    }
+}
+
 void setReturnValue(struct TaskDescriptor *td, int ret){
     *(td->sp + 1) = ret;
 }

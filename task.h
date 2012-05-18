@@ -32,6 +32,9 @@ int createTask(
 /* Returns false iff task_id is invalid */
 bool exitTask(unsigned int task_id);
 
+/* Remove the last scheduled task from the queues */
+void exitCurrentTask(void);
+
 /* Sets the return value of the task */
 void setReturnValue(struct TaskDescriptor *td, int ret);
 
