@@ -8,7 +8,6 @@ struct TaskDescriptor {
     unsigned int spsr;
     unsigned int *sp;
 
-    bool active;
     int parent_task_id;
 };
 
@@ -29,8 +28,8 @@ int createTask(
 );
 #define DEFAULT_STACK_SIZE 0x400
 
-/* Returns false iff task_id is invalid */
-bool exitTask(unsigned int task_id);
+/* Remove the last scheduled task from the queues */
+void exitCurrentTask(void);
 
 /* Sets the return value of the task */
 void setReturnValue(struct TaskDescriptor *td, int ret);
