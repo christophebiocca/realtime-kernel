@@ -923,8 +923,76 @@ c1220aec5020cbc73ede2f463204defa  user_task.c
 Program Output
 \end_layout
 
+\begin_layout LyX-Code
+RedBoot> go
+\end_layout
+
+\begin_layout LyX-Code
+Created: 1 
+\end_layout
+
+\begin_layout LyX-Code
+Created: 2 
+\end_layout
+
+\begin_layout LyX-Code
+Task: 3, Parent: 0 
+\end_layout
+
+\begin_layout LyX-Code
+Task: 3, Parent: 0 
+\end_layout
+
+\begin_layout LyX-Code
+Created: 3 
+\end_layout
+
+\begin_layout LyX-Code
+Task: 4, Parent: 0 
+\end_layout
+
+\begin_layout LyX-Code
+Task: 4, Parent: 0 
+\end_layout
+
+\begin_layout LyX-Code
+Created: 4 
+\end_layout
+
+\begin_layout LyX-Code
+First: exiting 
+\end_layout
+
+\begin_layout LyX-Code
+Task: 1, Parent: 0 
+\end_layout
+
+\begin_layout LyX-Code
+Task: 2, Parent: 0 
+\end_layout
+
+\begin_layout LyX-Code
+Task: 1, Parent: 0 
+\end_layout
+
+\begin_layout LyX-Code
+Task: 2, Parent: 0
+\end_layout
+
+\begin_layout LyX-Code
+Program completed with status 0
+\end_layout
+
 \begin_layout Standard
-FIXME: do this in the morning
+Task 1 and 2 are created with a lower priority than the creating task.
+ Therefore, the initial task is still the only task in the highest non-empty
+ priority queue.
+ When it creates task 3 and 4 however, these have a higher priority than
+ the creating tasks, and, as such they run to completion before the create
+ call even returns.
+ After the second create call returns, the initial task exits, and then
+ task 1 and 2, which are the only tasks on the system alternate running
+ every time they call pass.
 \end_layout
 
 \begin_layout Bibliography
