@@ -27,3 +27,10 @@ int Send(int tid, char *msg, int msglen, char *reply, int replylen);
 // Receives a message from anyone.
 // Returns the length of the message.
 int Receive(int *tid, char *msg, int msglen);
+
+// Replies to a message that has been sent.
+// 0: success
+// -1: impossible task id
+// -2: task doesn't exist
+// -3: task isn't waiting for a reply.
+int Reply(int tid, char *reply, int replylen);

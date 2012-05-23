@@ -64,3 +64,14 @@ int Receive(int *tid, char *msg, int msglen){
         : "r"(msg_in), "r"(msglen_in));
     return (int) tid_in_len_out;
 }
+
+int Reply(int tid, char *reply, int replylen){
+    register int tid_in_len_out asm("r0") = tid;
+    register char *msg_in asm("r1") = reply;
+    register int msglen_in asm("r2") = replylen;
+    asm volatile(
+        syscall(SYS_RECEIVE)
+        : "+r"(tid_in_len_out)
+        : "r"(msg_in), "r"(msglen_in));
+    return (int) tid_in_len_out;
+}
