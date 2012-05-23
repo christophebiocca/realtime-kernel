@@ -3,6 +3,12 @@
 
 #include <stdbool.h>
 
+#define TASKS_BITS 8
+#define PRIORITY_BITS 5
+
+#define MAX_TASKS (1<<TASKS_BITS)
+#define MAX_PRIORITY (1<<PRIORITY_BITS)
+
 struct TaskDescriptor {
     unsigned int id;
     unsigned int spsr;

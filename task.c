@@ -2,13 +2,10 @@
 #include "cpsr.h"
 #include "task.h"
 
-#define MAX_TASKS       100
-
 static struct TaskDescriptor g_task_table[MAX_TASKS];
 static int g_next_task_id;
 static int g_active_task_id;
 
-#define MAX_PRIORITY    32
 #define MAX_QUEUE_SIZE  16
 struct TaskQueue {
     struct TaskDescriptor *buffer[MAX_QUEUE_SIZE];
