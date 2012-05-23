@@ -15,7 +15,7 @@ static void childTask() {
 void userModeTask(){
     for (int i = 0; i < 4; ++i) {
         bwprintf(COM2, "Created: %d\r\n", Create(
-            (i < 2) ? 0 : 2,
+            (i < 2) ? 2 : 0,
             childTask
         ));
     }
