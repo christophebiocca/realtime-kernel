@@ -9,6 +9,38 @@
 #define MAX_TASKS (1<<TASKS_BITS)
 #define MAX_PRIORITY (1<<PRIORITY_BITS)
 
+#define INDEX_OFFSET 0
+#define INDEX_MASK ((MAX_TASKS-1) << INDEX_OFFSET)
+#define PRIORITY_OFFSET TASKS_BITS
+#define PRIORITY_MASK ((MAX_PRIORITY-1) << PRIORITY_OFFSET)
+#define UNIQUE_OFFSET (TASKS_BITS + PRIORITY_BITS)
+#define UNIQUE_BITS (32 - UNIQUE_OFFSET)
+#define NUM_UNIQUES (1 << UNIQUE_BITS)
+#define UNIQUE_MASK ((NUM_UNIQUES-1) << UNIQUE_OFFSET)
+
+static inline int taskIndex(int tid){
+    return (INDEX_MASK & tid) >> INDEX_OFFSET;
+}
+
+static inline int taskPriority(int tid){
+    return (PRIORITY_MASK & tid) >> PRIORITY_OFFSET;
+}
+
+static inline int taskUnique(int tid){
+    return (UNIQUE_MASK & tid) >> UNIQUE_OFFSET;
+}
+
+// Does not range check inputs. Make sure you respect the below.
+// 0 <= index < MAX_TASKS
+// 0 <= priority < MAX_PRIORITY
+// 0 <= unique < NUM_UNIQUES
+static inline int makeTid(int index, int priority, int unique){
+    return
+        (index << INDEX_OFFSET) |
+        (priority << PRIORITY_OFFSET) |
+        (unique << UNIQUE_OFFSET);
+}
+
 struct TaskDescriptor {
     unsigned int id;
     unsigned int spsr;

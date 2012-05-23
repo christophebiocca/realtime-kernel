@@ -78,8 +78,10 @@ int createTask(unsigned int priority, void (*code)(void),
         return -3;
     }
 
-    struct TaskDescriptor *t = &g_task_table[g_next_task_id];
-    t->id = g_next_task_id++;
+    int unique, index;
+    unique = index = g_next_task_id++;
+    struct TaskDescriptor *t = &g_task_table[index];
+    t->id = makeTid(index, priority, unique);
     t->spsr = UserMode | DisableIRQ | DisableFIQ;
     t->parent_task_id = parent_task_id;
 
