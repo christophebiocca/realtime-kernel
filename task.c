@@ -20,7 +20,6 @@ static unsigned int *g_current_stack;
 static int LOOKUP[32];
 
 static inline struct TaskDescriptor *queuePop(int priority){
-    bwprintf(COM2, "Pop %d\r\n", priority);
     struct TaskQueue *queue = &g_task_queue[priority];
     struct TaskDescriptor *desc = queue->head;
     queue->head = desc->next;
@@ -33,7 +32,6 @@ static inline struct TaskDescriptor *queuePop(int priority){
 }
 
 static inline void queuePush(int priority, struct TaskDescriptor *t){
-    bwprintf(COM2, "Push %d\r\n", priority);
     struct TaskQueue *queue = &g_task_queue[priority];
     *(queue->tail) = t;
     queue->tail = &(t->next);
@@ -132,7 +130,6 @@ struct TaskDescriptor *scheduleTask(void){
         queuePush(taskPriority(g_active_task->id), g_active_task);
     }
     if(g_task_queue_mask){
-        bwputstr(COM2, "Scheduling\r\n");
         int priority = LOOKUP[(((unsigned int) g_task_queue_mask & -g_task_queue_mask)
             * BRUJIN_SEQUENCE) >> 27];
         return g_active_task = queuePop(priority);
