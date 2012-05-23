@@ -50,7 +50,7 @@ int main(){
     initTaskSystem(&userModeTask);
 
     struct TaskDescriptor* active;
-    for(active = scheduleTask(); active; active = scheduleTask()){
+    for(active = scheduleTask(); active; active = scheduleTask()) {
 
         register unsigned int *sp asm("r0") = active->sp;
         register unsigned int spsr asm("r1") = active->spsr;

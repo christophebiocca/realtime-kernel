@@ -1,0 +1,956 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize 12
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+CS 452: Kernel 1
+\end_layout
+
+\begin_layout Author
+Christophe Biocca (#20322763) and Ronuk Raval (#20345750)
+\end_layout
+
+\begin_layout Date
+May 23, 2012
+\end_layout
+
+\begin_layout Section
+Operation
+\end_layout
+
+\begin_layout LyX-Code
+> load -b 0x00200000 -h 129.97.167.12 "ARM/cs452_05/kernel_k0.elf"
+\end_layout
+
+\begin_layout LyX-Code
+...
+\end_layout
+
+\begin_layout LyX-Code
+> go
+\end_layout
+
+\begin_layout Standard
+The full set of system calls required by the assignment are supported:
+\end_layout
+
+\begin_layout Description
+
+\family typewriter
+\series bold
+int
+\begin_inset space ~
+\end_inset
+
+Create(int
+\begin_inset space ~
+\end_inset
+
+priority,
+\begin_inset space ~
+\end_inset
+
+void
+\begin_inset space ~
+\end_inset
+
+(*code)()) 
+\family default
+\series default
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+~
+\backslash
+
+\backslash
+
+\end_layout
+
+\end_inset
+
+Schedule the task specified by the function pointer 
+\family typewriter
+code
+\family default
+ with the specified priotity.
+\end_layout
+
+\begin_layout Description
+
+\family typewriter
+\series bold
+int
+\begin_inset space ~
+\end_inset
+
+myTid() 
+\family default
+\series default
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+~
+\backslash
+
+\backslash
+
+\end_layout
+
+\end_inset
+
+Return the task id for the calling task.
+\end_layout
+
+\begin_layout Description
+
+\family typewriter
+int
+\begin_inset space ~
+\end_inset
+
+myParentTid() 
+\family default
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+~
+\backslash
+
+\backslash
+
+\end_layout
+
+\end_inset
+
+Return the task id of the parent of the calling task.
+\end_layout
+
+\begin_layout Description
+
+\family typewriter
+\series bold
+void
+\begin_inset space ~
+\end_inset
+
+Pass() 
+\family default
+\series default
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+~
+\backslash
+
+\backslash
+
+\end_layout
+
+\end_inset
+
+No-op for entering the kernel.
+\end_layout
+
+\begin_layout Description
+
+\family typewriter
+void
+\begin_inset space ~
+\end_inset
+
+Exit() 
+\family default
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+~
+\backslash
+
+\backslash
+
+\end_layout
+
+\end_inset
+
+Exits the calling task and never schedules it again.
+\end_layout
+
+\begin_layout Section
+Context Switch
+\end_layout
+
+\begin_layout Standard
+From kernel to user space:
+\end_layout
+
+\begin_layout Enumerate
+Put user task 
+\family typewriter
+sp
+\family default
+ into 
+\family typewriter
+r0
+\end_layout
+
+\begin_layout Enumerate
+Put user task 
+\family typewriter
+spsr
+\family default
+ into 
+\family typewriter
+r1
+\end_layout
+
+\begin_layout Enumerate
+Save kernel registers (
+\family typewriter
+r2-r12
+\family default
+, 
+\family typewriter
+lr
+\family default
+) onto kernel stack.
+ Kernel 
+\family typewriter
+sp
+\family default
+ is not saved since it will be preserved across mode switches and 
+\family typewriter
+pc
+\family default
+ is set to the right thing by 
+\family typewriter
+swi
+\family default
+ instruction on kernel entry.
+\end_layout
+
+\begin_layout Enumerate
+Pop task 
+\family typewriter
+pc
+\family default
+ as first word off 
+\family typewriter
+r0
+\family default
+ (task 
+\family typewriter
+sp
+\family default
+) into kernel 
+\family typewriter
+lr
+\family default
+ (restoring state for 
+\family typewriter
+movs
+\family default
+).
+\end_layout
+
+\begin_layout Enumerate
+Restore 
+\family typewriter
+spsr
+\family default
+ from 
+\family typewriter
+r1
+\family default
+ (task 
+\family typewriter
+spsr
+\family default
+).
+\end_layout
+
+\begin_layout Enumerate
+Switch to system mode:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Restore task 
+\family typewriter
+sp
+\family default
+ from 
+\family typewriter
+r0
+\family default
+.
+\end_layout
+
+\begin_layout Enumerate
+Unroll trap frame from task 
+\family typewriter
+sp
+\family default
+ (
+\family typewriter
+r0-r12
+\family default
+, 
+\family typewriter
+lr
+\family default
+).
+ Note that this is the task 
+\family typewriter
+lr
+\family default
+ and not the kernel 
+\family typewriter
+lr
+\family default
+ we set in (4).
+\end_layout
+
+\begin_layout Enumerate
+Switch to supervisor mode.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Jump to userspace into the task with 
+\family typewriter
+movs pc, lr
+\family default
+.
+\end_layout
+
+\begin_layout Standard
+From user space to kernel (
+\family typewriter
+swi n
+\family default
+):
+\end_layout
+
+\begin_layout Enumerate
+Switch to system mode:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Store user registers (
+\family typewriter
+r0-r12
+\family default
+, 
+\family typewriter
+lr
+\family default
+) on user stack.
+ We will save the other registers (
+\family typewriter
+sp
+\family default
+ and 
+\family typewriter
+pc
+\family default
+) in other ways.
+\end_layout
+
+\begin_layout Enumerate
+Move 
+\family typewriter
+sp
+\family default
+ into 
+\family typewriter
+r0
+\family default
+.
+\end_layout
+
+\begin_layout Enumerate
+Switch to supervisor mode.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Push 
+\family typewriter
+lr
+\family default
+ (the task's 
+\family typewriter
+pc
+\family default
+) onto stack pointed by 
+\family typewriter
+r0
+\family default
+ (task 
+\family typewriter
+sp
+\family default
+) and update 
+\family typewriter
+r0
+\family default
+ to new stack head.
+\end_layout
+
+\begin_layout Enumerate
+Move 
+\family typewriter
+spsr
+\family default
+ into 
+\family typewriter
+r1
+\family default
+.
+\end_layout
+
+\begin_layout Enumerate
+Unroll kernel registers from kernel stack (
+\family typewriter
+r2-r12
+\family default
+, 
+\family typewriter
+lr
+\family default
+).
+\end_layout
+
+\begin_layout Enumerate
+Save 
+\family typewriter
+r0
+\family default
+ (task 
+\family typewriter
+sp
+\family default
+) and 
+\family typewriter
+r1
+\family default
+ (task 
+\family typewriter
+spsr
+\family default
+) into task descriptor for task that just called kernel.
+\end_layout
+
+\begin_layout Subsection
+Trap Frame
+\end_layout
+
+\begin_layout Standard
+When a user task switches into the kernel, a trap frame is created on the
+ task's stack which stores a snapshot of its state.
+ The exact layout of the trap frame follows:
+\end_layout
+
+\begin_layout LyX-Code
++-----+ <-- SP after trap frame creation
+\end_layout
+
+\begin_layout LyX-Code
+| PC  |
+\end_layout
+
+\begin_layout LyX-Code
+| LR  |
+\end_layout
+
+\begin_layout LyX-Code
+| r12 |
+\end_layout
+
+\begin_layout LyX-Code
+| r11 |
+\end_layout
+
+\begin_layout LyX-Code
+| ...
+ |
+\end_layout
+
+\begin_layout LyX-Code
+| r0  |
+\end_layout
+
+\begin_layout LyX-Code
++-----+ <-- SP at SWI instruction
+\end_layout
+
+\begin_layout LyX-Code
+| ...
+ |
+\end_layout
+
+\begin_layout LyX-Code
++-----+
+\end_layout
+
+\begin_layout Section
+Syscalls
+\end_layout
+
+\begin_layout Standard
+All syscalls are wrapped in callable C functions.
+ These wrap the correct constants into 
+\family typewriter
+swi n
+\family default
+.
+ After a successful switch into kernel mode, the 
+\family typewriter
+n
+\family default
+ is extracted by looking at the word before the task's 
+\family typewriter
+pc
+\family default
+ (conveniently located at the top of the trap frame) and masking out the
+ 
+\family typewriter
+swi
+\family default
+ portion.
+\end_layout
+
+\begin_layout Standard
+Argument passing is handled by explicitly placing parameters into 
+\family typewriter
+r0-r5
+\family default
+.
+ For example, from the implementation of 
+\family typewriter
+Create()
+\family default
+:
+\end_layout
+
+\begin_layout LyX-Code
+int Create(int priority, void (*code)()) {
+\end_layout
+
+\begin_deeper
+\begin_layout LyX-Code
+// some error checking
+\end_layout
+
+\begin_layout LyX-Code
+register unsigned int priority_in_ret_out asm("r0") = priority;
+\end_layout
+
+\begin_layout LyX-Code
+register void (*code_in)() asm("r1") = code;
+\end_layout
+
+\begin_layout LyX-Code
+// call swi n and return whats in r0 (priority_in_ret_out)
+\end_layout
+
+\end_deeper
+\begin_layout LyX-Code
+}
+\end_layout
+
+\begin_layout Standard
+In this way, we explicitly tell gcc to place the parameters in registers
+ we specify.
+ On the kernel side, these parameters are extracted from the trap frame
+ for 
+\family typewriter
+r0-r5
+\family default
+ and handled from there.
+\end_layout
+
+\begin_layout Standard
+Return values from syscalls are handled by explicitly manipulating the trap
+ frame for the calling task.
+ Replacing the value of 
+\family typewriter
+r0
+\family default
+ in the trap frame with the return value puts it in the right place when
+ the task is next scheduled.
+\end_layout
+
+\begin_layout Section
+Tasks
+\end_layout
+
+\begin_layout Standard
+A task represents a unit of code that can be scheduled independent of other
+ tasks in the system.
+ In our kernel, a task is spawned based off a function pointer.
+\end_layout
+
+\begin_layout Subsection
+Task Descriptor
+\end_layout
+
+\begin_layout Standard
+All tasks are tracked by a descriptor, which holds onto its task id, 
+\family typewriter
+sp
+\family default
+, 
+\family typewriter
+spsr
+\family default
+, and parent task id (the one who called 
+\family typewriter
+Create()
+\family default
+).
+ The 
+\family typewriter
+sp
+\family default
+ and 
+\family typewriter
+spsr
+\family default
+ are manipulated by the context switch.
+ There is a global table of tasks where descriptors are allocated from and
+ a task id is merely an index into this table.
+\end_layout
+
+\begin_layout Standard
+In its current form, the kernel only allocates enough memory to track 100
+ tasks.
+ 
+\family typewriter
+Create()
+\family default
+ calls after 100 tasks have been spawned fail with a return value of 
+\family typewriter
+-2
+\family default
+.
+\end_layout
+
+\begin_layout Subsection
+Prioritization and Scheduling
+\end_layout
+
+\begin_layout Standard
+At create time, all tasks have a specified priority.
+ This is tracked by queues, which in the current form, are 32 ringbuffers
+ with a maximum buffer size of 16.
+\end_layout
+
+\begin_layout Standard
+There is also a bitmask which tracks the queue population.
+ If there is a runnable task at priority 
+\family typewriter
+p
+\family default
+, the 
+\family typewriter
+1 << p
+\family default
+ bit of the bitmask will be set.
+\end_layout
+
+\begin_layout Standard
+When a task needs to be scheduled, the queue with the highest priority and
+ active tasks is found by efficiently computing the number of right leading
+ zeroes in the bitmask 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "key-1"
+
+\end_inset
+
+.
+ The head of the queue is then rotated to be the tail and returned as the
+ next task to be scheduled.
+\end_layout
+
+\begin_layout Subsection
+Task Creation
+\end_layout
+
+\begin_layout Standard
+A task is created by specifying a priority, a function pointer, the number
+ of words to reserve for it's stack, and the parent task id.
+ It then creates an artificial trap frame and sets 
+\family typewriter
+pc
+\family default
+ to the value of the function pointer (after compensating for a relocation
+ of 
+\family typewriter
+0x200000
+\family default
+, the parameter to RedBoot's 
+\family typewriter
+load -b
+\family default
+) and the frame pointer (
+\family typewriter
+r12
+\family default
+) to be equivalent to the 
+\family typewriter
+sp
+\family default
+.
+ It then allocates a task descriptor and stores this information there.
+ Finally, it adds the descriptor to the right task queue and sets the appropriat
+e bit in the bitmask.
+\end_layout
+
+\begin_layout Standard
+The 
+\family typewriter
+Create()
+\family default
+ syscall is implemented by this function.
+ Due the API constraints, the 
+\family typewriter
+Create()
+\family default
+ syscall currently specifies a stack size of 1024 words, which will break
+ horribly should the task need more.
+ Currently, there exists no user callable syscall that allows specification
+ of the stack size.
+\end_layout
+
+\begin_layout Subsection
+Task Deletion
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+Exit()
+\family default
+ is implemented by finding the populated queue with the highest priority
+ and removing the task at the tail of the queue (since the calling task
+ must exist at that position since we just scheduled it).
+ Once removed from the priority queues, we guarantee that the task will
+ never be scheduled again.
+ However, no effort is made to reclaim task descriptors.
+\end_layout
+
+\begin_layout Section
+Source Code
+\end_layout
+
+\begin_layout Standard
+Code is located under 
+\family typewriter
+/u8/raraval/cs452/realtime-kernel
+\family default
+.
+ The directory is group owned by 
+\family typewriter
+cs452_05
+\family default
+ and is group writable.
+ Compiling is as simple as running 
+\family typewriter
+make
+\family default
+, which will also copy the local 
+\family typewriter
+kernel.elf
+\family default
+ to 
+\family typewriter
+/u/cs452/tftp/ARM/cs452_05/kernel_k0.elf
+\family default
+.
+ 
+\family typewriter
+md5sum
+\family default
+'s:
+\end_layout
+
+\begin_layout LyX-Code
+7a4a9ad794b23492937f73b953f952c8  bwio.c
+\end_layout
+
+\begin_layout LyX-Code
+d32dda3f6cd59b210c03d1ed8332c581  bwio.h
+\end_layout
+
+\begin_layout LyX-Code
+a90d3c62c60be7f6178690067e9b05c3  cpsr.h
+\end_layout
+
+\begin_layout LyX-Code
+7ccf926195225fcab016186c8c5185fe  include/stdbool.h
+\end_layout
+
+\begin_layout LyX-Code
+d3bc866668828a2b5a27afb070309262  include/ts7200.h
+\end_layout
+
+\begin_layout LyX-Code
+2f514b4cc0aeda4b3aa27c12c1fe1bd4  kernel.c
+\end_layout
+
+\begin_layout LyX-Code
+2a9f79bc87c4b4ee9eee933f48571ec0  linker.ld
+\end_layout
+
+\begin_layout LyX-Code
+c285d16c4d805bc24e7a4c0261ad6dee  Makefile
+\end_layout
+
+\begin_layout LyX-Code
+436afe7fc14408ee2f8be159b83c4ac1  README.md
+\end_layout
+
+\begin_layout LyX-Code
+e68e742fa61bfa23b8caffb5a14055d2  syscall_ids.h
+\end_layout
+
+\begin_layout LyX-Code
+3309d1a970799bde1b8e5d5a08f29e8e  syscalls.c
+\end_layout
+
+\begin_layout LyX-Code
+522e5ab798a2bfab78c06d51600da114  syscalls.h
+\end_layout
+
+\begin_layout LyX-Code
+49af1eb58acf2730b2f95f140bda438a  task.c
+\end_layout
+
+\begin_layout LyX-Code
+4f441ffa8c56762e3a4486b94f1c4edd  task.h
+\end_layout
+
+\begin_layout LyX-Code
+c1220aec5020cbc73ede2f463204defa  user_task.c
+\end_layout
+
+\begin_layout LyX-Code
+962dc8dab4c71088e86d7c7c6bb9adc8  user_task.h
+\end_layout
+
+\begin_layout Section
+Program Output
+\end_layout
+
+\begin_layout Standard
+FIXME: do this in the morning
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "bruijn"
+key "key-1"
+
+\end_inset
+
+``Count the consecutive zero bits (trailing) on the right with multiply
+ and lookup''.
+ 
+\begin_inset Flex URL
+status open
+
+\begin_layout Plain Layout
+
+<http://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightMultLookup>
+\end_layout
+
+\end_inset
+
+.
+ Retrieved May 19, 201
+\end_layout
+
+\end_body
+\end_document

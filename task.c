@@ -46,7 +46,10 @@ void initTaskSystem(void (*initialTask)(void)) {
     // Priority 0 because init task must run to completion before anything else
     // it may even issue multiple syscalls and must be guaranteed to run after
     // them.
-    int ret = createTask(0, initialTask, DEFAULT_STACK_SIZE, -1);
+    //
+    // But for the purposes of assignment 1, where we need the ability to create
+    // tasks with higher priority than init.
+    int ret = createTask(1, initialTask, DEFAULT_STACK_SIZE, -1);
     if(ret < 0){
         bwprintf(COM2, "Fatal error, %d when setting up initial task");
     }
