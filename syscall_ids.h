@@ -4,3 +4,4 @@
 #define SYS_PASS 3
 #define SYS_EXIT 4
 #define SYS_SEND 5
+#define SYS_RECEIVE 6

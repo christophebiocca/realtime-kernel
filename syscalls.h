@@ -23,3 +23,7 @@ void Exit(void);
 // -3: TODO: I don't understand that one
 // Otherwise, the length of the reply.
 int Send(int tid, char *msg, int msglen, char *reply, int replylen);
+
+// Receives a message from anyone.
+// Returns the length of the message.
+int Receive(int *tid, char *msg, int msglen);

@@ -53,3 +53,14 @@ int Send(int tid, char *msg, int msglen, char *reply, int replylen){
         : "r"(msg_in), "r"(msglen_in), "r"(reply_in), "r"(replylen_in));
     return tid_in_len_out;
 }
+
+int Receive(int *tid, char *msg, int msglen){
+    register int *tid_in_len_out asm("r0") = tid;
+    register char *msg_in asm("r1") = msg;
+    register int msglen_in asm("r2") = msglen;
+    asm volatile(
+        syscall(SYS_RECEIVE)
+        : "+r"(tid_in_len_out)
+        : "r"(msg_in), "r"(msglen_in));
+    return (int) tid_in_len_out;
+}
