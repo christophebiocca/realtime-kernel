@@ -4,13 +4,11 @@
 
 static struct TaskDescriptor g_task_table[MAX_TASKS];
 static int g_next_task_id;
-static int g_active_task_id;
+static struct TaskDescriptor *g_active_task;
 
-#define MAX_QUEUE_SIZE  16
 struct TaskQueue {
-    struct TaskDescriptor *buffer[MAX_QUEUE_SIZE];
-    unsigned int head;
-    unsigned int tail;
+    struct TaskDescriptor *head;
+    struct TaskDescriptor **tail;
 } g_task_queue[MAX_PRIORITY];
 unsigned int g_task_queue_mask;
 
@@ -21,6 +19,27 @@ static unsigned int *g_current_stack;
 #define BRUJIN_SEQUENCE 0x077CB531U
 static int LOOKUP[32];
 
+static inline struct TaskDescriptor *queuePop(int priority){
+    bwprintf(COM2, "Pop %d\r\n", priority);
+    struct TaskQueue *queue = &g_task_queue[priority];
+    struct TaskDescriptor *desc = queue->head;
+    queue->head = desc->next;
+    desc->next = 0;
+    if(!queue->head){
+        queue->tail = &queue->head;
+        g_task_queue_mask &= ~(1 << priority);
+    }
+    return desc;
+}
+
+static inline void queuePush(int priority, struct TaskDescriptor *t){
+    bwprintf(COM2, "Push %d\r\n", priority);
+    struct TaskQueue *queue = &g_task_queue[priority];
+    *(queue->tail) = t;
+    queue->tail = &(t->next);
+    g_task_queue_mask |= 1 << priority;
+}
+
 void initTaskSystem(void (*initialTask)(void)) {
 
     for(unsigned int i = 0; i < 32; ++i){
@@ -30,13 +49,12 @@ void initTaskSystem(void (*initialTask)(void)) {
 
     // FIXME: write bzero and zero out g_task_table
     g_next_task_id = 0;
-    g_active_task_id = -1;
+    g_active_task = 0;
     g_current_stack = (unsigned int *) STACK_HIGH;
 
     for (int i = 0; i < MAX_PRIORITY; ++i) {
-        // FIXME: zero out buffer
         g_task_queue[i].head = 0;
-        g_task_queue[i].tail = 0;
+        g_task_queue[i].tail = &g_task_queue[i].head;
     }
     g_task_queue_mask = 0;
 
@@ -86,6 +104,7 @@ int createTask(unsigned int priority, void (*code)(void),
     t->parent_task_id = parent_task_id;
 
     t->sp = g_current_stack - TRAP_FRAME_SIZE;
+    t->next=0;
     // FIXME: we're going to be sticking stacks right next to each other
     g_current_stack -= (stack_size + TRAP_FRAME_SIZE);
 
@@ -95,24 +114,13 @@ int createTask(unsigned int priority, void (*code)(void),
     *(t->sp) = ((unsigned int) code) + RELOCATION_CONSTANT;
     *(t->sp + 12) = (unsigned int) t->sp;  // for now, set frame pointer = stack pointer
 
-    struct TaskQueue *queue = &g_task_queue[priority];
-    queue->buffer[queue->tail++] = t;
-    queue->tail %= MAX_QUEUE_SIZE;
-
-    g_task_queue_mask |= 1 << priority;
+    queuePush(priority, t);
 
     return t->id;
 }
 
 void exitCurrentTask(void){
-    int priority = LOOKUP[(((unsigned int) g_task_queue_mask & -g_task_queue_mask)
-        * BRUJIN_SEQUENCE) >> 27];
-    struct TaskQueue *queue = &g_task_queue[priority];
-    queue->tail = (queue->tail - 1) % MAX_QUEUE_SIZE; // Drop the tail of the queue.
-    if(queue->tail == queue->head){
-        // And if the queue is empty, clear the ready bit of the queue.
-        g_task_queue_mask &= ~(1 << priority);
-    }
+    g_active_task = 0;
 }
 
 void setReturnValue(struct TaskDescriptor *td, int ret){
@@ -120,15 +128,14 @@ void setReturnValue(struct TaskDescriptor *td, int ret){
 }
 
 struct TaskDescriptor *scheduleTask(void){
-    struct TaskDescriptor *desc;
+    if(g_active_task){
+        queuePush(taskPriority(g_active_task->id), g_active_task);
+    }
     if(g_task_queue_mask){
+        bwputstr(COM2, "Scheduling\r\n");
         int priority = LOOKUP[(((unsigned int) g_task_queue_mask & -g_task_queue_mask)
             * BRUJIN_SEQUENCE) >> 27];
-        struct TaskQueue *queue = &g_task_queue[priority];
-        queue->buffer[queue->tail] = desc = queue->buffer[queue->head];
-        queue->head = (queue->head+1) % MAX_QUEUE_SIZE;
-        queue->tail = (queue->tail+1) % MAX_QUEUE_SIZE;
-        return desc;
+        return g_active_task = queuePop(priority);
     }
     return 0;
 }

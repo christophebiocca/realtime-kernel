@@ -46,6 +46,9 @@ struct TaskDescriptor {
     unsigned int spsr;
     unsigned int *sp;
 
+    struct TaskDescriptor* next;
+    // Allows threading a linked list through the descriptors.
+
     int parent_task_id;
 };
 
