@@ -5,7 +5,7 @@
 #define syscall(name) syscall_num(name)
 
 int Create(int priority, void (*code)()){
-    if(priority > 32 || priority < 1){
+    if(priority >= 32 || priority < 0){
         return -1; // Invalid priority.
     }
     register unsigned int priority_in_ret_out asm("r0") = priority;
