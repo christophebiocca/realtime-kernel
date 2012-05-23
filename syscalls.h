@@ -16,3 +16,10 @@ void Pass(void);
 
 // Stop executing this task. Never returns.
 void Exit(void);
+
+// Sends a message to another task, only returns on error or success.
+// -1: impossible task id
+// -2: task doesn't exist
+// -3: TODO: I don't understand that one
+// Otherwise, the length of the reply.
+int Send(int tid, char *msg, int msglen, char *reply, int replylen);

@@ -40,3 +40,16 @@ void Pass(void){
 void Exit(void){
     asm volatile(syscall(SYS_EXIT));
 }
+
+int Send(int tid, char *msg, int msglen, char *reply, int replylen){
+    register int tid_in_len_out asm("r0") = tid;
+    register char *msg_in asm("r1") = msg;
+    register int msglen_in asm("r2") = msglen;
+    register char *reply_in asm("r3") = reply;
+    register int replylen_in asm("r4") = replylen;
+    asm volatile(
+        syscall(SYS_SEND)
+        : "+r"(tid_in_len_out)
+        : "r"(msg_in), "r"(msglen_in), "r"(reply_in), "r"(replylen_in));
+    return tid_in_len_out;
+}
