@@ -33,7 +33,7 @@ static unsigned int *g_current_stack;
 #define BRUJIN_SEQUENCE 0x077CB531U
 static int LOOKUP[32];
 
-static inline struct TaskDescriptor *queuePop(int priority){
+static inline struct TaskDescriptor *priorityQueuePop(int priority){
     struct TaskQueue *queue = &g_task_queue[priority];
     struct TaskDescriptor *desc = queue->head;
     queue->head = desc->next;
@@ -45,7 +45,7 @@ static inline struct TaskDescriptor *queuePop(int priority){
     return desc;
 }
 
-static inline void queuePush(int priority, struct TaskDescriptor *t){
+static inline void priorityQueuePush(int priority, struct TaskDescriptor *t){
     struct TaskQueue *queue = &g_task_queue[priority];
     *(queue->tail) = t;
     queue->tail = &(t->next);
@@ -126,7 +126,7 @@ int createTask(unsigned int priority, void (*code)(void),
     *(t->sp) = ((unsigned int) code) + RELOCATION_CONSTANT;
     *(t->sp + 12) = (unsigned int) t->sp;  // for now, set frame pointer = stack pointer
 
-    queuePush(priority, t);
+    priorityQueuePush(priority, t);
 
     return t->id;
 }
@@ -162,12 +162,12 @@ void setTaskState(struct TaskDescriptor *td, unsigned int *sp, unsigned int spsr
 
 struct TaskDescriptor *scheduleTask(void){
     if(g_active_task){
-        queuePush(taskPriority(g_active_task->id), g_active_task);
+        priorityQueuePush(taskPriority(g_active_task->id), g_active_task);
     }
     if(g_task_queue_mask){
         int priority = LOOKUP[(((unsigned int) g_task_queue_mask & -g_task_queue_mask)
             * BRUJIN_SEQUENCE) >> 27];
-        return g_active_task = queuePop(priority);
+        return g_active_task = priorityQueuePop(priority);
     }
     return 0;
 }
