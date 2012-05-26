@@ -18,13 +18,13 @@ static void handle(struct Request *req){
     switch(req->callID){
         case SYS_CREATE:
             setReturnValue(req->task, createTask(req->arg0, (void (*)(void)) req->arg1,
-                DEFAULT_STACK_SIZE, req->task->id));
+                DEFAULT_STACK_SIZE, taskID(req->task)));
             break;
         case SYS_MY_TID:
-            setReturnValue(req->task, req->task->id);
+            setReturnValue(req->task, taskID(req->task));
             break;
         case SYS_MY_PARENT_TID:
-            setReturnValue(req->task, req->task->parent_task_id);
+            setReturnValue(req->task, parentID(req->task));
             break;
         case SYS_PASS:
             break;
