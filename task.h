@@ -75,6 +75,12 @@ void exitCurrentTask(void);
 /* Sets the return value of the task */
 void setReturnValue(struct TaskDescriptor *td, int ret);
 
+/* Gets the taskId */
+int taskID(struct TaskDescriptor *td);
+
+/* Gets the parent task id */
+int parentID(struct TaskDescriptor *td);
+
 /* Returns the new active task or NULL if there are no tasks left on the system
  * (at which point the kernel must return cleanly to RedBoot */
 struct TaskDescriptor *scheduleTask(void);

@@ -128,6 +128,14 @@ void setReturnValue(struct TaskDescriptor *td, int ret){
     *(td->sp + 1) = ret;
 }
 
+int taskID(struct TaskDescriptor *td){
+    return td->id;
+}
+
+int parentID(struct TaskDescriptor *td){
+    return td->parent_task_id;
+}
+
 struct TaskDescriptor *scheduleTask(void){
     if(g_active_task){
         queuePush(taskPriority(g_active_task->id), g_active_task);
