@@ -136,6 +136,19 @@ int parentID(struct TaskDescriptor *td){
     return td->parent_task_id;
 }
 
+unsigned int *taskStackPointer(struct TaskDescriptor *td){
+    return td->sp;
+}
+
+unsigned int taskSPSR(struct TaskDescriptor *td){
+    return td->spsr;
+}
+
+void setTaskState(struct TaskDescriptor *td, unsigned int *sp, unsigned int spsr){
+    td->sp = sp;
+    td->spsr = spsr;
+}
+
 struct TaskDescriptor *scheduleTask(void){
     if(g_active_task){
         queuePush(taskPriority(g_active_task->id), g_active_task);

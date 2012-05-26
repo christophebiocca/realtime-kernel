@@ -81,6 +81,15 @@ int taskID(struct TaskDescriptor *td);
 /* Gets the parent task id */
 int parentID(struct TaskDescriptor *td);
 
+/* Gets the stack pointer */
+unsigned int *taskStackPointer(struct TaskDescriptor *td);
+
+/* Gets the task's spsr */
+unsigned int taskSPSR(struct TaskDescriptor *td);
+
+/* Sets the stack pointer and spsr for a task */
+void setTaskState(struct TaskDescriptor *td, unsigned int *sp, unsigned int spsr);
+
 /* Returns the new active task or NULL if there are no tasks left on the system
  * (at which point the kernel must return cleanly to RedBoot */
 struct TaskDescriptor *scheduleTask(void);
