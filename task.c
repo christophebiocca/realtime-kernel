@@ -9,7 +9,10 @@ static struct TaskDescriptor *g_active_task;
 struct TaskQueue {
     struct TaskDescriptor *head;
     struct TaskDescriptor **tail;
-} g_task_queue[MAX_PRIORITY];
+};
+
+struct TaskQueue g_task_queue[MAX_PRIORITY];
+
 unsigned int g_task_queue_mask;
 
 #define STACK_HIGH      0x300000
