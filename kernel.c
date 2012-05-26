@@ -52,9 +52,11 @@ int main(){
     struct TaskDescriptor* active;
     for(active = scheduleTask(); active; active = scheduleTask()) {
 
-        register unsigned int *sp asm("r0") = active->sp;
-        register unsigned int spsr asm("r1") = active->spsr;
+        unsigned int *sp = taskStackPointer(active);
+        unsigned int spsr = taskSPSR(active);
 
+        register unsigned int *sp_reg asm("r0") = sp;
+        register unsigned int spsr_reg asm("r1") = spsr;
         asm volatile(
             "stmfd sp!, {r2-r12, r14}\n\t"  // save kregs on kstack
             "ldmfd %0!, {r14}\n\t"          // Get the stored pc
@@ -72,11 +74,13 @@ int main(){
             "stmfd %0!, {r14}\n\t"          // Store the task's pc on it's stack
             "mrs %1, spsr\n\t"              // Obtain activity's spsr
             "ldmfd sp!, {r2-r12, r14}\n\t"  // unroll kregs from kstack
-            : "+r"(sp), "+r"(spsr)
+            : "+r"(sp_reg), "+r"(spsr_reg)
         );
 
-        active->sp = sp;
-        active->spsr = spsr;
+        sp = sp_reg;
+        spsr = spsr_reg;
+
+        setTaskState(active, sp, spsr);
         unsigned int call = *(((unsigned int *) *sp) - 1) & 0x00FFFFFF;
         struct Request req = {
             .task = active,
