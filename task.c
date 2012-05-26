@@ -33,22 +33,35 @@ static unsigned int *g_current_stack;
 #define BRUJIN_SEQUENCE 0x077CB531U
 static int LOOKUP[32];
 
-static inline struct TaskDescriptor *priorityQueuePop(int priority){
-    struct TaskQueue *queue = &g_task_queue[priority];
+static inline struct TaskDescriptor *queuePop(struct TaskQueue *queue, bool *empty){
     struct TaskDescriptor *desc = queue->head;
     queue->head = desc->next;
     desc->next = 0;
     if(!queue->head){
         queue->tail = &queue->head;
-        g_task_queue_mask &= ~(1 << priority);
+        if(empty){
+            *empty=true;
+        };
     }
     return desc;
 }
 
-static inline void priorityQueuePush(int priority, struct TaskDescriptor *t){
-    struct TaskQueue *queue = &g_task_queue[priority];
+static inline void queuePush(struct TaskQueue *queue, struct TaskDescriptor *t){
     *(queue->tail) = t;
     queue->tail = &(t->next);
+}
+
+static inline struct TaskDescriptor *priorityQueuePop(int priority){
+    bool empty = false;
+    struct TaskDescriptor* task = queuePop(&g_task_queue[priority], &empty);
+    if(empty){
+        g_task_queue_mask &= ~(1 << priority);
+    }
+    return task;
+}
+
+static inline void priorityQueuePush(int priority, struct TaskDescriptor *t){
+    queuePush(&g_task_queue[priority], t);
     g_task_queue_mask |= 1 << priority;
 }
 
