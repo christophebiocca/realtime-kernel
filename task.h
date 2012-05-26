@@ -41,16 +41,7 @@ static inline int makeTid(int index, int priority, int unique){
         (unique << UNIQUE_OFFSET);
 }
 
-struct TaskDescriptor {
-    unsigned int id;
-    unsigned int spsr;
-    unsigned int *sp;
-
-    // Allows threading a linked list through the descriptors.
-    struct TaskDescriptor* next;
-
-    int parent_task_id;
-};
+struct TaskDescriptor;
 
 void initTaskSystem(void (*initialTask)(void));
 

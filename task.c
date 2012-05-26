@@ -2,6 +2,17 @@
 #include "cpsr.h"
 #include "task.h"
 
+struct TaskDescriptor {
+    unsigned int id;
+    unsigned int spsr;
+    unsigned int *sp;
+
+    // Allows threading a linked list through the descriptors.
+    struct TaskDescriptor* next;
+
+    int parent_task_id;
+};
+
 static struct TaskDescriptor g_task_table[MAX_TASKS];
 static int g_next_task_id;
 static struct TaskDescriptor *g_active_task;
