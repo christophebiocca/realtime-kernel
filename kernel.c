@@ -8,16 +8,13 @@
 struct Request {
     struct TaskDescriptor *task;
     unsigned int callID;
-    unsigned int arg0;
-    unsigned int arg1;
-    unsigned int arg2;
-    unsigned int arg3;
+    unsigned int *args;
 };
 
 static void handle(struct Request *req){
     switch(req->callID){
         case SYS_CREATE:
-            setReturnValue(req->task, createTask(req->arg0, (void (*)(void)) req->arg1,
+            setReturnValue(req->task, createTask(req->args[0], (void (*)(void)) req->args[1],
                 DEFAULT_STACK_SIZE, taskID(req->task)));
             break;
         case SYS_MY_TID:
@@ -85,10 +82,7 @@ int main(){
         struct Request req = {
             .task = active,
             .callID = call,
-            .arg0 = *(sp+1),
-            .arg1 = *(sp+2),
-            .arg2 = *(sp+3),
-            .arg3 = *(sp+4)
+            .args = sp + 1 // Because pc is at 0
         };
         handle(&req);
     }
