@@ -82,7 +82,7 @@ unsigned int taskSPSR(struct TaskDescriptor *td);
 void setTaskState(struct TaskDescriptor *td, unsigned int *sp, unsigned int spsr);
 
 /* Returns the new active task or NULL if there are no tasks left on the system
- * (at which point the kernel must return cleanly to RedBoot */
+ * (at which point the kernel must return cleanly to RedBoot) */
 struct TaskDescriptor *scheduleTask(void);
 
 int getActiveTaskId(void);
