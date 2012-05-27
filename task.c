@@ -8,11 +8,17 @@ struct TaskDescriptor {
     unsigned int spsr;
     unsigned int *sp;
 
+    unsigned int rcvBlockedHead:8;
+    unsigned int rcvBlockedTail:8;
+
     // Allows threading a linked list through the descriptors.
     unsigned int next:8;
 
     enum {
         TSK_READY,
+        TSK_RECEIVE_BLOCKED,
+        TSK_REPLY_BLOCKED,
+        TSK_SEND_BLOCKED,
         TSK_ZOMBIE,
     } status:8;
 
@@ -72,6 +78,7 @@ static inline bool name ## Empty(struct type *queue){\
 }
 
 DEFN_QUEUE(queue, TaskQueue, head, tail)
+DEFN_QUEUE(receiveQueue, TaskDescriptor, rcvBlockedHead, rcvBlockedTail);
 
 static inline struct TaskDescriptor *priorityQueuePop(int priority){
     bool empty = false;
@@ -114,6 +121,8 @@ void initTaskSystem(void (*initialTask)(void)) {
         t->sp = 0;
         t->parent_task_id = 0;
         t->status = TSK_ZOMBIE;
+        t->rcvBlockedHead = 0;
+        t->rcvBlockedTail = 0;
     }
 
     // Priority 0 because init task must run to completion before anything else
@@ -203,6 +212,61 @@ unsigned int taskSPSR(struct TaskDescriptor *td){
 void setTaskState(struct TaskDescriptor *td, unsigned int *sp, unsigned int spsr){
     td->sp = sp;
     td->spsr = spsr;
+}
+
+static inline void copyMessage(struct TaskDescriptor *src, struct TaskDescriptor *dest){
+    char* sent_msg = (char*)src->sp[2];
+    int sent_msglen = src->sp[3];
+    char* rcv_msg = (char*)dest->sp[2];
+    int rcv_msglen = dest->sp[3];
+    int len = (sent_msglen > rcv_msglen) ? rcv_msglen : sent_msglen;
+    for(int i = 0; i < len; ++i){
+        rcv_msg[i]=sent_msg[i];
+    }
+    *((int*)dest->sp[1]) = src->id;
+    (dest->sp)[1] = sent_msglen;
+}
+
+void send(unsigned int task_id){
+    // TODO: Sanity Check Everything.
+    struct TaskDescriptor *rec = &g_task_table[taskIndex(task_id)];
+    if(rec->status == TSK_SEND_BLOCKED){
+        copyMessage(g_active_task, rec);
+        rec->status = TSK_READY;
+        priorityQueuePush(taskPriority(task_id), rec);
+        g_active_task->status = TSK_REPLY_BLOCKED;
+    } else {
+        receiveQueuePush(rec, g_active_task);
+        g_active_task->status = TSK_RECEIVE_BLOCKED;
+    }
+    g_active_task = 0;
+}
+
+void receive(){
+    if(receiveQueueEmpty(g_active_task)){
+        g_active_task->status = TSK_SEND_BLOCKED;
+        g_active_task = 0;
+    } else {
+        struct TaskDescriptor *sender = receiveQueuePop(g_active_task, 0);
+        copyMessage(sender, g_active_task);
+        sender->status = TSK_REPLY_BLOCKED;
+    }
+}
+
+void reply(unsigned int task_id){
+    struct TaskDescriptor *sender = &g_task_table[taskIndex(task_id)];
+    char* src_reply = (char*)g_active_task->sp[2];
+    int src_replylen = g_active_task->sp[3];
+    char* dest_reply = (char*)sender->sp[4];
+    int dest_replylen = sender->sp[5];
+    int len = (src_replylen > dest_replylen) ? dest_replylen : src_replylen;
+    for(int i = 0; i < len; ++i){
+        dest_reply[i]=src_reply[i];
+    }
+    sender->sp[1] = src_replylen;
+    g_active_task->sp[1] = 0;
+    sender->status = TSK_READY;
+    priorityQueuePush(taskPriority(task_id), sender);
 }
 
 struct TaskDescriptor *scheduleTask(void){
