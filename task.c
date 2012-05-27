@@ -8,7 +8,7 @@ struct TaskDescriptor {
     unsigned int *sp;
 
     // Allows threading a linked list through the descriptors.
-    struct TaskDescriptor* next;
+    unsigned int next:8;
 
     int parent_task_id;
 };
@@ -17,9 +17,10 @@ static struct TaskDescriptor g_task_table[MAX_TASKS];
 static int g_next_task_id;
 static struct TaskDescriptor *g_active_task;
 
+// Use 0 to signify that there is no such value.
 struct TaskQueue {
-    struct TaskDescriptor *head;
-    struct TaskDescriptor **tail;
+    unsigned int head:8;
+    unsigned int tail:8;
 };
 
 struct TaskQueue g_task_queue[MAX_PRIORITY];
@@ -34,11 +35,11 @@ static unsigned int *g_current_stack;
 static int LOOKUP[32];
 
 static inline struct TaskDescriptor *queuePop(struct TaskQueue *queue, bool *empty){
-    struct TaskDescriptor *desc = queue->head;
+    struct TaskDescriptor *desc = &g_task_table[queue->head];
     queue->head = desc->next;
     desc->next = 0;
     if(!queue->head){
-        queue->tail = &queue->head;
+        queue->tail = queue->head;
         if(empty){
             *empty=true;
         };
@@ -47,8 +48,13 @@ static inline struct TaskDescriptor *queuePop(struct TaskQueue *queue, bool *emp
 }
 
 static inline void queuePush(struct TaskQueue *queue, struct TaskDescriptor *t){
-    *(queue->tail) = t;
-    queue->tail = &(t->next);
+    char next = taskIndex(t->id);
+    if(queue->tail){
+        g_task_table[queue->tail].next = next;
+    } else {
+        queue->head = next;
+    }
+    queue->tail = next;
 }
 
 static inline struct TaskDescriptor *priorityQueuePop(int priority){
@@ -73,13 +79,13 @@ void initTaskSystem(void (*initialTask)(void)) {
     }
 
     // FIXME: write bzero and zero out g_task_table
-    g_next_task_id = 0;
+    g_next_task_id = 1;
     g_active_task = 0;
     g_current_stack = (unsigned int *) STACK_HIGH;
 
     for (int i = 0; i < MAX_PRIORITY; ++i) {
         g_task_queue[i].head = 0;
-        g_task_queue[i].tail = &g_task_queue[i].head;
+        g_task_queue[i].tail = 0;
     }
     g_task_queue_mask = 0;
 
