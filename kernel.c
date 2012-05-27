@@ -96,5 +96,6 @@ int main(){
         };
         handle(&req);
     }
+    return 0;
 }
 
