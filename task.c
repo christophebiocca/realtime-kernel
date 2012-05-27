@@ -34,28 +34,31 @@ static unsigned int *g_current_stack;
 #define BRUJIN_SEQUENCE 0x077CB531U
 static int LOOKUP[32];
 
-static inline struct TaskDescriptor *queuePop(struct TaskQueue *queue, bool *empty){
-    struct TaskDescriptor *desc = &g_task_table[queue->head];
-    queue->head = desc->next;
-    desc->next = 0;
-    if(!queue->head){
-        queue->tail = queue->head;
-        if(empty){
-            *empty=true;
-        };
-    }
-    return desc;
+#define DEFN_QUEUE(name, type, head_field, tail_field)\
+static inline struct TaskDescriptor *name ## Pop(struct type *queue, bool *empty){\
+    struct TaskDescriptor *desc = &g_task_table[queue->head_field];\
+    queue->head_field = desc->next;\
+    desc->next = 0;\
+    if(!queue->head_field){\
+        queue->tail_field = queue->head_field;\
+        if(empty){\
+            *empty=true;\
+        };\
+    }\
+    return desc;\
+}\
+\
+static inline void name ## Push(struct type *queue, struct TaskDescriptor *t){\
+    char next = taskIndex(t->id);\
+    if(queue->tail_field){\
+        g_task_table[queue->tail_field].next = next;\
+    } else {\
+        queue->head_field = next;\
+    }\
+    queue->tail_field = next;\
 }
 
-static inline void queuePush(struct TaskQueue *queue, struct TaskDescriptor *t){
-    char next = taskIndex(t->id);
-    if(queue->tail){
-        g_task_table[queue->tail].next = next;
-    } else {
-        queue->head = next;
-    }
-    queue->tail = next;
-}
+DEFN_QUEUE(queue, TaskQueue, head, tail)
 
 static inline struct TaskDescriptor *priorityQueuePop(int priority){
     bool empty = false;
