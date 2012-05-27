@@ -1,10 +1,12 @@
+#include <bwio.h>
 #include <stdbool.h>
 #include <utils.h>
 
-#include "nameserver.h"
-#include "syscalls.h"
+#include <nameserver.h>
+#include <syscalls.h>
+#include <task.h>
 
-#define NAMESERVER_ID   1
+#define NAMESERVER_ID   makeTid(1, 1, 1)
 #define MAX_NAME_LEN    32
 
 enum {
