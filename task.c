@@ -56,6 +56,13 @@ static inline void name ## Push(struct type *queue, struct TaskDescriptor *t){\
         queue->head_field = next;\
     }\
     queue->tail_field = next;\
+}\
+\
+static inline bool name ## Empty(struct type *queue){\
+    if(!queue->head_field){\
+        return true;\
+    }\
+    return false;\
 }
 
 DEFN_QUEUE(queue, TaskQueue, head, tail)
