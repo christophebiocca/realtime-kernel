@@ -6,7 +6,7 @@
 #include <syscalls.h>
 #include <task.h>
 
-#define NAMESERVER_ID   makeTid(1, 1, 1)
+#define NAMESERVER_ID   makeTid(2, 1, 2)
 #define MAX_NAME_LEN    32
 
 enum {
@@ -77,8 +77,11 @@ void task_nameserver(void) {
             case WHO_IS: {
                 bool has_replied = false;
 
+                bwprintf(COM2, "Looking for: %s\r\n", msg.name);
                 for (int i = 0; i < num_registrations; ++i) {
+                    bwprintf(COM2, "Checking: %s\r\n", registrations[i].name);
                     if (strcmp(registrations[i].name, msg.name) == 0) {
+                        bwputstr(COM2, "found!\r\n");
                         msg.reply = registrations[i].tid;
                         Reply(sender, (char *) &msg, sizeof(NameserverMessage));
 
