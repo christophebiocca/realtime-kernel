@@ -97,7 +97,7 @@ void initTaskSystem(void (*initialTask)(void)) {
     // tasks with higher priority than init.
     int ret = createTask(1, initialTask, DEFAULT_STACK_SIZE, -1);
     if(ret < 0){
-        bwprintf(COM2, "Fatal error, %d when setting up initial task");
+        bwprintf(COM2, "Fatal error, %d when setting up initial task\r\n");
     }
 }
 
