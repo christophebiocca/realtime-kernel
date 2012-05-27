@@ -70,7 +70,7 @@ int Reply(int tid, char *reply, int replylen){
     register char *msg_in asm("r1") = reply;
     register int msglen_in asm("r2") = replylen;
     asm volatile(
-        syscall(SYS_RECEIVE)
+        syscall(SYS_REPLY)
         : "+r"(tid_in_len_out)
         : "r"(msg_in), "r"(msglen_in));
     return (int) tid_in_len_out;
