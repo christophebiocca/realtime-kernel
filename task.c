@@ -10,6 +10,11 @@ struct TaskDescriptor {
     // Allows threading a linked list through the descriptors.
     unsigned int next:8;
 
+    enum {
+        TSK_READY,
+        TSK_ZOMBIE,
+    } status:8;
+
     int parent_task_id;
 };
 
@@ -105,6 +110,7 @@ void initTaskSystem(void (*initialTask)(void)) {
         t->next = 0;
         t->sp = 0;
         t->parent_task_id = 0;
+        t->status = TSK_ZOMBIE;
     }
 
     // Priority 0 because init task must run to completion before anything else
@@ -154,6 +160,7 @@ int createTask(unsigned int priority, void (*code)(void),
 
     t->sp = g_current_stack - TRAP_FRAME_SIZE;
     t->next=0;
+    t->status = TSK_READY;
     // FIXME: we're going to be sticking stacks right next to each other
     g_current_stack -= (stack_size + TRAP_FRAME_SIZE);
 
@@ -169,6 +176,7 @@ int createTask(unsigned int priority, void (*code)(void),
 }
 
 void exitCurrentTask(void){
+    g_active_task->status = TSK_ZOMBIE;
     g_active_task = 0;
 }
 
