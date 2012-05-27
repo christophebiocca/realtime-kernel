@@ -1,6 +1,7 @@
 #include "bwio.h"
 #include "cpsr.h"
 #include "task.h"
+#include <kassert.h>
 
 struct TaskDescriptor {
     unsigned int id;
@@ -78,10 +79,12 @@ static inline struct TaskDescriptor *priorityQueuePop(int priority){
     if(empty){
         g_task_queue_mask &= ~(1 << priority);
     }
+    assert(task->status == TSK_READY);
     return task;
 }
 
 static inline void priorityQueuePush(int priority, struct TaskDescriptor *t){
+    assert(t->status == TSK_READY);
     queuePush(&g_task_queue[priority], t);
     g_task_queue_mask |= 1 << priority;
 }
@@ -212,7 +215,9 @@ struct TaskDescriptor *scheduleTask(void){
     if(g_task_queue_mask){
         int priority = LOOKUP[(((unsigned int) g_task_queue_mask & -g_task_queue_mask)
             * BRUJIN_SEQUENCE) >> 27];
-        return g_active_task = priorityQueuePop(priority);
+        g_active_task = priorityQueuePop(priority);
+        assert(g_active_task->status == TSK_READY);
+        return g_active_task;
     }
     return 0;
 }
