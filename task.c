@@ -228,8 +228,11 @@ static inline void copyMessage(struct TaskDescriptor *src, struct TaskDescriptor
 }
 
 void send(unsigned int task_id){
-    // TODO: Sanity Check Everything.
     struct TaskDescriptor *rec = &g_task_table[taskIndex(task_id)];
+    if(task_id != rec->id){
+        g_active_task->sp[1]=-2;
+        return;
+    }
     if(rec->status == TSK_SEND_BLOCKED){
         copyMessage(g_active_task, rec);
         rec->status = TSK_READY;
@@ -255,6 +258,14 @@ void receive(){
 
 void reply(unsigned int task_id){
     struct TaskDescriptor *sender = &g_task_table[taskIndex(task_id)];
+    if(task_id != sender->id){
+        g_active_task->sp[1]=-2;
+        return;
+    }
+    if(sender->status != TSK_REPLY_BLOCKED){
+        g_active_task->sp[1]=-3;
+        return;
+    }
     char* src_reply = (char*)g_active_task->sp[2];
     int src_replylen = g_active_task->sp[3];
     char* dest_reply = (char*)sender->sp[4];

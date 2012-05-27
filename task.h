@@ -14,7 +14,7 @@
 #define PRIORITY_OFFSET TASKS_BITS
 #define PRIORITY_MASK ((MAX_PRIORITY-1) << PRIORITY_OFFSET)
 #define UNIQUE_OFFSET (TASKS_BITS + PRIORITY_BITS)
-#define UNIQUE_BITS (32 - UNIQUE_OFFSET)
+#define UNIQUE_BITS (31 - UNIQUE_OFFSET) // Highest bit is always 0.
 #define NUM_UNIQUES (1 << UNIQUE_BITS)
 #define UNIQUE_MASK ((NUM_UNIQUES-1) << UNIQUE_OFFSET)
 
@@ -72,7 +72,7 @@ unsigned int taskSPSR(struct TaskDescriptor *td);
 void setTaskState(struct TaskDescriptor *td, unsigned int *sp, unsigned int spsr);
 
 /* Returns the new active task or NULL if there are no tasks left on the system
- * (at which point the kernel must return cleanly to RedBoot */
+ * (at which point the kernel must return cleanly to RedBoot) */
 struct TaskDescriptor *scheduleTask(void);
 
 int getActiveTaskId(void);
