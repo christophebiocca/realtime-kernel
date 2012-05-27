@@ -52,6 +52,7 @@ int main(){
         "ldr %0, =kerlabel" // Load the label from a literal pool
     : "=r"(jump_addr));
     *((unsigned int *)0x28) = jump_addr + 0x200000;
+    *((unsigned int *)0x08) = 0xe59ff018;
 
     initTaskSystem(&nsUserModeTask);
 
