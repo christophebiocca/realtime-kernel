@@ -8,11 +8,17 @@ struct TaskDescriptor {
     unsigned int spsr;
     unsigned int *sp;
 
+    unsigned int rcvBlockedHead:8;
+    unsigned int rcvBlockedTail:8;
+
     // Allows threading a linked list through the descriptors.
     unsigned int next:8;
 
     enum {
         TSK_READY,
+        TSK_RECEIVE_BLOCKED,
+        TSK_REPLY_BLOCKED,
+        TSK_SEND_BLOCKED,
         TSK_ZOMBIE,
     } status:8;
 
@@ -72,6 +78,7 @@ static inline bool name ## Empty(struct type *queue){\
 }
 
 DEFN_QUEUE(queue, TaskQueue, head, tail)
+DEFN_QUEUE(receiveQueue, TaskDescriptor, rcvBlockedHead, rcvBlockedTail);
 
 static inline struct TaskDescriptor *priorityQueuePop(int priority){
     bool empty = false;
@@ -114,6 +121,8 @@ void initTaskSystem(void (*initialTask)(void)) {
         t->sp = 0;
         t->parent_task_id = 0;
         t->status = TSK_ZOMBIE;
+        t->rcvBlockedHead = 0;
+        t->rcvBlockedTail = 0;
     }
 
     // Priority 0 because init task must run to completion before anything else
