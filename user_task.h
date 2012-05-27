@@ -2,5 +2,6 @@
 #define _USER_TASK_H
 
 void userModeTask();
+void nsUserModeTask();
 
 #endif

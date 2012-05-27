@@ -44,7 +44,7 @@ int main(){
     : "=r"(jump_addr));
     *((unsigned int *)0x28) = jump_addr + 0x200000;
 
-    initTaskSystem(&userModeTask);
+    initTaskSystem(&nsUserModeTask);
 
     struct TaskDescriptor* active;
     for(active = scheduleTask(); active; active = scheduleTask()) {
