@@ -90,4 +90,13 @@ int getActiveTaskId(void);
 /* Returns NULL on invalid task_id */
 struct TaskDescriptor *getTask(unsigned int task_id);
 
+/* Sends a message to another task */
+void send(unsigned int task_id);
+
+/* Receives a message from any task */
+void receive();
+
+/* Replies to a task that had sent a message */
+void reply(unsigned int task_id);
+
 #endif
