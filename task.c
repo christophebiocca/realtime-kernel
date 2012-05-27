@@ -81,7 +81,6 @@ void initTaskSystem(void (*initialTask)(void)) {
         LOOKUP[((1u << i) * BRUJIN_SEQUENCE) >> 27] = i;
     }
 
-    // FIXME: write bzero and zero out g_task_table
     g_next_task_id = 1;
     g_active_task = 0;
     g_current_stack = (unsigned int *) STACK_HIGH;
@@ -91,6 +90,15 @@ void initTaskSystem(void (*initialTask)(void)) {
         g_task_queue[i].tail = 0;
     }
     g_task_queue_mask = 0;
+
+    for (int i = 1; i < MAX_TASKS; ++i){
+        struct TaskDescriptor *t = g_task_table + i;
+        t->id = 0;
+        t->spsr = 0;
+        t->next = 0;
+        t->sp = 0;
+        t->parent_task_id = 0;
+    }
 
     // Priority 0 because init task must run to completion before anything else
     // it may even issue multiple syscalls and must be guaranteed to run after
