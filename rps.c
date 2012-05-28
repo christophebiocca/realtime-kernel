@@ -260,6 +260,7 @@ static void playerSpawner(void){
 }
 
 void rpsUserModeTask(void) {
+    seed = 0x445f1ab9;
     Create(1, task_nameserver);
     Create(2, rpsServer);
     Create(3, playerSpawner);
