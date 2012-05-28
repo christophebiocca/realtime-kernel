@@ -186,7 +186,7 @@ static inline unsigned int next(int width){
 static void rpsClient(void){
     int server = WhoIs("rps");
     if(server < 0){
-        bwprintf(COM2, "Got a bad response when doing name query! %d", server);
+        bwprintf(COM2, "Got a bad response when doing name query! %d\r\n", server);
         Exit();
     }
     int request;
@@ -197,7 +197,11 @@ static void rpsClient(void){
         request = SIGN_UP;
         len = Send(server, (char*) &request, 4, (char*) &response, 4);
         if(len < 0){
-            bwprintf(COM2, "Got a bad response when signing up! %d", len);
+            bwprintf(COM2, "Got a bad response when signing up! %d\r\n", len);
+        }
+        if(response != ROUND_BEGIN){
+            bwprintf(COM2, "Was expecting ROUND_BEGIN, got %d\r\n", response);
+            Exit();
         }
         for(; i >= 0; --i){
             // Now let's play for some time.
@@ -207,19 +211,23 @@ static void rpsClient(void){
             request = moves[play];
             len = Send(server, (char*) &request, 4, (char*) &response, 4);
             if(len < 0){
-                bwprintf(COM2, "Got a bad response when playing! %d", len);
+                bwprintf(COM2, "Got a bad response when playing! %d\r\n", len);
                 Exit();
             }
             if(response == OPPONENT_QUIT){
                 // We need to sign up again.
                 break;
             }
+            if(response != WIN && response != DRAW && response != LOSS){
+                bwprintf(COM2, "Was expecting win/loss/draw, got %d\r\n", response);
+                Exit();
+            }
         }
     }
     request = QUIT;
     len = Send(server, (char*) &request, 4, (char*) &response, 4);
     if(len < 0){
-        bwprintf(COM2, "Got a bad response when quitting! %d", len);
+        bwprintf(COM2, "Got a bad response when quitting! %d\r\n", len);
     }
     Exit();
 }
