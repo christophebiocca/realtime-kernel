@@ -3,5 +3,6 @@
 
 void userModeTask();
 void nsUserModeTask();
+void timeUserModeTask();
 
 #endif

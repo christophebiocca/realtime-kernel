@@ -2,6 +2,7 @@
 #include "cpsr.h"
 #include "task.h"
 #include <kassert.h>
+#include <utils.h>
 
 struct TaskDescriptor {
     unsigned int id;
@@ -219,15 +220,15 @@ static inline void copyMessage(struct TaskDescriptor *src, struct TaskDescriptor
     int sent_msglen = src->sp[3];
     char* rcv_msg = (char*)dest->sp[2];
     int rcv_msglen = dest->sp[3];
-    int len = (sent_msglen > rcv_msglen) ? rcv_msglen : sent_msglen;
-    for(int i = 0; i < len; ++i){
-        rcv_msg[i]=sent_msg[i];
-    }
+
+    memcpy16(rcv_msg, sent_msg, (sent_msglen > rcv_msglen) ? rcv_msglen : sent_msglen);
     *((int*)dest->sp[1]) = src->id;
     (dest->sp)[1] = sent_msglen;
 }
 
 void send(unsigned int task_id){
+    *((volatile int *) 0x80810064) = 0;
+    *((volatile int *) 0x80810064) = 0x0100;
     struct TaskDescriptor *rec = &g_task_table[taskIndex(task_id)];
     if(task_id != rec->id){
         g_active_task->sp[1]=-2;
@@ -270,14 +271,20 @@ void reply(unsigned int task_id){
     int src_replylen = g_active_task->sp[3];
     char* dest_reply = (char*)sender->sp[4];
     int dest_replylen = sender->sp[5];
-    int len = (src_replylen > dest_replylen) ? dest_replylen : src_replylen;
-    for(int i = 0; i < len; ++i){
-        dest_reply[i]=src_reply[i];
-    }
+
+    memcpy16(
+        dest_reply,
+        src_reply,
+        (src_replylen > dest_replylen) ? dest_replylen : src_replylen
+    );
     sender->sp[1] = src_replylen;
     g_active_task->sp[1] = 0;
     sender->status = TSK_READY;
     priorityQueuePush(taskPriority(task_id), sender);
+
+    unsigned int timer_now = *((volatile int *) 0x80810060);
+    *((volatile int *) 0x80810064) = 0;
+    bwprintf(COM2, "%d ticks have elapsed\r\n", timer_now);
 }
 
 struct TaskDescriptor *scheduleTask(void){

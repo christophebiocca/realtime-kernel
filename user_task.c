@@ -3,6 +3,7 @@
 #include "syscalls.h"
 
 #include <nameserver.h>
+#include <utils.h>
 
 static void childTask() {
     int tid = MyTid();
@@ -39,18 +40,65 @@ void userModeTask(){
 
 static void nsChildTask() {
     bwprintf(COM2, "Server ID: %d\r\n", WhoIs("server"));
+    bwprintf(COM2, "ServerPrime ID: %d\r\n", WhoIs("serverprime"));
+    Exit();
+}
+
+static void nsServerPrimeTask() {
+    bwprintf(COM2, "[task %d] Registering \"serverprime\": %d\r\n", MyTid(), RegisterAs("serverprime"));
     Exit();
 }
 
 static void nsServerTask() {
-    bwprintf(COM2, "Registering \"server\": %d\r\n", RegisterAs("server"));
+    bwprintf(COM2, "[task %d] Registering \"server\": %d\r\n", MyTid(), RegisterAs("server"));
     Exit();
 }
 
 void nsUserModeTask(){
     bwprintf(COM2, "Nameserver: %d\r\n", Create(1, task_nameserver));
     bwprintf(COM2, "Server: %d\r\n", Create(2, nsServerTask));
+    bwprintf(COM2, "Server Prime: %d\r\n", Create(2, nsServerPrimeTask));
     bwprintf(COM2, "Child: %d\r\n", Create(3, nsChildTask));
+
+    Exit();
+}
+
+/* Send receive reply timings */
+int g_receiver_tid;
+typedef struct {
+    int padding[10];
+} Message64;
+
+typedef struct {
+    int padding;
+} Message4;
+
+typedef Message64 Message;
+
+static void timeSenderTask(void) {
+    Message request, reply;
+    Send(
+        g_receiver_tid,
+        (char *) &request, sizeof(Message),
+        (char *) &reply, sizeof(Message)
+    );
+
+    Exit();
+}
+
+static void timeReceiveTask(void) {
+    int tid;
+    Message msg;
+
+    Receive(&tid, (char *) &msg, sizeof(Message));
+    Reply(tid, (char *) &msg, sizeof(Message));
+
+    Exit();
+}
+
+void timeUserModeTask(void) {
+    Create(2, timeSenderTask);
+    g_receiver_tid = Create(1, timeReceiveTask);
 
     Exit();
 }
