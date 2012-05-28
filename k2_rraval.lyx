@@ -61,6 +61,280 @@
 \begin_body
 
 \begin_layout Section
+Compiling and running
+\end_layout
+
+\begin_layout Subsection
+Source Code
+\end_layout
+
+\begin_layout Standard
+The source code submitted for this assignment can be found under /u/cbiocca/cs45
+2/a2/src/.
+ Here are the checksums for the files:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+c759dd22c170820d997777b550a1622b ./Makefile
+\end_layout
+
+\begin_layout Plain Layout
+
+3fb369afd0a490365655a5bfa157adf8 ./bwio.h
+\end_layout
+
+\begin_layout Plain Layout
+
+a90d3c62c60be7f6178690067e9b05c3 ./cpsr.h
+\end_layout
+
+\begin_layout Plain Layout
+
+08d53dce06cf241497d3740bed4e1d02 ./include/kassert.h
+\end_layout
+
+\begin_layout Plain Layout
+
+7ccf926195225fcab016186c8c5185fe ./include/stdbool.h
+\end_layout
+
+\begin_layout Plain Layout
+
+d3bc866668828a2b5a27afb070309262 ./include/ts7200.h
+\end_layout
+
+\begin_layout Plain Layout
+
+1f083cc3eb8d2b6cc7fe0467b7bd871b ./nameserver.h
+\end_layout
+
+\begin_layout Plain Layout
+
+f27e0697cf63149e406c799f636b510a ./syscall_ids.h
+\end_layout
+
+\begin_layout Plain Layout
+
+823cc9f12f2f3aae700b445b00ab18e5 ./syscalls.h
+\end_layout
+
+\begin_layout Plain Layout
+
+fcae53695ab11a2a5b87a5d0a4babb74 ./task.h
+\end_layout
+
+\begin_layout Plain Layout
+
+e5b684158b15ff9696859e95f5be24cd ./user_task.h
+\end_layout
+
+\begin_layout Plain Layout
+
+4a1d0edb22f4907e727dfab6c4d1d78b ./utils.h
+\end_layout
+
+\begin_layout Plain Layout
+
+7a4a9ad794b23492937f73b953f952c8 ./bwio.c
+\end_layout
+
+\begin_layout Plain Layout
+
+92fcb43d662fceeceb832217d38b9cea ./kernel.c
+\end_layout
+
+\begin_layout Plain Layout
+
+0cad4fa12de69c46253ddbee132f966f ./nameserver.c
+\end_layout
+
+\begin_layout Plain Layout
+
+b2e6a0c9b1d796127cbb08c7bc9b45f0 ./rps.c
+\end_layout
+
+\begin_layout Plain Layout
+
+2d148088c560b871e5c68dc8ac367b7a ./syscalls.c
+\end_layout
+
+\begin_layout Plain Layout
+
+721f0110126a1b9416a624d9a4f2d36b ./task.c
+\end_layout
+
+\begin_layout Plain Layout
+
+22a9e52a05620ea80811392cab6667d1 ./user_task.c
+\end_layout
+
+\begin_layout Plain Layout
+
+8b9d4ebc6524cc9217514ceb57e0110c ./utils.c
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Executable
+\end_layout
+
+\begin_layout Standard
+The elf executable is located at /u/cbiocca/cs42/a2/kernel.elf, and has checksum
+ a5f4c00340e8e117cf3ebb85ad291355.
+ It can also be remade by running make in the src directory.
+\end_layout
+
+\begin_layout Subsection
+Running the RPS server/players
+\end_layout
+
+\begin_layout Standard
+Simply typing:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout LyX-Code
+
+load -b 0x00218000 -h 129.97.167.12 "ARM/cs452_05/kernel_k0.elf"
+\end_layout
+
+\begin_layout LyX-Code
+
+go
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Will launch the rock paper scissor tasks, namely a nameserver, a rps server,
+ and 6 rps clients.
+\end_layout
+
+\begin_layout Standard
+Each client picks a random number of games that it wants to play, and quits
+ after playing that number of rounds, signing up again if its opponent leaves
+ and it is not done.
+ The server pauses after deciding each match, press Enter to continue.
+ All filled games progress concurrently.
+\end_layout
+
+\begin_layout Section
+The Task System
+\end_layout
+
+\begin_layout Subsection
+Task Descriptors
+\end_layout
+
+\begin_layout Standard
+Each task descriptor has 8 fields, for a total of 5 words of space used:
+\end_layout
+
+\begin_layout Itemize
+An id and the parent id (1 word each).
+ The ids encode the index of each task in the global task table (in the
+ lowest 8 bits), the priority (in the 5 bits above that) and an ever incrementin
+g unique number in the remainder.
+\end_layout
+
+\begin_layout Itemize
+The spsr and stack pointer of the tasks.
+ As the entirety of the task's registers (r0-r12, r14, r15) are on its stack,
+ we only need to store these.
+\end_layout
+
+\begin_layout Itemize
+The next index, which, when this task is in a queue (either a priority queue
+ or a receive queue) indicates the index of the next item in the queue in
+ the global task table.
+\end_layout
+
+\begin_layout Itemize
+The head and tail index of the task's receive queue.
+\end_layout
+
+\begin_layout Itemize
+The status of the task (Ready, Send/Receive/Reply Blocked, Zombie)
+\end_layout
+
+\begin_layout Standard
+Because the index is limited to 8 bits, only 255 tasks can exist at the
+ same time, (index 0 is reserved to act as an analogue to the null pointer).
+\end_layout
+
+\begin_layout Subsection
+Scheduling
+\end_layout
+
+\begin_layout Standard
+Scheduling is handled by having 32 different priority queues, each of which
+ is a linked list threaded through the global task table using the next
+ index of each task.
+ Appending a task to a queue is a simple constant time operation, and so
+ is shifting it.
+ A bit mask is used to keep track of the highest active priority, and the
+ queue can be chosen using this bitmask in 5 operations + 1 lookup.
+ For now, the scheduler quits when no task is ready to run as, in the absence
+ of interrupts, this means that nothing will ever run again.
+\end_layout
+
+\begin_layout Subsection
+Sending messages
+\end_layout
+
+\begin_layout Standard
+Tasks which are send, receive, or reply blocked aren't in any queues.
+ Their status is set to the appropriate value.
+ Since the id contains the table index of a task, we can find said task
+ in constant time if someone tries to interact with it.
+ Every task descriptor has a head and tail index for a receive queue, which
+ uses the same code as the priority queues, so that we can append and shift
+ in constant time.
+ We never copy the messages to the kernel's space, as we know that tasks
+ are going to be blocked until the transfer completes.
+ This saves considerable time, and simplifies the code.
+ To transfer the messages between tasks, we use our own implementation of
+ memcpy.
+\end_layout
+
+\begin_layout Subsection
+Memcpy
+\end_layout
+
+\begin_layout Standard
+Memcpy is used in the message passing system several times.
+ First, copying a word around is special cased as a very common pattern
+ and is optimized for minimal overhead.
+ Then, there exist two implementations in assembly optimized for block copying
+ chunks of memory 4 and 8 words at a time respectively.
+\end_layout
+
+\begin_layout Standard
+Currently, copying messages is done 4 words at a time, since it is unlikely
+ that messages are going to be significantly bigger than that.
+ Copying memory in 8 word chunks incurs an overhead is restoring the state
+ of certain registers, and as can be observed from the timings, the overhead
+ nullifies any possible gains for small multiples of 4 words.
+\end_layout
+
+\begin_layout Section
 The Nameserver
 \end_layout
 
@@ -119,26 +393,6 @@ The server runs at a higher priority than the clients and at a lower one
  than the nameserver.
  This is justified by the timings for being send blocked being much better
  than being receive blocked.
-\end_layout
-
-\begin_layout Section
-Memcpy (Christophe integrate this into your tasks section!)
-\end_layout
-
-\begin_layout Standard
-Memcpy is used in the message passing system several times.
- First, copying a word around is special cased as a very common pattern
- and is optimized for minimal overhead.
- Then, there exist two implementations in assembly optimized for block copying
- chunks of memory 4 and 8 words at a time respectively.
-\end_layout
-
-\begin_layout Standard
-Currently, copying messages is done 4 words at a time, since it is unlikely
- that messages are going to be significantly bigger than that.
- Copying memory in 8 word chunks incurs an overhead is restoring the state
- of certain registers, and as can be observed from the timings, the overhead
- nullifies any possible gains for small multiples of 4 words.
 \end_layout
 
 \begin_layout Section
