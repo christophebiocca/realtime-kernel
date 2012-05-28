@@ -105,6 +105,7 @@ static void rpsServer(void) {
             case PLAY_ROCK:
             case PLAY_PAPER:
             case PLAY_SCISSORS: {
+                LOG("Got play request from %d\r\n", tid);
                 bool valid = false;
 
                 for (int i = 0; i < SIMULTANEOUS_GAMES; ++i) {
@@ -144,6 +145,7 @@ static void rpsServer(void) {
             }
 
             case QUIT: {
+                LOG("Got quit request from %d\r\n", tid);
                 bool valid = false;
 
                 for (int i = 0; i < SIMULTANEOUS_GAMES; ++i) {
