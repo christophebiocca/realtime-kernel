@@ -189,27 +189,32 @@ static inline unsigned int next(int width){
     return seed >> (32-width);
 }
 
+#define CLIENT_LOG(msg, ...) bwprintf(COM2, "[client %d] " msg, client_id,  __VA_ARGS__)
+
 static void rpsClient(void){
+    int client_id = MyTid();
     int server = WhoIs("rps");
     if(server < 0){
-        bwprintf(COM2, "Got a bad response when doing name query! %d\r\n", server);
+        CLIENT_LOG("Got a bad response when doing name query! %d\r\n", server);
         Exit();
     }
     int request;
     int response;
     int len;
     for(int i = next(10); i >= 0;){
+        CLIENT_LOG("Signing up!\r\n", "");
         // Let's sign up
         request = SIGN_UP;
         len = Send(server, (char*) &request, 4, (char*) &response, 4);
         if(len < 0){
-            bwprintf(COM2, "Got a bad response when signing up! %d\r\n", len);
+            CLIENT_LOG("Got a bad response when signing up! %d\r\n", len);
         }
         if(response != ROUND_BEGIN){
-            bwprintf(COM2, "Was expecting ROUND_BEGIN, got %d\r\n", response);
+            CLIENT_LOG("Was expecting ROUND_BEGIN, got %d\r\n", response);
             Exit();
         }
         for(; i >= 0; --i){
+            CLIENT_LOG("Got %d games left to play\r\n", i);
             // Now let's play for some time.
             int play;
             while((play = next(2)) == 4); // To eliminate bias in picking a game.
@@ -217,23 +222,26 @@ static void rpsClient(void){
             request = moves[play];
             len = Send(server, (char*) &request, 4, (char*) &response, 4);
             if(len < 0){
-                bwprintf(COM2, "Got a bad response when playing! %d\r\n", len);
+                CLIENT_LOG("Got a bad response when playing! %d\r\n", len);
                 Exit();
             }
             if(response == OPPONENT_QUIT){
                 // We need to sign up again.
+                CLIENT_LOG("Other player dropped.\r\n", 0);
                 break;
             }
             if(response != WIN && response != DRAW && response != LOSS){
-                bwprintf(COM2, "Was expecting win/loss/draw, got %d\r\n", response);
+                CLIENT_LOG("Was expecting win/loss/draw, got %d\r\n", response);
                 Exit();
             }
+            CLIENT_LOG("We %s\r\n", (response == WIN ? "Won" : (response == DRAW) ? "Tied" : "Lost"));
         }
     }
     request = QUIT;
+    CLIENT_LOG("Going to quit!\r\n", 0);
     len = Send(server, (char*) &request, 4, (char*) &response, 4);
     if(len < 0){
-        bwprintf(COM2, "Got a bad response when quitting! %d\r\n", len);
+        CLIENT_LOG("Got a bad response when quitting! %d\r\n", len);
     }
     Exit();
 }
