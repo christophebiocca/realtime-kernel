@@ -1,0 +1,651 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize 12
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Section
+The Nameserver
+\end_layout
+
+\begin_layout Standard
+The nameserver is always the first task created by the initial user mode
+ task.
+ As such, its task id is entirely deterministic and is shared as a constant
+ between tasks.
+\end_layout
+
+\begin_layout Standard
+Internally the name server keeps track of 
+\family typewriter
+(name, task-id)
+\family default
+ pairs in an unsorted buffer.
+ Thus insertion takes O(n) time since registering a name that has been registere
+d before overwrites the previous association and lookup takes O(n) time
+ since potentially every registered pair needs to be scanned.
+ While data structures with better performance characteristics exist (i.e.
+ hash tables), linear scans on an unsorted buffer were deemed sufficient
+ since the nameserver sees almost all its usage in task initialization,
+ where performance isn't critical.
+ Linear scans are also trivial to implement, where as hash tables are definitely
+ not!
+\end_layout
+
+\begin_layout Section
+Rock Paper Scissors Server
+\end_layout
+
+\begin_layout Standard
+The RPS server is capable of tracking 16 clients in 8 simultaneous games.
+ Clients are entered into a flat table in pairs.
+ When a client sends a request (either playing or quitting) the corresponding
+ entry is found by a linear scan (since there are only 16 entries, this
+ isn't too terrible) and the state is updated.
+ If two opponents have both played, the server replies to both with updated
+ results and awaits future plays or quits.
+\end_layout
+
+\begin_layout Standard
+Like the nameserver, fancier and asymptotically better data structures were
+ pre-empted in favour of ease of implementation.
+\end_layout
+
+\begin_layout Standard
+If the arena is full, this is handled gracefully by the server by replying
+ with an appropriate error code to the client that is signing up.
+ If clients later quit, spots are opened up to be reused and everything
+ continues to work.
+\end_layout
+
+\begin_layout Standard
+The server runs at a higher priority than the clients and at a lower one
+ than the nameserver.
+ This is justified by the timings for being send blocked being much better
+ than being receive blocked.
+\end_layout
+
+\begin_layout Section
+Memcpy (Christophe integrate this into your tasks section!)
+\end_layout
+
+\begin_layout Standard
+Memcpy is used in the message passing system several times.
+ First, copying a word around is special cased as a very common pattern
+ and is optimized for minimal overhead.
+ Then, there exist two implementations in assembly optimized for block copying
+ chunks of memory 4 and 8 words at a time respectively.
+\end_layout
+
+\begin_layout Standard
+Currently, copying messages is done 4 words at a time, since it is unlikely
+ that messages are going to be significantly bigger than that.
+ Copying memory in 8 word chunks incurs an overhead is restoring the state
+ of certain registers, and as can be observed from the timings, the overhead
+ nullifies any possible gains for small multiples of 4 words.
+\end_layout
+
+\begin_layout Section
+Performance Measurements
+\end_layout
+
+\begin_layout Standard
+The timings were performed from the first instruction of the 
+\family typewriter
+Send()
+\family default
+ wrapper code to the last instruction.
+ The 40-bit debug timer was used, which uses a reference frequency of 983.04
+\begin_inset space ~
+\end_inset
+
+kHz.
+ The performance of being send blocked first vs.
+ being receive blocked was also tested by setting different priorities for
+ the sender and the receiver and then swapping them.
+\end_layout
+
+\begin_layout Subsection
+Naive 
+\family typewriter
+memcpy()
+\end_layout
+
+\begin_layout Standard
+The naive version of 
+\family typewriter
+memcpy()
+\family default
+ was a byte by byte copy implemented in C.
+ It's advantage was the ability to support messages of arbitrary sizes,
+ but it performed quite poorly:
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top" width="0pt">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+4
+\begin_inset space ~
+\end_inset
+
+Bytes
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+64
+\begin_inset space ~
+\end_inset
+
+Bytes
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Sender priority > Receiver
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+384.54
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Formula $\mathrm{\mu s}$
+\end_inset
+
+ (379
+\begin_inset space ~
+\end_inset
+
+ticks)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+684.61
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Formula $\mathrm{\mu s}$
+\end_inset
+
+ (673
+\begin_inset space ~
+\end_inset
+
+ticks)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Receiver priority > Sender
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+358.07
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Formula $\mathrm{\mu s}$
+\end_inset
+
+ (352
+\begin_inset space ~
+\end_inset
+
+ticks)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+652.06
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Formula $\mathrm{\mu s}$
+\end_inset
+
+ (641
+\begin_inset space ~
+\end_inset
+
+ticks)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+4 word block 
+\family typewriter
+memcpy()
+\end_layout
+
+\begin_layout Standard
+Utilizes the 
+\family typewriter
+stmia
+\family default
+ and 
+\family typewriter
+ldmia
+\family default
+ block load and store instructions to repeatedly unroll the source buffer
+ into 4 registers and then store them onto the destination buffer.
+ For message passing, passing around messages 1 word long are special cased
+ and are also supported with minimal overhead.
+ The downside to this is only very specific message lengths are supported.
+ As can be seen from the measurements, the difference between copying 4
+ bytes and 64 bytes is very small:
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top" width="0pt">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+4
+\begin_inset space ~
+\end_inset
+
+Bytes
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+64
+\begin_inset space ~
+\end_inset
+
+Bytes
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Sender priority > Receiver
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+358.07
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Formula $\mathrm{\mu s}$
+\end_inset
+
+ (352
+\begin_inset space ~
+\end_inset
+
+ticks)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+375.37
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Formula $\mathrm{\mu s}$
+\end_inset
+
+ (369
+\begin_inset space ~
+\end_inset
+
+ticks)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Receiver priority > Sender
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+327.56
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Formula $\mathrm{\mu s}$
+\end_inset
+
+ (322
+\begin_inset space ~
+\end_inset
+
+ticks)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+342.81
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Formula $\mathrm{\mu s}$
+\end_inset
+
+ (337
+\begin_inset space ~
+\end_inset
+
+ticks)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+8 word block 
+\family typewriter
+memcpy()
+\end_layout
+
+\begin_layout Standard
+Implemented in assembly with 
+\family typewriter
+stmia
+\family default
+ and 
+\family typewriter
+ldmia
+\family default
+.
+ Incurs a setup and teardown overhead since certain registers need to saved
+ on and popped off the stack after the copy.
+ The 1 word message copy is still special cased and so only the 64
+\begin_inset space ~
+\end_inset
+
+bytes message times are listed.
+ As can be seen, the savings from the 4 word block copy are minimal and
+ come with a space overhead of requiring messages larger than a word to
+ be a multiple of 8 words.
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="2">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top" width="0pt">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+64
+\begin_inset space ~
+\end_inset
+
+Bytes
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Sender priority > Receiver
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+371.3
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Formula $\mathrm{\mu s}$
+\end_inset
+
+ (365
+\begin_inset space ~
+\end_inset
+
+ticks)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Receiver priority > Sender
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+341.8
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Formula $\mathrm{\mu s}$
+\end_inset
+
+ (336
+\begin_inset space ~
+\end_inset
+
+ticks)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
