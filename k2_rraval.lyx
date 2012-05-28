@@ -60,6 +60,18 @@
 
 \begin_body
 
+\begin_layout Title
+CS 452: Kernel 1
+\end_layout
+
+\begin_layout Author
+Christophe Biocca (#20322763) and Ronuk Raval (#20345750)
+\end_layout
+
+\begin_layout Date
+May 23, 2012
+\end_layout
+
 \begin_layout Section
 Compiling and running
 \end_layout
@@ -293,6 +305,8 @@ Scheduling is handled by having 32 different priority queues, each of which
  queue can be chosen using this bitmask in 5 operations + 1 lookup.
  For now, the scheduler quits when no task is ready to run as, in the absence
  of interrupts, this means that nothing will ever run again.
+ The active task is on no queue at all, and so we can easily stop the rescheduli
+ng of the active task by not putting it back in its priority queue.
 \end_layout
 
 \begin_layout Subsection
@@ -413,6 +427,8 @@ kHz.
  The performance of being send blocked first vs.
  being receive blocked was also tested by setting different priorities for
  the sender and the receiver and then swapping them.
+ All performance timings where performed on unoptimized code, with caches
+ off.
 \end_layout
 
 \begin_layout Subsection
@@ -427,8 +443,8 @@ The naive version of
 memcpy()
 \family default
  was a byte by byte copy implemented in C.
- It's advantage was the ability to support messages of arbitrary sizes,
- but it performed quite poorly:
+ Its advantage was the ability to support messages of arbitrary sizes, but
+ it performed quite poorly, especially for larger messages:
 \end_layout
 
 \begin_layout Standard
