@@ -5,17 +5,17 @@
 #include <nameserver.h>
 
 typedef enum {
+    PLAY_ROCK = 0,
+    PLAY_PAPER = 1,
+    PLAY_SCISSORS = 2,
     SIGN_UP,
-    PLAY_ROCK,
-    PLAY_PAPER,
-    PLAY_SCISSORS,
     QUIT
 } rpsRequest;
 
 typedef enum {
-    WIN,
-    LOSS,
-    DRAW,
+    LOSS = 2,
+    DRAW = 0,
+    WIN = 1,
     ROUND_BEGIN,
     OPPONENT_QUIT,
     ARENA_FULL,
