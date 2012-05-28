@@ -64,7 +64,7 @@ static void rpsServer(void) {
 
                     int index1 = -1, index2 = -1;
                     for (int i = 0; i < SIMULTANEOUS_GAMES; ++i) {
-                        if (!state[i].tid) {
+                        if (state[i].tid == 0) {
                             if (index1 == -1) {
                                 index1 = i;
                             } else if (index2 == -1) {
@@ -96,8 +96,8 @@ static void rpsServer(void) {
                     awaiting_tid = 0;
 
                     response = ROUND_BEGIN;
-                    Reply(awaiting_tid, (char*) &response, sizeof(int));
-                    Reply(tid, (char*) &response, sizeof(int));
+                    Reply(state[index1].tid, (char*) &response, sizeof(int));
+                    Reply(state[index2].tid, (char*) &response, sizeof(int));
                 }
 
                 break;
@@ -110,16 +110,16 @@ static void rpsServer(void) {
                 for (int i = 0; i < SIMULTANEOUS_GAMES; ++i) {
                     if (state[i].tid == tid) {
                         state[i].move = request;
+                        int op = state[i].opponent;
 
-                        if (state[i].move != SIGN_UP &&
-                                state[state[i].opponent].move != SIGN_UP) {
+                        if (state[i].move != SIGN_UP && state[op].move != SIGN_UP) {
                             // FIXME: decide the win / loss / draw state here and reply
                             response = WIN;
                             Reply(state[i].tid, (char*) &response, sizeof(int));
-                            Reply(state[state[i].opponent].tid, (char*) &response, sizeof(int));
+                            Reply(state[op].tid, (char*) &response, sizeof(int));
 
                             state[i].move = SIGN_UP;
-                            state[state[i].opponent].move = SIGN_UP;
+                            state[op].move = SIGN_UP;
 
                             LOG("Round over!\r\n");
                             // FIXME: log win / loss /draw
@@ -133,7 +133,7 @@ static void rpsServer(void) {
 
                 if (!valid) {
                     LOG("player %d issued a play request but is not in a "
-                        "match... ignoring\r\n");
+                        "match... ignoring\r\n", tid);
                     response = NOT_PLAYING;
                     Reply(tid, (char*) &response, sizeof(int));
                 }
@@ -163,7 +163,7 @@ static void rpsServer(void) {
 
                 if (!valid) {
                     LOG("player %d issued a quit request but is not in a "
-                        "match... ignoring\r\n");
+                        "match... ignoring\r\n", tid);
                     response = NOT_PLAYING;
                     Reply(tid, (char*) &response, sizeof(int));
                 }
