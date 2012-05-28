@@ -217,7 +217,7 @@ static void rpsClient(void){
             CLIENT_LOG("Got %d games left to play\r\n", i);
             // Now let's play for some time.
             int play;
-            while((play = next(2)) == 4); // To eliminate bias in picking a game.
+            while((play = next(2)) == 3); // To eliminate bias in picking a game.
             rpsRequest moves[3] = {PLAY_ROCK, PLAY_PAPER, PLAY_SCISSORS};
             request = moves[play];
             len = Send(server, (char*) &request, 4, (char*) &response, 4);
