@@ -9,7 +9,7 @@ rom : ORIGIN = 0x60000000, LENGTH = 8M
 SECTIONS
 {
     . = 0x218000;
-    .text :
+    .text . :
     {
         *(.text)
         *(.got)
@@ -20,6 +20,8 @@ SECTIONS
         *(.glue_7)
         *(.glue_7t)
     } > ram
-    .data : { *(.data) } > ram
-    .bss : { *(.bss) } > ram
+    .data . : { *(.data) } > ram
+    .bss . : { *(.bss) } > ram
+    .comment . : { *(.comment) } > ram
+    .debug . : { *(.debug_line) *(.debug_info) *(.debug_abbrev) *(.debug_aranges) } > ram
 }

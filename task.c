@@ -175,7 +175,7 @@ int createTask(unsigned int priority, void (*code)(void),
     // FIXME: zero out the trap frame
 
     // see trap frame layout above TRAP_FRAME_SIZE
-    *(t->sp) = ((unsigned int) code) + RELOCATION_CONSTANT;
+    *(t->sp) = ((unsigned int) code);
     *(t->sp + 12) = (unsigned int) t->sp;  // for now, set frame pointer = stack pointer
 
     priorityQueuePush(priority, t);
