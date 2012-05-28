@@ -8,7 +8,7 @@ rom : ORIGIN = 0x60000000, LENGTH = 8M
 
 SECTIONS
 {
-    . = 0x200000;
+    . = 0x218000;
     .text :
     {
         *(.text)
