@@ -135,8 +135,6 @@ void initTaskSystem(void (*initialTask)(void)) {
     }
 }
 
-#define RELOCATION_CONSTANT 0x200000
-
 // The following code MUST be kept in sync with the trap frame unrolling
 // during context switch. Trap frame layout:
 //      sp + 0 = r15 (pc)
