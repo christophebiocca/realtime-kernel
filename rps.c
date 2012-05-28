@@ -189,7 +189,7 @@ static inline unsigned int next(int width){
     return seed >> (32-width);
 }
 
-#define CLIENT_LOG(msg, ...) bwprintf(COM2, "[client %d] " msg, client_id,  __VA_ARGS__)
+#define CLIENT_LOG(msg, ...) bwprintf(COM2, "[client %d] " msg, client_id , ##  __VA_ARGS__)
 
 static void rpsClient(void){
     int client_id = MyTid();
@@ -202,7 +202,7 @@ static void rpsClient(void){
     int response;
     int len;
     for(int i = next(10); i >= 0;){
-        CLIENT_LOG("Signing up!\r\n", "");
+        CLIENT_LOG("Signing up!\r\n");
         // Let's sign up
         request = SIGN_UP;
         len = Send(server, (char*) &request, 4, (char*) &response, 4);
@@ -227,7 +227,7 @@ static void rpsClient(void){
             }
             if(response == OPPONENT_QUIT){
                 // We need to sign up again.
-                CLIENT_LOG("Other player dropped.\r\n", 0);
+                CLIENT_LOG("Other player dropped.\r\n");
                 break;
             }
             if(response != WIN && response != DRAW && response != LOSS){
@@ -238,7 +238,7 @@ static void rpsClient(void){
         }
     }
     request = QUIT;
-    CLIENT_LOG("Going to quit!\r\n", 0);
+    CLIENT_LOG("Going to quit!\r\n");
     len = Send(server, (char*) &request, 4, (char*) &response, 4);
     if(len < 0){
         CLIENT_LOG("Got a bad response when quitting! %d\r\n", len);
