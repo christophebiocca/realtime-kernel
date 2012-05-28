@@ -114,9 +114,9 @@ static void rpsServer(void) {
                         int op = state[i].opponent;
 
                         if (state[i].move != SIGN_UP && state[op].move != SIGN_UP) {
-                            // FIXME: decide the win / loss / draw state here and reply
-                            response = WIN;
+                            response = (state[i].move - state[op].move + 3) % 3;
                             Reply(state[i].tid, (char*) &response, sizeof(int));
+                            response = (state[op].move - state[i].move + 3) % 3;
                             Reply(state[op].tid, (char*) &response, sizeof(int));
 
                             state[i].move = SIGN_UP;
