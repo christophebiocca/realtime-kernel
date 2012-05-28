@@ -24,6 +24,16 @@ typedef enum {
 
 #define SIMULTANEOUS_GAMES  16
 #define LOG(...)            bwprintf(COM2, "[rps-server] " __VA_ARGS__)
+
+static void safeReply(int tid, rpsResponse resp){
+    int response = resp;
+    int ret = Reply(tid, (char*) &response, sizeof(int));
+    if(ret < 0){
+        LOG("Got a negative response to reply! (%d)\r\n");
+        Exit();
+    }
+}
+
 static void rpsServer(void) {
     static int awaiting_tid;
     static struct {
@@ -45,7 +55,7 @@ static void rpsServer(void) {
         Exit();
     }
 
-    int tid, request, response;
+    int tid, request;
     while (true) {
         Receive(&tid, (char *) &request, sizeof(int));
 
@@ -80,8 +90,7 @@ static void rpsServer(void) {
                     if (index2 == -1) {
                         LOG("Unfortunately, the arena is currently booked. "
                             "Dropping player %d silently... \r\n", tid);
-                        response = ARENA_FULL;
-                        Reply(tid, (char*) &response, sizeof(int));
+                        safeReply(tid, ARENA_FULL);
                         break;
                     }
 
@@ -95,9 +104,8 @@ static void rpsServer(void) {
 
                     awaiting_tid = 0;
 
-                    response = ROUND_BEGIN;
-                    Reply(state[index1].tid, (char*) &response, sizeof(int));
-                    Reply(state[index2].tid, (char*) &response, sizeof(int));
+                    safeReply(state[index1].tid, ROUND_BEGIN);
+                    safeReply(state[index2].tid, ROUND_BEGIN);
                 }
 
                 break;
@@ -113,11 +121,15 @@ static void rpsServer(void) {
                         state[i].move = request;
                         int op = state[i].opponent;
 
-                        if (state[i].move != SIGN_UP && state[op].move != SIGN_UP) {
-                            response = (state[i].move - state[op].move + 3) % 3;
-                            Reply(state[i].tid, (char*) &response, sizeof(int));
+                        if(state[op].move == QUIT){
+                            LOG("%d already quit, notifying\r\n", state[op].tid);
+                            safeReply(state[i].tid, OPPONENT_QUIT);
+                            state[i].tid = state[op].tid = 0;
+                        } else if (state[i].move != SIGN_UP && state[op].move != SIGN_UP) {
+                            int response = (state[i].move - state[op].move + 3) % 3;
+                            safeReply(state[i].tid, response);
                             response = (state[op].move - state[i].move + 3) % 3;
-                            Reply(state[op].tid, (char*) &response, sizeof(int));
+                            safeReply(state[op].tid, response);
 
                             state[i].move = SIGN_UP;
                             state[op].move = SIGN_UP;
@@ -137,8 +149,7 @@ static void rpsServer(void) {
                 if (!valid) {
                     LOG("player %d issued a play request but is not in a "
                         "match... ignoring\r\n", tid);
-                    response = NOT_PLAYING;
-                    Reply(tid, (char*) &response, sizeof(int));
+                    safeReply(tid, NOT_PLAYING);
                 }
 
                 break;
@@ -151,15 +162,15 @@ static void rpsServer(void) {
                 for (int i = 0; i < SIMULTANEOUS_GAMES; ++i) {
                     if (state[i].tid == tid) {
                         int op = state[i].opponent;
-
-                        response = OPPONENT_QUIT;
-                        LOG("Found %d\r\n", tid);
-                        Reply(state[i].tid, (char*) &response, sizeof(int));
-                        LOG("Letting %d know %d\r\n", state[op].tid);
-                        Reply(state[op].tid, (char*) &response, sizeof(int));
-
-                        state[i].tid = 0;
-                        state[op].tid = 0;
+                        state[i].move = QUIT;
+                        safeReply(state[i].tid, OPPONENT_QUIT);
+                        if(state[op].move == PLAY_ROCK || state[op].move == PLAY_PAPER ||
+                            state[op].move == PLAY_SCISSORS){
+                            LOG("Notifying %d\r\n", state[op].tid);
+                            safeReply(state[op].tid, OPPONENT_QUIT);
+                            state[i].tid = 0;
+                            state[op].tid = 0;
+                        }
 
                         valid = true;
                         break;
@@ -170,8 +181,7 @@ static void rpsServer(void) {
                 if (!valid) {
                     LOG("player %d issued a quit request but is not in a "
                         "match... ignoring\r\n", tid);
-                    response = NOT_PLAYING;
-                    Reply(tid, (char*) &response, sizeof(int));
+                    safeReply(tid, NOT_PLAYING);
                 }
 
                 break;
@@ -214,12 +224,14 @@ static void rpsClient(void){
             Exit();
         }
         for(; i >= 0; --i){
-            CLIENT_LOG("Got %d games left to play\r\n", i);
+            CLIENT_LOG("%d games left to play\r\n", i);
             // Now let's play for some time.
             int play;
-            while((play = next(2)) == 3); // To eliminate bias in picking a game.
+            while((play = next(2)) == 3); // To eliminate bias in picking a move.
             rpsRequest moves[3] = {PLAY_ROCK, PLAY_PAPER, PLAY_SCISSORS};
+            char *mvNames[3] = {"Rock", "Paper", "Scissors"};
             request = moves[play];
+            CLIENT_LOG("Will play %s\r\n", mvNames[play]);
             len = Send(server, (char*) &request, 4, (char*) &response, 4);
             if(len < 0){
                 CLIENT_LOG("Got a bad response when playing! %d\r\n", len);
@@ -247,20 +259,20 @@ static void rpsClient(void){
 }
 
 static void playerSpawner(void){
-    Create(2, rpsClient);
-    Create(2, rpsClient);
-    Exit();
-    while(1){
-        bwputstr(COM2, "No players are active at the moment, let's create one.\r\n");
-        if(Create(2, rpsClient) < 0){
+    for(int i = 0; i < 6 ; ++i){
+        int tid = Create(4, rpsClient);
+        if(tid < 0){
             bwputstr(COM2, "Couldn't create player, quitting!\r\n");
             break;
+        } else {
+            bwprintf(COM2, "Created client #%d\r\n", tid);
         }
     }
+    Exit();
 }
 
 void rpsUserModeTask(void) {
-    seed = 0x445f1ab9;
+    seed = 0xb4561ab9;
     Create(1, task_nameserver);
     Create(2, rpsServer);
     Create(3, playerSpawner);
