@@ -153,15 +153,17 @@ static void rpsServer(void) {
                         int op = state[i].opponent;
 
                         response = OPPONENT_QUIT;
-                        Reply(state[op].tid, (char*) &response, sizeof(int));
+                        LOG("Found %d\r\n", tid);
+                        Reply(state[i].tid, (char*) &response, sizeof(int));
+                        LOG("Letting %d know %d\r\n", state[op].tid);
                         Reply(state[op].tid, (char*) &response, sizeof(int));
 
                         state[i].tid = 0;
                         state[op].tid = 0;
-                    }
 
-                    valid = true;
-                    break;
+                        valid = true;
+                        break;
+                    }
                 }
 
 
