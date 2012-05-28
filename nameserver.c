@@ -7,7 +7,7 @@
 #include <task.h>
 
 #define NAMESERVER_ID   makeTid(2, 1, 2)
-#define MAX_NAME_LEN    32
+#define MAX_NAME_LEN    15
 
 enum {
     SUCCESS = 0,
@@ -17,16 +17,14 @@ enum {
     NO_NAMESERVER = -3,
 };
 
-// FIXME: make this 32 bytes for fast mempcpy
 typedef struct {
     enum {
         REGISTER_AS,
         WHO_IS,
-    } type;
+    } type:8;
 
     char name[MAX_NAME_LEN];
-    int reply;
-} NameserverMessage;
+} NameserverRequest;
 
 #define MAX_REGISTRATIONS   256
 
@@ -38,39 +36,40 @@ void task_nameserver(void) {
     int num_registrations = 0;
 
     int sender;
-    NameserverMessage msg;
+    NameserverRequest request;
+    int reply;
 
     while (true) {
-        int bytes = Receive(&sender, (char *) &msg, sizeof(NameserverMessage));
-        if (bytes != sizeof(NameserverMessage)) {
-            msg.reply = GENERIC_ERROR;
-            Reply(sender, (char *) &msg, sizeof(NameserverMessage));
+        int bytes = Receive(&sender, (char *) &request, sizeof(NameserverRequest));
+        if (bytes != sizeof(NameserverRequest)) {
+            reply = GENERIC_ERROR;
+            Reply(sender, (char *) &reply, sizeof(int));
             continue;
         }
 
-        switch (msg.type) {
+        switch (request.type) {
             case REGISTER_AS:
                 if (num_registrations >= MAX_REGISTRATIONS) {
-                    msg.reply = NAMETABLE_FULL;
-                    Reply(sender, (char *) &msg, sizeof(NameserverMessage));
+                    reply = NAMETABLE_FULL;
+                    Reply(sender, (char *) &reply, sizeof(int));
                     break;
                 }
 
                 int i;
                 for (i = 0; i < num_registrations; ++i) {
-                    if (strcmp(registrations[i].name, msg.name) == 0) {
+                    if (strcmp(registrations[i].name, request.name) == 0) {
                         break;
                     }
                 }
 
                 if (i == num_registrations) {
                     ++num_registrations;
-                    strncpy(registrations[i].name, msg.name, MAX_NAME_LEN);
+                    strncpy(registrations[i].name, request.name, MAX_NAME_LEN);
                 }
 
                 registrations[i].tid = sender;
-                msg.reply = SUCCESS;
-                Reply(sender, (char *) &msg, sizeof(NameserverMessage));
+                reply = SUCCESS;
+                Reply(sender, (char *) &reply, sizeof(int));
 
                 break;
 
@@ -78,9 +77,9 @@ void task_nameserver(void) {
                 bool has_replied = false;
 
                 for (int i = 0; i < num_registrations; ++i) {
-                    if (strcmp(registrations[i].name, msg.name) == 0) {
-                        msg.reply = registrations[i].tid;
-                        Reply(sender, (char *) &msg, sizeof(NameserverMessage));
+                    if (strcmp(registrations[i].name, request.name) == 0) {
+                        reply = registrations[i].tid;
+                        Reply(sender, (char *) &reply, sizeof(int));
 
                         has_replied = true;
                         break;
@@ -88,52 +87,54 @@ void task_nameserver(void) {
                 }
 
                 if (!has_replied) {
-                    msg.reply = NO_SUCH_TASK;
-                    Reply(sender, (char *) &msg, sizeof(NameserverMessage));
+                    reply = NO_SUCH_TASK;
+                    Reply(sender, (char *) &reply, sizeof(int));
                 }
 
                 break;
             }
 
             default:
-                msg.reply = GENERIC_ERROR;
-                Reply(sender, (char *) &msg, sizeof(NameserverMessage));
+                reply = GENERIC_ERROR;
+                Reply(sender, (char *) &reply, sizeof(int));
         }
     }
 }
 
 int RegisterAs(char *name) {
-    NameserverMessage request, reply;
+    NameserverRequest request;
+    int reply;
 
     request.type = REGISTER_AS;
     strncpy(request.name, name, MAX_NAME_LEN);
     int bytes = Send(
         NAMESERVER_ID,
-        (char *) &request, sizeof(NameserverMessage),
-        (char *) &reply, sizeof(NameserverMessage)
+        (char *) &request, sizeof(NameserverRequest),
+        (char *) &reply, sizeof(int)
     );
 
-    if (bytes != sizeof(NameserverMessage)) {
+    if (bytes != sizeof(int)) {
         return (bytes == -2) ? NO_NAMESERVER : GENERIC_ERROR;
     }
 
-    return reply.reply;
+    return reply;
 }
 
 int WhoIs(char *name) {
-    NameserverMessage request, reply;
+    NameserverRequest request;
+    int reply;
 
     request.type = WHO_IS;
     strncpy(request.name, name, MAX_NAME_LEN);
     int bytes = Send(
         NAMESERVER_ID,
-        (char *) &request, sizeof(NameserverMessage),
-        (char *) &reply, sizeof(NameserverMessage)
+        (char *) &request, sizeof(NameserverRequest),
+        (char *) &reply, sizeof(int)
     );
 
-    if (bytes != sizeof(NameserverMessage)) {
+    if (bytes != sizeof(int)) {
         return (bytes == -2) ? NO_NAMESERVER : GENERIC_ERROR;
     }
 
-    return reply.reply;
+    return reply;
 }

@@ -54,7 +54,7 @@ int main(){
     *((unsigned int *)0x28) = jump_addr + RELOCATION_CONSTANT;
     *((unsigned int *)0x08) = 0xe59ff018;
 
-    initTaskSystem(&timeUserModeTask);
+    initTaskSystem(&nsUserModeTask);
 
     struct TaskDescriptor* active;
     for(active = scheduleTask(); active; active = scheduleTask()) {

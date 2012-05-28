@@ -1,3 +1,4 @@
+#include <bwio.h>
 #include <utils.h>
 
 char *strncpy(char *dest, char *from, unsigned int max_len) {

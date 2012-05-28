@@ -219,7 +219,13 @@ static inline void copyMessage(struct TaskDescriptor *src, struct TaskDescriptor
     char* rcv_msg = (char*)dest->sp[2];
     int rcv_msglen = dest->sp[3];
 
-    memcpy16(rcv_msg, sent_msg, (sent_msglen > rcv_msglen) ? rcv_msglen : sent_msglen);
+    int len = (sent_msglen > rcv_msglen) ? rcv_msglen : sent_msglen;
+    if (len == 4) {
+        *((unsigned int *) rcv_msg) = *((unsigned int *) sent_msg);
+    } else {
+        memcpy16(rcv_msg, sent_msg, len);
+    }
+
     *((int*)dest->sp[1]) = src->id;
     (dest->sp)[1] = sent_msglen;
 }
@@ -270,11 +276,13 @@ void reply(unsigned int task_id){
     char* dest_reply = (char*)sender->sp[4];
     int dest_replylen = sender->sp[5];
 
-    memcpy16(
-        dest_reply,
-        src_reply,
-        (src_replylen > dest_replylen) ? dest_replylen : src_replylen
-    );
+    int len = (src_replylen > dest_replylen) ? dest_replylen : src_replylen;
+    if (len == 4) {
+        *((unsigned int *) dest_reply) = *((unsigned int *) src_reply);
+    } else {
+        memcpy16(dest_reply, src_reply, len);
+    }
+
     sender->sp[1] = src_replylen;
     g_active_task->sp[1] = 0;
     sender->status = TSK_READY;
