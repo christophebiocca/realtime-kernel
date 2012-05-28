@@ -121,12 +121,14 @@ static void rpsServer(void) {
                             state[i].move = SIGN_UP;
                             state[op].move = SIGN_UP;
 
-                            LOG("Round over!\r\n");
+                            LOG("Round over! Press Enter to continue\r\n");
+                            bwgetc(COM2);
                             // FIXME: log win / loss /draw
 
-                            valid = true;
-                            break;
                         }
+
+                        valid = true;
+                        break;
                     }
                 }
 
@@ -154,10 +156,10 @@ static void rpsServer(void) {
 
                         state[i].tid = 0;
                         state[op].tid = 0;
-
-                        valid = true;
-                        break;
                     }
+
+                    valid = true;
+                    break;
                 }
 
 
