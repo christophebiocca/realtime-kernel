@@ -201,7 +201,7 @@ static void rpsClient(void){
     int request;
     int response;
     int len;
-    for(int i = next(10); i >= 0;){
+    for(int i = next(4) + 1; i >= 0;){
         CLIENT_LOG("Signing up!\r\n");
         // Let's sign up
         request = SIGN_UP;
