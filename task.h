@@ -50,8 +50,6 @@ int createTask(
 );
 #define DEFAULT_STACK_SIZE 0x400
 
-#define RELOCATION_CONSTANT 0x218000
-
 /* Remove the last scheduled task from the queues */
 void exitCurrentTask(void);
 
