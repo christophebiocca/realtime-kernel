@@ -1,5 +1,6 @@
 #include <bwio.h>
 #include <syscalls.h>
+#include <stdbool.h>
 #include <user_task.h>
 #include <nameserver.h>
 
@@ -11,13 +12,29 @@ typedef enum {
     QUIT
 } rpsRequest;
 
-// we support 32 matches going at once
-#define CONCURRENT_MATCHES  16
-#define LOG(...)    bwprintf(COM2, "[rps-server] " __VA_ARGS__)
+typedef enum {
+    WIN,
+    LOSS,
+    DRAW,
+    ROUND_BEGIN,
+    OPPONENT_QUIT,
+    ARENA_FULL,
+    NOT_PLAYING
+} rpsResponse;
+
+#define SIMULTANEOUS_GAMES  16
+#define LOG(...)            bwprintf(COM2, "[rps-server] " __VA_ARGS__)
 static void rpsServer(void) {
     static int awaiting_tid = 0; // client awaiting a challenger
-    static int current_tid1 = 0, current_tid2 = 0;
-    static rpsRequest current_tid1_state, current_tid2_state;
+    static struct {
+        int tid;
+        rpsRequest move;
+        int opponent;
+    } state[SIMULTANEOUS_GAMES];
+
+    for (int i = 0; i < SIMULTANEOUS_GAMES; ++i) {
+        state[i].tid = 0;
+    }
 
     LOG("Reticulating splines...");
     int ret = RegisterAs("rps");
@@ -27,7 +44,7 @@ static void rpsServer(void) {
         Exit();
     }
 
-    int tid, request;
+    int tid, request, response;
     Receive(&tid, (char *) &request, sizeof(int));
 
     switch (request) {
@@ -43,22 +60,42 @@ static void rpsServer(void) {
             } else {
                 LOG("Found match: %d vs %d\r\n", awaiting_tid, tid);
 
-                if (current_tid1 != 0 || current_tid2 != 0) {
-                    LOG("Unfortunately, the arena is currently booked. "
-                        "Dropping player %d silently... \r\n", tid);
-                    // FIXME: tell client why!
-                    Reply(tid, (char*) &request, sizeof(int));
+                int index1 = -1, index2 = -1;
+                for (int i = 0; i < SIMULTANEOUS_GAMES; ++i) {
+                    if (!state[i].tid) {
+                        if (index1 == -1) {
+                            index1 = i;
+                        } else if (index2 == -1) {
+                            index2 = i;
+                        } else {
+                            // found two free indices!
+                            break;
+                        }
+                    }
                 }
 
-                current_tid1 = awaiting_tid;
-                current_tid2 = tid;
-                current_tid1_state = current_tid2_state = SIGN_UP;
+                // if index1 == -1 then index2 == -1
+                if (index2 == -1) {
+                    LOG("Unfortunately, the arena is currently booked. "
+                        "Dropping player %d silently... \r\n", tid);
+                    response = ARENA_FULL;
+                    Reply(tid, (char*) &response, sizeof(int));
+                    break;
+                }
+
+                state[index1].tid = awaiting_tid;
+                state[index1].move = SIGN_UP;
+                state[index1].opponent = index2;
+
+                state[index2].tid = tid;
+                state[index2].move = SIGN_UP;
+                state[index2].opponent = index1;
 
                 awaiting_tid = 0;
 
-                // FIXME: figure out void replies
-                Reply(awaiting_tid, (char*) &request, sizeof(int));
-                Reply(tid, (char*) &request, sizeof(int));
+                response = ROUND_BEGIN;
+                Reply(awaiting_tid, (char*) &response, sizeof(int));
+                Reply(tid, (char*) &response, sizeof(int));
             }
 
             break;
@@ -66,45 +103,71 @@ static void rpsServer(void) {
         case PLAY_ROCK:
         case PLAY_PAPER:
         case PLAY_SCISSORS: {
-            if (current_tid1 == tid) {
-                current_tid1_state = request;
-            } else if (current_tid2 == tid) {
-                current_tid2_state = request;
-            } else {
-                LOG("player %d issued a play request but is not in a "
-                    "match... ignoring\r\n");
-                Reply(tid, (char*) &request, sizeof(int));
-                break;
-            }
+            bool valid = false;
 
-            if (current_tid1_state != SIGN_UP && current_tid2_state != SIGN_UP) {
-                // FIXME: decide the win / loss / draw state here and reply
-                int response = WIN;
-                Reply(current_tid1, &request, sizeof(int));
-                Reply(current_tid2, &request, sizeof(int));
+            for (int i = 0; i < SIMULTANEOUS_GAMES; ++i) {
+                if (state[i].tid == tid) {
+                    state[i].move = request;
 
-                LOG("Round over!");
-                // FIXME: log win / loss /draw
-                current_tid1 = current_tid2 = 0;
-            }
-        }
+                    if (state[i].move != SIGN_UP &&
+                            state[state[i].opponent].move != SIGN_UP) {
+                        // FIXME: decide the win / loss / draw state here and reply
+                        response = WIN;
+                        Reply(state[i].tid, (char*) &response, sizeof(int));
+                        Reply(state[state[i].opponent].tid, (char*) &response, sizeof(int));
 
-        case QUIT:
-            int *swap =
-                (current_tid1 == tid) ? &current_tid1 :
-                (current_tid2 == tid) ? &current_tid2 :
-                NULL;
+                        state[i].move = SIGN_UP;
+                        state[state[i].opponent].move = SIGN_UP;
 
-            if (swap) {
-                LOG("Player %d is quitting!\r\n", tid);
+                        LOG("Round over!\r\n");
+                        // FIXME: log win / loss /draw
 
-                if (awaiting_tid) {
-                    *swap = awaiting_tid;
-                    Reply(awaiting_tid, (char*) &request, sizeof(int));
-                    awaiting_tid = 0;
-                } else {
+                        valid = true;
+                        break;
+                    }
                 }
             }
+
+
+            if (!valid) {
+                LOG("player %d issued a play request but is not in a "
+                    "match... ignoring\r\n");
+                response = NOT_PLAYING;
+                Reply(tid, (char*) &response, sizeof(int));
+            }
+
+            break;
+        }
+
+        case QUIT: {
+            bool valid = false;
+
+            for (int i = 0; i < SIMULTANEOUS_GAMES; ++i) {
+                if (state[i].tid == tid) {
+                    int op = state[i].opponent;
+
+                    response = OPPONENT_QUIT;
+                    Reply(state[op].tid, (char*) &response, sizeof(int));
+                    Reply(state[op].tid, (char*) &response, sizeof(int));
+
+                    state[i].tid = 0;
+                    state[op].tid = 0;
+
+                    valid = true;
+                    break;
+                }
+            }
+
+
+            if (!valid) {
+                LOG("player %d issued a quit request but is not in a "
+                    "match... ignoring\r\n");
+                response = NOT_PLAYING;
+                Reply(tid, (char*) &response, sizeof(int));
+            }
+
+            break;
+        }
     }
 
     Exit();
