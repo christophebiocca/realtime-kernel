@@ -5,4 +5,7 @@ void userModeTask();
 void nsUserModeTask();
 void timeUserModeTask();
 
+// rock paper scissors
+void rpsUserModeTask();
+
 #endif

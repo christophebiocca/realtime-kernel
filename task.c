@@ -231,8 +231,6 @@ static inline void copyMessage(struct TaskDescriptor *src, struct TaskDescriptor
 }
 
 void send(unsigned int task_id){
-    *((volatile int *) 0x80810064) = 0;
-    *((volatile int *) 0x80810064) = 0x0100;
     struct TaskDescriptor *rec = &g_task_table[taskIndex(task_id)];
     if(task_id != rec->id){
         g_active_task->sp[1]=-2;
@@ -287,10 +285,6 @@ void reply(unsigned int task_id){
     g_active_task->sp[1] = 0;
     sender->status = TSK_READY;
     priorityQueuePush(taskPriority(task_id), sender);
-
-    unsigned int timer_now = *((volatile int *) 0x80810060);
-    *((volatile int *) 0x80810064) = 0;
-    bwprintf(COM2, "%d ticks have elapsed\r\n", timer_now);
 }
 
 struct TaskDescriptor *scheduleTask(void){

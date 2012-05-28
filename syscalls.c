@@ -1,3 +1,4 @@
+#include <bwio.h>
 #include "syscalls.h"
 #include "syscall_ids.h"
 
@@ -42,6 +43,11 @@ void Exit(void){
 }
 
 int Send(int tid, char *msg, int msglen, char *reply, int replylen){
+    /*
+    *((volatile int *) 0x80810064) = 0;
+    *((volatile int *) 0x80810064) = 0x0100;
+    */
+
     register int tid_in_len_out asm("r0") = tid;
     register char *msg_in asm("r1") = msg;
     register int msglen_in asm("r2") = msglen;
@@ -51,6 +57,13 @@ int Send(int tid, char *msg, int msglen, char *reply, int replylen){
         syscall(SYS_SEND)
         : "+r"(tid_in_len_out)
         : "r"(msg_in), "r"(msglen_in), "r"(reply_in), "r"(replylen_in));
+
+    /*
+    unsigned int timer_now = *((volatile int *) 0x80810060);
+    *((volatile int *) 0x80810064) = 0;
+    bwprintf(COM2, "%d ticks have elapsed\r\n", timer_now);
+    */
+
     return tid_in_len_out;
 }
 

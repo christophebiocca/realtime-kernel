@@ -97,8 +97,8 @@ static void timeReceiveTask(void) {
 }
 
 void timeUserModeTask(void) {
-    Create(1, timeSenderTask);
-    g_receiver_tid = Create(2, timeReceiveTask);
+    Create(2, timeSenderTask);
+    g_receiver_tid = Create(1, timeReceiveTask);
 
     Exit();
 }
