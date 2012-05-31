@@ -12,11 +12,7 @@ static inline void copyMessage(struct TaskDescriptor *src, struct TaskDescriptor
     int rcv_msglen = dest->sp[3];
 
     int len = (sent_msglen > rcv_msglen) ? rcv_msglen : sent_msglen;
-    if (len == 4) {
-        *((unsigned int *) rcv_msg) = *((unsigned int *) sent_msg);
-    } else {
-        memcpy16(rcv_msg, sent_msg, len);
-    }
+    memcpy16(rcv_msg, sent_msg, len);
 
     *((int*)dest->sp[1]) = src->id;
     (dest->sp)[1] = sent_msglen;
@@ -72,11 +68,7 @@ void ipcReply(unsigned int task_id){
     int dest_replylen = sender->sp[5];
 
     int len = (src_replylen > dest_replylen) ? dest_replylen : src_replylen;
-    if (len == 4) {
-        *((unsigned int *) dest_reply) = *((unsigned int *) src_reply);
-    } else {
-        memcpy16(dest_reply, src_reply, len);
-    }
+    memcpy16(dest_reply, src_reply, len);
 
     sender->sp[1] = src_replylen;
     g_active_task->sp[1] = 0;
