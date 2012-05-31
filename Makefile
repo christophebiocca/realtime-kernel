@@ -16,11 +16,13 @@ LDFLAGS = -init main -Map kernel.map -N -T linker.ld -L/u/wbcowan/gnuarm-4.0.2/l
 
 .PHONY: all clean rdeploy
 
-VPATH = include/
+srcdirs = kernel user
+vpath %.h include include/kernel include/user
+vpath %.c $(srcdirs)
 
 all = kernel.elf
 
-sources := $(wildcard *.c)
+sources := $(foreach sdir,$(srcdirs),$(wildcard $(sdir)/*.c))
 assembled_sources := $(patsubst %c,%s,$(sources))
 
 hand_assemblies := $(filter-out $(assembled_sources),$(wildcard *.s))
@@ -34,7 +36,7 @@ kernel.elf : $(objects) linker.ld
 	$(LD) $(LDFLAGS) -o $@ $(filter-out linker.ld,$^) -lgcc
 
 %.s: %.c
-	$(CC) -S $(CFLAGS) $<
+	$(CC) -o $@ -S $(CFLAGS) $<
 
 %.o: %.s
 	$(AS) $(ASFLAGS) -o $@ $<

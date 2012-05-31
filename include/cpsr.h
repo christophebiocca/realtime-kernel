@@ -1,5 +1,6 @@
 #ifndef _CPSR_H
 #define _CPSR_H 1
+
 #define NegativeMask (1<<31)
 #define ZeroMask (1<<30)
 #define CarryMask (1<<29)
@@ -13,7 +14,7 @@
     #define ABTMode 0x17
     #define UNDMode 0x1b
     #define SYSMode 0x1f
-    
+
 #define DisableIRQ (1<<7)
 #define DisableFIQ (1<<6)
 

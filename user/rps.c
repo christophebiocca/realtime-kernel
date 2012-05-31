@@ -1,8 +1,8 @@
 #include <bwio.h>
-#include <syscalls.h>
 #include <stdbool.h>
-#include <user_task.h>
-#include <nameserver.h>
+
+#include <user/nameserver.h>
+#include <user/syscall.h>
 
 typedef enum {
     PLAY_ROCK = 0,

@@ -1,3 +1,15 @@
+#ifndef SYSCALL_H
+#define SYSCALL_H 1
+
+#define SYS_CREATE 0
+#define SYS_MY_TID 1
+#define SYS_MY_PARENT_TID 2
+#define SYS_PASS 3
+#define SYS_EXIT 4
+#define SYS_SEND 5
+#define SYS_RECEIVE 6
+#define SYS_REPLY 7
+
 // Creates a new task with the given priority and code.
 // Returns positive tid if success
 // -1 for invalid priority
@@ -34,3 +46,5 @@ int Receive(int *tid, char *msg, int msglen);
 // -2: task doesn't exist
 // -3: task isn't waiting for a reply.
 int Reply(int tid, char *reply, int replylen);
+
+#endif

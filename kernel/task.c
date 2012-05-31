@@ -1,34 +1,14 @@
-#include "bwio.h"
-#include "cpsr.h"
-#include "task.h"
-#include <kassert.h>
-#include <utils.h>
+#include <bwio.h>
+#include <cpsr.h>
+#include <lib.h>
 
-struct TaskDescriptor {
-    unsigned int id;
-    unsigned int spsr;
-    unsigned int *sp;
+#include <kernel/task.h>
+#include "task_internal.h"
+#include <kernel/assert.h>
 
-    unsigned int rcvBlockedHead:8;
-    unsigned int rcvBlockedTail:8;
-
-    // Allows threading a linked list through the descriptors.
-    unsigned int next:8;
-
-    enum {
-        TSK_READY,
-        TSK_RECEIVE_BLOCKED,
-        TSK_REPLY_BLOCKED,
-        TSK_SEND_BLOCKED,
-        TSK_ZOMBIE,
-    } status:8;
-
-    int parent_task_id;
-};
-
-static struct TaskDescriptor g_task_table[MAX_TASKS];
+struct TaskDescriptor g_task_table[MAX_TASKS];
 static int g_next_task_id;
-static struct TaskDescriptor *g_active_task;
+struct TaskDescriptor *g_active_task;
 
 // Use 0 to signify that there is no such value.
 struct TaskQueue {
@@ -36,8 +16,7 @@ struct TaskQueue {
     unsigned int tail:8;
 };
 
-struct TaskQueue g_task_queue[MAX_PRIORITY];
-
+static struct TaskQueue g_task_queue[MAX_PRIORITY];
 unsigned int g_task_queue_mask;
 
 #define STACK_HIGH      0x300000
@@ -47,41 +26,41 @@ static unsigned int *g_current_stack;
 #define BRUJIN_SEQUENCE 0x077CB531U
 static int LOOKUP[32];
 
-#define DEFN_QUEUE(name, type, head_field, tail_field)\
-static inline struct TaskDescriptor *name ## Pop(struct type *queue, bool *empty){\
-    struct TaskDescriptor *desc = &g_task_table[queue->head_field];\
-    queue->head_field = desc->next;\
-    desc->next = 0;\
-    if(!queue->head_field){\
-        queue->tail_field = queue->head_field;\
-        if(empty){\
-            *empty=true;\
-        };\
-    }\
-    return desc;\
-}\
-\
-static inline void name ## Push(struct type *queue, struct TaskDescriptor *t){\
-    char next = taskIndex(t->id);\
-    if(queue->tail_field){\
-        g_task_table[queue->tail_field].next = next;\
-    } else {\
-        queue->head_field = next;\
-    }\
-    queue->tail_field = next;\
-}\
-\
-static inline bool name ## Empty(struct type *queue){\
-    if(!queue->head_field){\
-        return true;\
-    }\
-    return false;\
+#define DEFN_QUEUE(name, type, head_field, tail_field)                      \
+struct TaskDescriptor *name ## Pop(struct type *queue, bool *empty){        \
+    struct TaskDescriptor *desc = &g_task_table[queue->head_field];         \
+    queue->head_field = desc->next;                                         \
+    desc->next = 0;                                                         \
+    if(!queue->head_field){                                                 \
+        queue->tail_field = queue->head_field;                              \
+        if(empty){                                                          \
+            *empty=true;                                                    \
+        };                                                                  \
+    }                                                                       \
+    return desc;                                                            \
+}                                                                           \
+                                                                            \
+void name ## Push(struct type *queue, struct TaskDescriptor *t){            \
+    char next = taskIndex(t->id);                                           \
+    if(queue->tail_field){                                                  \
+        g_task_table[queue->tail_field].next = next;                        \
+    } else {                                                                \
+        queue->head_field = next;                                           \
+    }                                                                       \
+    queue->tail_field = next;                                               \
+}                                                                           \
+                                                                            \
+bool name ## Empty(struct type *queue){                                     \
+    if(!queue->head_field){                                                 \
+        return true;                                                        \
+    }                                                                       \
+    return false;                                                           \
 }
 
 DEFN_QUEUE(queue, TaskQueue, head, tail)
 DEFN_QUEUE(receiveQueue, TaskDescriptor, rcvBlockedHead, rcvBlockedTail);
 
-static inline struct TaskDescriptor *priorityQueuePop(int priority){
+struct TaskDescriptor *priorityQueuePop(int priority) {
     bool empty = false;
     struct TaskDescriptor* task = queuePop(&g_task_queue[priority], &empty);
     if(empty){
@@ -91,7 +70,7 @@ static inline struct TaskDescriptor *priorityQueuePop(int priority){
     return task;
 }
 
-static inline void priorityQueuePush(int priority, struct TaskDescriptor *t){
+void priorityQueuePush(int priority, struct TaskDescriptor *t) {
     assert(t->status == TSK_READY);
     queuePush(&g_task_queue[priority], t);
     g_task_queue_mask |= 1 << priority;
@@ -211,80 +190,6 @@ unsigned int taskSPSR(struct TaskDescriptor *td){
 void setTaskState(struct TaskDescriptor *td, unsigned int *sp, unsigned int spsr){
     td->sp = sp;
     td->spsr = spsr;
-}
-
-static inline void copyMessage(struct TaskDescriptor *src, struct TaskDescriptor *dest){
-    char* sent_msg = (char*)src->sp[2];
-    int sent_msglen = src->sp[3];
-    char* rcv_msg = (char*)dest->sp[2];
-    int rcv_msglen = dest->sp[3];
-
-    int len = (sent_msglen > rcv_msglen) ? rcv_msglen : sent_msglen;
-    if (len == 4) {
-        *((unsigned int *) rcv_msg) = *((unsigned int *) sent_msg);
-    } else {
-        memcpy16(rcv_msg, sent_msg, len);
-    }
-
-    *((int*)dest->sp[1]) = src->id;
-    (dest->sp)[1] = sent_msglen;
-}
-
-void send(unsigned int task_id){
-    struct TaskDescriptor *rec = &g_task_table[taskIndex(task_id)];
-    if(task_id != rec->id){
-        g_active_task->sp[1]=-2;
-        return;
-    }
-    if(rec->status == TSK_SEND_BLOCKED){
-        copyMessage(g_active_task, rec);
-        rec->status = TSK_READY;
-        priorityQueuePush(taskPriority(task_id), rec);
-        g_active_task->status = TSK_REPLY_BLOCKED;
-    } else {
-        receiveQueuePush(rec, g_active_task);
-        g_active_task->status = TSK_RECEIVE_BLOCKED;
-    }
-    g_active_task = 0;
-}
-
-void receive(){
-    if(receiveQueueEmpty(g_active_task)){
-        g_active_task->status = TSK_SEND_BLOCKED;
-        g_active_task = 0;
-    } else {
-        struct TaskDescriptor *sender = receiveQueuePop(g_active_task, 0);
-        copyMessage(sender, g_active_task);
-        sender->status = TSK_REPLY_BLOCKED;
-    }
-}
-
-void reply(unsigned int task_id){
-    struct TaskDescriptor *sender = &g_task_table[taskIndex(task_id)];
-    if(task_id != sender->id){
-        g_active_task->sp[1]=-2;
-        return;
-    }
-    if(sender->status != TSK_REPLY_BLOCKED){
-        g_active_task->sp[1]=-3;
-        return;
-    }
-    char* src_reply = (char*)g_active_task->sp[2];
-    int src_replylen = g_active_task->sp[3];
-    char* dest_reply = (char*)sender->sp[4];
-    int dest_replylen = sender->sp[5];
-
-    int len = (src_replylen > dest_replylen) ? dest_replylen : src_replylen;
-    if (len == 4) {
-        *((unsigned int *) dest_reply) = *((unsigned int *) src_reply);
-    } else {
-        memcpy16(dest_reply, src_reply, len);
-    }
-
-    sender->sp[1] = src_replylen;
-    g_active_task->sp[1] = 0;
-    sender->status = TSK_READY;
-    priorityQueuePush(taskPriority(task_id), sender);
 }
 
 struct TaskDescriptor *scheduleTask(void){
