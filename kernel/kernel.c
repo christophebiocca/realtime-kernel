@@ -7,45 +7,56 @@
 #include <user/syscall.h>
 #include <user/init.h>
 
-struct Request {
-    struct TaskDescriptor *task;
-    unsigned int callID;
-    unsigned int *args;
-};
+static void dispatchSyscall(struct TaskDescriptor *task,
+        unsigned int syscall_id, unsigned int *args) {
 
-static void handle(struct Request *req){
-    switch(req->callID){
+    switch(syscall_id) {
         case SYS_CREATE:
-            setReturnValue(req->task, createTask(req->args[0], (void (*)(void)) req->args[1],
-                DEFAULT_STACK_SIZE, taskID(req->task)));
+            setReturnValue(
+                task,
+                createTask(
+                    args[0],
+                    (void (*)(void)) args[1],
+                    DEFAULT_STACK_SIZE,
+                    taskID(task)
+                )
+            );
             break;
+
         case SYS_MY_TID:
-            setReturnValue(req->task, taskID(req->task));
+            setReturnValue(task, taskID(task));
             break;
+
         case SYS_MY_PARENT_TID:
-            setReturnValue(req->task, parentID(req->task));
+            setReturnValue(task, parentID(task));
             break;
+
         case SYS_PASS:
             break;
+
         case SYS_EXIT:
             exitCurrentTask();
             break;
+
         case SYS_SEND:
-            ipcSend(req->args[0]);
+            ipcSend(args[0]);
             break;
+
         case SYS_RECEIVE:
             ipcReceive();
             break;
+
         case SYS_REPLY:
-            ipcReply(req->args[0]);
+            ipcReply(args[0]);
             break;
+
         default:
-            bwprintf(COM2, "Invalid call %u!\r\n", req->callID);
+            bwprintf(COM2, "Invalid call %u!\r\n", syscall_id);
             break;
     }
 }
 
-int main(){
+int main(void) {
     unsigned int jump_addr;
 
     bwsetfifo(COM2, false);
@@ -91,12 +102,7 @@ int main(){
 
         setTaskState(active, sp, spsr);
         unsigned int call = *(((unsigned int *) *sp) - 1) & 0x00FFFFFF;
-        struct Request req = {
-            .task = active,
-            .callID = call,
-            .args = sp + 1 // Because pc is at 0
-        };
-        handle(&req);
+        dispatchSyscall(active, call, sp + 1);
     }
     return 0;
 }
