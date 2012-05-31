@@ -1,10 +1,11 @@
 #include <bwio.h>
 #include <stdbool.h>
-#include <utils.h>
 
-#include <nameserver.h>
-#include <syscalls.h>
-#include <task.h>
+#include <kernel/lib.h>
+#include <kernel/task.h>
+
+#include <user/nameserver.h>
+#include <user/syscall.h>
 
 #define NAMESERVER_ID   makeTid(2, 1, 2)
 #define MAX_NAME_LEN    15

@@ -1,8 +1,8 @@
-#include "bwio.h"
-#include "cpsr.h"
-#include "task.h"
-#include <kassert.h>
-#include <utils.h>
+#include <bwio.h>
+#include <cpsr.h>
+#include <kernel/task.h>
+#include <kernel/assert.h>
+#include <kernel/lib.h>
 
 struct TaskDescriptor {
     unsigned int id;

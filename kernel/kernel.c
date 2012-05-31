@@ -1,9 +1,10 @@
-#include "stdbool.h"
-#include "bwio.h"
-#include "cpsr.h"
-#include "user_task.h"
-#include "task.h"
-#include "syscall_ids.h"
+#include <stdbool.h>
+
+#include <bwio.h>
+#include <cpsr.h>
+#include <kernel/task.h>
+#include <user/syscall.h>
+#include <user/init.h>
 
 struct Request {
     struct TaskDescriptor *task;

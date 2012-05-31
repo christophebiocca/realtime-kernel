@@ -1,6 +1,5 @@
 #include <bwio.h>
-#include "syscalls.h"
-#include "syscall_ids.h"
+#include <user/syscall.h>
 
 #define syscall_num(id) "swi " #id "\n\t"
 #define syscall(name) syscall_num(name)
