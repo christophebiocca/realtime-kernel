@@ -1,9 +1,8 @@
-#include "user_task.h"
-#include "bwio.h"
-#include "syscalls.h"
+#include <bwio.h>
 
-#include <nameserver.h>
-#include <utils.h>
+#include <user/nameserver.h>
+#include <user/syscall.h>
+#include <user/init.h>
 
 static void childTask() {
     int tid = MyTid();
