@@ -2,6 +2,7 @@
 
 #include <bwio.h>
 #include <cpsr.h>
+#include <kernel/ipc.h>
 #include <kernel/task.h>
 #include <user/syscall.h>
 #include <user/init.h>
@@ -30,13 +31,13 @@ static void handle(struct Request *req){
             exitCurrentTask();
             break;
         case SYS_SEND:
-            send(req->args[0]);
+            ipcSend(req->args[0]);
             break;
         case SYS_RECEIVE:
-            receive();
+            ipcReceive();
             break;
         case SYS_REPLY:
-            reply(req->args[0]);
+            ipcReply(req->args[0]);
             break;
         default:
             bwprintf(COM2, "Invalid call %u!\r\n", req->callID);
