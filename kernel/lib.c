@@ -1,5 +1,5 @@
 #include <bwio.h>
-#include <kernel/lib.h>
+#include <lib.h>
 
 char *strncpy(char *dest, char *from, unsigned int max_len) {
     unsigned int i = 0;

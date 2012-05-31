@@ -1,9 +1,8 @@
 #include <bwio.h>
 #include <stdbool.h>
+#include <lib.h>
 
-#include <kernel/lib.h>
 #include <kernel/task.h>
-
 #include <user/nameserver.h>
 #include <user/syscall.h>
 
