@@ -103,11 +103,23 @@ void timeUserModeTask(void) {
     Exit();
 }
 
+void listenerTask(void){
+    bwprintf(COM2, "Listening...\r\n");
+    AwaitEvent(0);
+    bwprintf(COM2, "HOLY SHIT\r\n");
+    Exit();
+}
+
+void annoyingTask(void){
+    bwprintf(COM2, "I will interrupt now.\r\n");
+    *((unsigned int *)(VIC1_BASE + VIC_SOFTWARE_INT)) = 0x1;
+    bwprintf(COM2, "Done interrupting now.\r\n");
+    Exit();
+}
+
 void interrupterTask(void) {
-    bwprintf(COM2, "user task\r\n");
-    for (int i = 0; i < 10000000; ++i) {
-        ;
-    }
-    bwprintf(COM2, "exit\r\n");
+    bwprintf(COM2, "Spawning listener child\r\n");
+    Create(1, listenerTask);
+    Create(2, annoyingTask);
     Exit();
 }
