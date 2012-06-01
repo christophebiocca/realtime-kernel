@@ -5,10 +5,10 @@
 #include <user/syscall.h>
 
 // timer 1 underflow interrupt
-#define INT_TIMER1  3
+#define INT_TIMER1  4
 
 // raise interrupt every 500ms
-#define NTICKS      500
+#define NTICKS      1000
 
 static void timerNotifier(void) {
     int serverTid = MyParentTid(), tmp;
