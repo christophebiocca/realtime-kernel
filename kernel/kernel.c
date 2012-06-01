@@ -6,6 +6,7 @@
 
 #include <kernel/ipc.h>
 #include <kernel/task.h>
+#include <kernel/interrupts.h>
 #include <user/syscall.h>
 #include <user/init.h>
 #include <lib.h>
@@ -53,6 +54,10 @@ static void dispatchSyscall(struct TaskDescriptor *task,
             ipcReply(args[0]);
             break;
 
+        case SYS_AWAIT_EVENT:
+            setReturnValue(task, awaitInterrupt(args[0]));
+            break;
+
         default:
             bwprintf(COM2, "Invalid call %u!\r\n", syscall_id);
             break;
@@ -81,10 +86,12 @@ int main(void) {
     *((unsigned int *)0x08) = 0xe59ff018;
     *((unsigned int *)0x18) = 0xe59ff018;
 
-    initTaskSystem(timerInitTask);
 
     *((unsigned int *) (VIC1_BASE + VIC_INT_ENABLE_CLEAR)) = 0xffffffff;
     *((unsigned int *) (VIC2_BASE + VIC_INT_ENABLE_CLEAR)) = 0xffffffff;
+
+    initInterruptSystem();
+    initTaskSystem(timerInitTask);
 
     struct TaskDescriptor* active;
     for(active = scheduleTask(); active; active = scheduleTask()) {
@@ -130,7 +137,7 @@ int main(void) {
             // the interrupt occurred.
             *sp = hardware_pc - 12;
 
-            bwprintf(COM2, "FIXME: Hardware int. %x\r\n", hardware_pc);
+            handleInterrupt();
 
             // reset so we don't confuse all kernel entries as hardware
             // interrupts

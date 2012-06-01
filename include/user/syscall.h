@@ -9,6 +9,7 @@
 #define SYS_SEND 5
 #define SYS_RECEIVE 6
 #define SYS_REPLY 7
+#define SYS_AWAIT_EVENT 8
 
 // Creates a new task with the given priority and code.
 // Returns positive tid if success
@@ -46,5 +47,10 @@ int Receive(int *tid, char *msg, int msglen);
 // -2: task doesn't exist
 // -3: task isn't waiting for a reply.
 int Reply(int tid, char *reply, int replylen);
+
+// Waits until the correct interrupt fires.
+// 0: interrupt has fired
+// -1: invalid eventid
+int AwaitEvent(int eventid);
 
 #endif
