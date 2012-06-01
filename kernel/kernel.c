@@ -2,6 +2,7 @@
 
 #include <bwio.h>
 #include <cpsr.h>
+#include <ts7200.h>
 #include <kernel/ipc.h>
 #include <kernel/task.h>
 #include <user/syscall.h>
@@ -56,18 +57,33 @@ static void dispatchSyscall(struct TaskDescriptor *task,
     }
 }
 
+volatile int hardware;
+
 int main(void) {
-    unsigned int jump_addr;
+    hardware = false;
 
     bwsetfifo(COM2, false);
 
+    register unsigned int swi_addr asm("r0");
+    register unsigned int h_int_addr asm("r1");
+    register unsigned int hardware_addr asm("r2") = (unsigned int) &hardware;
     asm volatile(
-        "ldr %0, =kerlabel" // Load the label from a literal pool
-    : "=r"(jump_addr));
-    *((unsigned int *)0x28) = jump_addr;
+        "ldr %0, =kerlabel\n\t" // Load the label from a literal pool
+        "ldr %1, =intentry\n\t" // Same
+        "msr cpsr_c, #0xd2\n\t" // Switch to irq
+        "mov r13, %2\n\t"       // Remember where to set hardware interrupt lr.
+        "msr cpsr_c, #0xd3\n\t" // Switch to supervisor
+    : "=r"(swi_addr), "=r"(h_int_addr) : "r"(hardware_addr));
+    *((unsigned int *)0x28) = swi_addr;
+    *((unsigned int *)0x38) = h_int_addr;
     *((unsigned int *)0x08) = 0xe59ff018;
+    *((unsigned int *)0x18) = 0xe59ff018;
 
-    initTaskSystem(&rpsUserModeTask);
+
+    // Allow interrupt 0
+    *((unsigned int *)(VIC1_BASE + VIC_INT_ENABLE)) = 0x1;
+
+    initTaskSystem(&interrupterTask);
 
     struct TaskDescriptor* active;
     for(active = scheduleTask(); active; active = scheduleTask()) {
@@ -86,6 +102,10 @@ int main(void) {
             "ldmfd sp!, {r0-r12, r14}\n\t"  // Unroll task registers.
             "msr cpsr_c, #0xd3\n\t"         // Switch to supervisor mode
             "movs pc, r14\n\t"              // JUMP!
+
+            "intentry:\n\t"                 // Land here on hardward interrupts
+            "str lr, [r13]\n\t"             // Shove a task's pc into hardware
+
             "kerlabel:\n\t"                 // ucode: SWI n
             "msr cpsr_c, #0xdf\n\t"         // Switch to system mode
             "stmfd sp!, {r0-r12, r14}\n\t"  // Store user registers.
@@ -101,8 +121,15 @@ int main(void) {
         spsr = spsr_reg;
 
         setTaskState(active, sp, spsr);
-        unsigned int call = *(((unsigned int *) *sp) - 1) & 0x00FFFFFF;
-        dispatchSyscall(active, call, sp + 1);
+        if(hardware){
+            *sp = hardware - 12;
+            bwprintf(COM2, "FIXME: Hardware int. %x\r\n", hardware);
+            *((unsigned int *)(VIC1_BASE + VIC_SOFTWARE_INT_CLEAR)) = 0xffffffff;
+            hardware = false;
+        } else {
+            unsigned int call = *(((unsigned int *) *sp) - 1) & 0x00FFFFFF;
+            dispatchSyscall(active, call, sp + 1);
+        }
     }
     return 0;
 }
