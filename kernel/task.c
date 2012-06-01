@@ -142,7 +142,7 @@ int createTask(unsigned int priority, void (*code)(void),
     unique = index = g_next_task_id++;
     struct TaskDescriptor *t = &g_task_table[index];
     t->id = makeTid(index, priority, unique);
-    t->spsr = UserMode | DisableIRQ | DisableFIQ;
+    t->spsr = UserMode;
     t->parent_task_id = parent_task_id;
 
     t->sp = g_current_stack - TRAP_FRAME_SIZE;
