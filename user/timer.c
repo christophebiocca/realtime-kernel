@@ -98,7 +98,7 @@ static void timerServer(void) {
         // FIXME: memmove
         if (triggered != 0) {
             for (int i = triggered; i < ndelays; ++i) {
-                delays[i] = delays[i - triggered];
+                delays[i - triggered] = delays[i];
             }
             ndelays -= triggered;
         }
