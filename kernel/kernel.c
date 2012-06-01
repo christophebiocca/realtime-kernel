@@ -54,6 +54,10 @@ static void dispatchSyscall(struct TaskDescriptor *task,
             ipcReply(args[0]);
             break;
 
+        case SYS_AWAIT_EVENT:
+            setReturnValue(task, awaitInterrupt(args[0]));
+            break;
+
         default:
             bwprintf(COM2, "Invalid call %u!\r\n", syscall_id);
             break;
