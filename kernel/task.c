@@ -23,9 +23,6 @@ unsigned int g_task_queue_mask;
 #define STACK_LOW       0x250000
 static unsigned int *g_current_stack;
 
-#define BRUJIN_SEQUENCE 0x077CB531U
-static int LOOKUP[32];
-
 #define DEFN_QUEUE(name, type, head_field, tail_field)                      \
 struct TaskDescriptor *name ## Pop(struct type *queue, bool *empty){        \
     struct TaskDescriptor *desc = &g_task_table[queue->head_field];         \
@@ -77,11 +74,6 @@ void priorityQueuePush(int priority, struct TaskDescriptor *t) {
 }
 
 void initTaskSystem(void (*initialTask)(void)) {
-
-    for(unsigned int i = 0; i < 32; ++i){
-        // Fill in the lookup table.
-        LOOKUP[((1u << i) * BRUJIN_SEQUENCE) >> 27] = i;
-    }
 
     g_next_task_id = 1;
     g_active_task = 0;
@@ -197,8 +189,7 @@ struct TaskDescriptor *scheduleTask(void){
         priorityQueuePush(taskPriority(g_active_task->id), g_active_task);
     }
     if(g_task_queue_mask){
-        int priority = LOOKUP[(((unsigned int) g_task_queue_mask & -g_task_queue_mask)
-            * BRUJIN_SEQUENCE) >> 27];
+        int priority = countLeadingZeroes(g_task_queue_mask);
         g_active_task = priorityQueuePop(priority);
         assert(g_active_task->status == TSK_READY);
         return g_active_task;
