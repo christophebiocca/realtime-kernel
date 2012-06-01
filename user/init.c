@@ -122,9 +122,15 @@ void annoyingTask(void){
     Exit();
 }
 
+void idlerTask(void){
+    for(volatile int i = 0; i < 100000; ++i);
+    bwprintf(COM2, "Idling.\r\n");
+}
+
 void interrupterTask(void) {
     bwprintf(COM2, "Spawning listener child\r\n");
     Create(1, listenerTask);
     Create(2, annoyingTask);
+    Create(31, idlerTask);
     Exit();
 }
