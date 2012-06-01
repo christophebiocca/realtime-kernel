@@ -3,6 +3,7 @@
 #include <bwio.h>
 #include <cpsr.h>
 #include <ts7200.h>
+
 #include <kernel/ipc.h>
 #include <kernel/task.h>
 #include <user/syscall.h>
@@ -57,23 +58,22 @@ static void dispatchSyscall(struct TaskDescriptor *task,
     }
 }
 
-volatile int hardware;
-
 int main(void) {
-    hardware = false;
+    static volatile unsigned int hardware_pc;
+    hardware_pc = 0;
 
     bwsetfifo(COM2, false);
 
     register unsigned int swi_addr asm("r0");
     register unsigned int h_int_addr asm("r1");
-    register unsigned int hardware_addr asm("r2") = (unsigned int) &hardware;
+    register unsigned int hardware_pc_addr asm("r2") = (unsigned int) &hardware_pc;
     asm volatile(
         "ldr %0, =kerlabel\n\t" // Load the label from a literal pool
         "ldr %1, =intentry\n\t" // Same
         "msr cpsr_c, #0xd2\n\t" // Switch to irq
         "mov r13, %2\n\t"       // Remember where to set hardware interrupt lr.
         "msr cpsr_c, #0xd3\n\t" // Switch to supervisor
-    : "=r"(swi_addr), "=r"(h_int_addr) : "r"(hardware_addr));
+    : "=r"(swi_addr), "=r"(h_int_addr) : "r"(hardware_pc_addr));
     *((unsigned int *)0x28) = swi_addr;
     *((unsigned int *)0x38) = h_int_addr;
     *((unsigned int *)0x08) = 0xe59ff018;
@@ -121,11 +121,21 @@ int main(void) {
         spsr = spsr_reg;
 
         setTaskState(active, sp, spsr);
-        if(hardware){
-            *sp = hardware - 12;
-            bwprintf(COM2, "FIXME: Hardware int. %x\r\n", hardware);
+
+        if(hardware_pc) {
+            // Fix the task PC (top of trap frame) with the PC captured by
+            // hardware interrupt.
+            //
+            // We subtract 12 to reload the 3 instructions in the pipeline when
+            // the interrupt occurred.
+            *sp = hardware_pc - 12;
+
+            bwprintf(COM2, "FIXME: Hardware int. %x\r\n", hardware_pc);
             *((unsigned int *)(VIC1_BASE + VIC_SOFTWARE_INT_CLEAR)) = 0xffffffff;
-            hardware = false;
+
+            // reset so we don't confuse all kernel entries as hardware
+            // interrupts
+            hardware_pc = 0;
         } else {
             unsigned int call = *(((unsigned int *) *sp) - 1) & 0x00FFFFFF;
             dispatchSyscall(active, call, sp + 1);
