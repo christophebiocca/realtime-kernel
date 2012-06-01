@@ -83,17 +83,6 @@ int main(void) {
 
     initTaskSystem(&interrupterTask);
 
-
-    *((unsigned int *) (VIC1_BASE + VIC_INT_ENABLE_CLEAR)) = 0xffffffff;
-    *((unsigned int *) (VIC2_BASE + VIC_INT_ENABLE_CLEAR)) = 0xffffffff;
-
-    // Allow interrupt 4: Timer 1 Underflow
-    *((unsigned int *) (VIC1_BASE + VIC_INT_ENABLE)) = INT_TC1UI;
-    // raise interrupt every 500ms
-    *((unsigned int *) (TIMER1_BASE + LDR_OFFSET)) = 1000;
-    // enable a 2kHz periodic timer
-    *((unsigned int *) (TIMER1_BASE + CRTL_OFFSET)) = ENABLE_MASK | MODE_MASK;
-
     struct TaskDescriptor* active;
     for(active = scheduleTask(); active; active = scheduleTask()) {
         unsigned int *sp = taskStackPointer(active);
@@ -138,10 +127,6 @@ int main(void) {
             // the interrupt occurred.
             *sp = hardware_pc - 12;
 
-            bwprintf(COM2, "FIXME: Hardware int. %x\r\n", hardware_pc);
-
-            // clear the timer interrupt
-            *((unsigned int *) (TIMER1_BASE + CLR_OFFSET)) = 0;
 
             // reset so we don't confuse all kernel entries as hardware
             // interrupts
