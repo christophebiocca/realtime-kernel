@@ -143,3 +143,36 @@
 #define UART_HDLCSTS_OFFSET	0x21c
 
 
+// Interrupt related //
+
+#define VIC1_BASE 0x800B0000
+#define VIC2_BASE 0x800C0000
+
+// Status of interrupts after masking with VIC_INT_ENABLE and VIC_INT_SELECT. Read-only
+#define VIC_IRQ_STATUS_OFFSET   0x000
+
+// Status of interrupts after masking with VIC_INT_ENABLE and VIC_INT_SELECT. Read-only
+#define VIC_FIQ_STATUS_OFFSET   0x004
+
+// Raw interrupts asserted before masking. Read-only.
+#define VIC_RAW_STATUS  `       0x008
+
+// Set 0 on a bit for IRQ, 1 for FIQ. Read-write.
+#define VIC_INT_SELECT          0x00C
+
+// Set 1 on a bit to enable the related interrupt.
+#define VIC_INT_ENABLE          0x010
+
+// Writing 1 here clears the corresponding bit in VIC_INT_ENABLE
+#define VIC_INT_ENABLE_CLEAR    0x014
+
+// Writing 1 here triggers the line for the corresponding interrupt.
+#define VIC_SOFTWARE_INT        0x018
+
+// Writing 1 here clears the line for the above interrupts.
+#define VIC_SOFTWARE_INT_CLEAR  0x01C
+
+// Blocks access to these registers in user mode.
+#define VIC_PROTECTION          0x020
+
+/* TODO: When/if we start vectored interrupts, we'll need to deal with more registers, see EP93xx docs, page 170 (6-8) */
