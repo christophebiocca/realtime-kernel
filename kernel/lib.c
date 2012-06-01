@@ -1,6 +1,15 @@
 #include <bwio.h>
 #include <lib.h>
 
+#define BRUJIN_SEQUENCE 0x077CB531U
+static int LOOKUP[32];
+void libinit(void){
+    for(unsigned int i = 0; i < 32; ++i){
+        // Fill in the lookup table.
+        LOOKUP[((1u << i) * BRUJIN_SEQUENCE) >> 27] = i;
+    }
+}
+
 char *strncpy(char *dest, char *from, unsigned int max_len) {
     unsigned int i = 0;
 
@@ -61,4 +70,8 @@ void memcpy32(void *dest, void *src, unsigned int n) {
             : "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r14"
         );
     }
+}
+
+int countLeadingZeroes(int num){
+    return LOOKUP[(((unsigned int) num & -num) * BRUJIN_SEQUENCE) >> 27];
 }
