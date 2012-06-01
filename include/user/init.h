@@ -10,6 +10,4 @@ void rpsUserModeTask();
 
 void interrupterTask(void);
 
-void timerInitTask(void);
-
 #endif
