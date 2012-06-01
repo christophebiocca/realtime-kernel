@@ -9,6 +9,7 @@
 #define SYS_SEND 5
 #define SYS_RECEIVE 6
 #define SYS_REPLY 7
+#define SYS_AWAIT_EVENT 8
 
 // Creates a new task with the given priority and code.
 // Returns positive tid if success
