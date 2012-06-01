@@ -111,3 +111,4 @@ void interrupterTask(void) {
     bwprintf(COM2, "exit\r\n");
     Exit();
 }
+
