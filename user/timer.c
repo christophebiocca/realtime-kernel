@@ -5,13 +5,13 @@
 #include <user/syscall.h>
 
 // timer 1 underflow interrupt
-#define INT_TIMER1  4
+#define INT_TIMER1  3
 
 // raise interrupt every 500ms
-#define NTICKS      1000
+#define NTICKS      500
 
 static void timerNotifier(void) {
-    int serverTid = MyParentTid();
+    int serverTid = MyParentTid(), tmp;
 
     *((unsigned int *) (TIMER1_BASE + LDR_OFFSET)) = NTICKS;
     // enable a 2kHz periodic timer
@@ -20,7 +20,7 @@ static void timerNotifier(void) {
     while (1) {
         AwaitEvent(INT_TIMER1);
         *((unsigned int *) (TIMER1_BASE + CLR_OFFSET)) = 0;
-        Send(timerTid, &tmp, sizeof(int));
+        Send(serverTid, (char *) &tmp, sizeof(int), (char *) &tmp, sizeof(int));
     }
 
     Exit();
@@ -32,7 +32,9 @@ static void timerServer(void) {
     Create(1, timerNotifier);
 
     while (1) {
-        Receive(&tid, &tmp, sizeof(int));
+        Receive(&tid, (char *) &tmp, sizeof(int));
+        Reply(tid, (char *) &tmp, sizeof(int));
+
         ++ticks;
         bwprintf(COM2, "Got %d ticks\r\n", ticks);
     }
@@ -40,8 +42,15 @@ static void timerServer(void) {
     Exit();
 }
 
+static void idleTask(void) {
+    while(1) {
+        Pass();
+    }
+}
+
 void timerInitTask(void) {
     Create(2, timerServer);
+    Create(31, idleTask);
     Exit();
 }
 
