@@ -7,8 +7,8 @@
 // timer 1 underflow interrupt
 #define INT_TIMER1  4
 
-// raise interrupt every 500ms
-#define NTICKS      1000
+// raise interrupt every 10ms
+#define NTICKS      20
 
 #define TIME_REQUEST    -1
 #define TICK_REQUEST    -2
@@ -107,26 +107,16 @@ static void timerServer(void) {
     Exit();
 }
 
-static void idleTask(void) {
-    while (1) {
-        Pass();
-    }
-
-    Exit();
-}
-
 static int g_timer_server_tid;
 void timerInitTask(void) {
     g_timer_server_tid = Create(2, timerServer);
     if (g_timer_server_tid < 0) {
         bwputstr(COM2, "Error creating timer server\r\n");
     }
-
-    Create(31, idleTask);
-    Exit();
 }
 
 int Delay(int ticks) {
+    bwprintf(COM2, "Waiting %d\r\n", ticks);
     return DelayUntil(Time() + ticks);
 }
 

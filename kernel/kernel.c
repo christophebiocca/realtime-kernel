@@ -91,7 +91,7 @@ int main(void) {
     *((unsigned int *) (VIC2_BASE + VIC_INT_ENABLE_CLEAR)) = 0xffffffff;
 
     initInterruptSystem();
-    initTaskSystem(timerInitTask);
+    initTaskSystem(timerInitialTask);
 
     struct TaskDescriptor* active;
     for(active = scheduleTask(); active && (!idling() || awaitingInterrupts());
