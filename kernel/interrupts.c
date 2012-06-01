@@ -38,3 +38,8 @@ void handleInterrupt(){
         } 
     }
 }
+
+// Returns whether there is anyone waiting for an interrupt right now.
+bool awaitingInterrupts(void){
+    return *(unsigned int *)(vic[0]+VIC_INT_ENABLE) || *(unsigned int *)(vic[1]+VIC_INT_ENABLE);
+}
