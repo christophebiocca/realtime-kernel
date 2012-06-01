@@ -9,7 +9,7 @@ void initInterruptSystem(void);
 int awaitInterrupt(int interruptID);
 
 // Reschedules any tasks that were waiting on interrupts to happen.
-void handleInterrupt();
+void handleInterrupt(void);
 
 // Returns whether there is anyone waiting for an interrupt right now.
 bool awaitingInterrupts(void);
