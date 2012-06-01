@@ -196,3 +196,7 @@ struct TaskDescriptor *scheduleTask(void){
     }
     return 0;
 }
+
+bool idling(){
+    return taskPriority(g_active_task->id) == 31;
+}
