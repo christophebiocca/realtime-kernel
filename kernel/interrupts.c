@@ -16,7 +16,6 @@ void initInterruptSystem(void){
 }
 
 int awaitInterrupt(int interruptID){
-    bwprintf(COM2, "await called, %d\r\n", interruptID);
     if(interruptID < 0 || interruptID > 63){
         return -1;
     }
@@ -25,7 +24,6 @@ int awaitInterrupt(int interruptID){
     // Finally set the mask.
     volatile unsigned int *enableMask = (unsigned int *)(vic[interruptID/32] + VIC_INT_ENABLE);
     *enableMask |= 1 << (interruptID % 32);
-    bwprintf(COM2, "Enable Mask: %x\r\n", *enableMask);
     return 0;
 }
 
