@@ -105,7 +105,7 @@ void timeUserModeTask(void) {
 
 void interrupterTask(void) {
     bwprintf(COM2, "user task\r\n");
-    while (1) {
+    for (int i = 0; i < 10000000; ++i) {
         ;
     }
     bwprintf(COM2, "exit\r\n");

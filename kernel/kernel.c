@@ -81,6 +81,10 @@ int main(void) {
 
     initTaskSystem(&interrupterTask);
 
+
+    *((unsigned int *) (VIC1_BASE + VIC_INT_ENABLE_CLEAR)) = 0xffffffff;
+    *((unsigned int *) (VIC2_BASE + VIC_INT_ENABLE_CLEAR)) = 0xffffffff;
+
     // Allow interrupt 4: Timer 1 Underflow
     *((unsigned int *) (VIC1_BASE + VIC_INT_ENABLE)) = INT_TC1UI;
     // raise interrupt every 500ms
@@ -145,6 +149,10 @@ int main(void) {
             dispatchSyscall(active, call, sp + 1);
         }
     }
+
+    *((unsigned int *) (VIC1_BASE + VIC_INT_ENABLE_CLEAR)) = 0xffffffff;
+    *((unsigned int *) (VIC2_BASE + VIC_INT_ENABLE_CLEAR)) = 0xffffffff;
+
     return 0;
 }
 
