@@ -1,5 +1,6 @@
 #include <bwio.h>
 
+#include <ts7200.h>
 #include <user/nameserver.h>
 #include <user/syscall.h>
 #include <user/init.h>
@@ -99,5 +100,12 @@ void timeUserModeTask(void) {
     Create(2, timeSenderTask);
     g_receiver_tid = Create(1, timeReceiveTask);
 
+    Exit();
+}
+
+void interrupterTask(void) {
+    bwprintf(COM2, "I will interrupt now.\r\n");
+    *((unsigned int *)(VIC1_BASE + VIC_SOFTWARE_INT)) = 0x1;
+    bwprintf(COM2, "Done interrupting now.\r\n");
     Exit();
 }

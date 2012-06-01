@@ -8,4 +8,6 @@ void timeUserModeTask();
 // rock paper scissors
 void rpsUserModeTask();
 
+void interrupterTask(void);
+
 #endif
