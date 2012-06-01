@@ -104,16 +104,21 @@ void timeUserModeTask(void) {
 }
 
 void listenerTask(void){
-    bwprintf(COM2, "Listening...\r\n");
-    AwaitEvent(0);
-    bwprintf(COM2, "HOLY SHIT\r\n");
+    while(1){
+        bwprintf(COM2, "Listening...\r\n");
+        AwaitEvent(0);
+        bwprintf(COM2, "HOLY SHIT\r\n");
+        *((unsigned int *)(VIC1_BASE + VIC_SOFTWARE_INT_CLEAR)) = 0x1;
+    }
     Exit();
 }
 
 void annoyingTask(void){
-    bwprintf(COM2, "I will interrupt now.\r\n");
-    *((unsigned int *)(VIC1_BASE + VIC_SOFTWARE_INT)) = 0x1;
-    bwprintf(COM2, "Done interrupting now.\r\n");
+    for(int i = 0; i<10; ++i){
+        bwprintf(COM2, "I will interrupt now.\r\n");
+        *((unsigned int *)(VIC1_BASE + VIC_SOFTWARE_INT)) = 0x1;
+        bwprintf(COM2, "Done interrupting now.\r\n");
+    }
     Exit();
 }
 
