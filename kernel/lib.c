@@ -31,6 +31,7 @@ int strcmp(char *s1, char *s2) {
 }
 
 void memcpy16(void *dest, void *src, unsigned int n) {
+    if(!n)return;
     if (n == 4) {
         *((unsigned int *) dest) = *((unsigned int *) src);
     } else {
@@ -52,6 +53,7 @@ void memcpy16(void *dest, void *src, unsigned int n) {
 }
 
 void memcpy32(void *dest, void *src, unsigned int n) {
+    if(!n)return;
     if (n == 4) {
         *((unsigned int *) dest) = *((unsigned int *) src);
     } else {
