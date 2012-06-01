@@ -36,6 +36,11 @@ void handleInterrupt(){
             struct TaskDescriptor *td = interruptTable[intIdOffset + i*32];
             priorityQueuePush(taskPriority(td->id), td);
             *((volatile unsigned int *)(vic[i]+VIC_INT_ENABLE_CLEAR)) = 1 << intIdOffset;
-        } 
+        }
     }
+}
+
+// Returns whether there is anyone waiting for an interrupt right now.
+bool awaitingInterrupts(void){
+    return *(unsigned int *)(vic[0]+VIC_INT_ENABLE) || *(unsigned int *)(vic[1]+VIC_INT_ENABLE);
 }

@@ -80,4 +80,7 @@ int getActiveTaskId(void);
 /* Returns NULL on invalid task_id */
 struct TaskDescriptor *getTask(unsigned int task_id);
 
+// Returns true iff the current task is the idle task.
+bool idling();
+
 #endif

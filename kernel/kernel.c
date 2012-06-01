@@ -94,7 +94,8 @@ int main(void) {
     initTaskSystem(timerInitTask);
 
     struct TaskDescriptor* active;
-    for(active = scheduleTask(); active; active = scheduleTask()) {
+    for(active = scheduleTask(); active && (!idling() || awaitingInterrupts());
+            active = scheduleTask()){
         unsigned int *sp = taskStackPointer(active);
         unsigned int spsr = taskSPSR(active);
 
