@@ -15,6 +15,7 @@
 
 #define TIME_REQUEST    -1
 #define TICK_REQUEST    -2
+#define QUIT            -3
 
 static void timerNotifier(void) {
     int serverTid = MyParentTid();
@@ -66,6 +67,9 @@ static void timerServer(void) {
     } delays[MAX_DELAYS];
     int ndelays = 0;
 
+    int should_quit = -1;
+    bool has_quit;
+
     Create(1, timerNotifier);
 
     while (1) {
@@ -102,8 +106,20 @@ static void timerServer(void) {
         } else if (request == TIME_REQUEST) {
             Reply(tid, (char *) &ticks, sizeof(int));
         } else if (request == TICK_REQUEST) {
-            Reply(tid, (char *) &ticks, sizeof(int));
-            ++ticks;
+            int response;
+
+            if (should_quit >= 0) {
+                response = 0;
+                has_quit = true;
+            } else {
+                response = 1;
+                ++ticks;
+            }
+
+            Reply(tid, (char *) &response, sizeof(int));
+        } else if (request == QUIT) {
+            should_quit = tid;
+            has_quit = false;
         } else {
             trace("invalid request: %d", request);
 
@@ -171,6 +187,18 @@ int DelayUntil(int nticks) {
     Send(
         g_timer_server_tid,
         (char *) &nticks, sizeof(int),
+        (char *) &response, sizeof(int)
+    );
+
+    return response;
+}
+
+int TimeQuit(void) {
+    int request = QUIT, response;
+
+    Send(
+        g_timer_server_tid,
+        (char *) &request, sizeof(int),
         (char *) &response, sizeof(int)
     );
 
