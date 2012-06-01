@@ -6,5 +6,6 @@ void timerInitTask(void);
 int Delay(int ticks);
 int Time(void);
 int DelayUntil(int nticks);
+int TimeQuit(void);
 
 #endif
