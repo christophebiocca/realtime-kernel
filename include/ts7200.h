@@ -175,4 +175,9 @@
 // Blocks access to these registers in user mode.
 #define VIC_PROTECTION          0x020
 
+enum {
+    INT_TC1UI = 1 << 4,
+    INT_TC2UI = 1 << 5,
+};
+
 /* TODO: When/if we start vectored interrupts, we'll need to deal with more registers, see EP93xx docs, page 170 (6-8) */

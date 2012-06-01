@@ -104,8 +104,10 @@ void timeUserModeTask(void) {
 }
 
 void interrupterTask(void) {
-    bwprintf(COM2, "I will interrupt now.\r\n");
-    *((unsigned int *)(VIC1_BASE + VIC_SOFTWARE_INT)) = 0x1;
-    bwprintf(COM2, "Done interrupting now.\r\n");
+    bwprintf(COM2, "user task\r\n");
+    while (1) {
+        ;
+    }
+    bwprintf(COM2, "exit\r\n");
     Exit();
 }
