@@ -1,6 +1,9 @@
 #include <bwio.h>
 #include <lib.h>
 
+void libinit(void){
+}
+
 char *strncpy(char *dest, char *from, unsigned int max_len) {
     unsigned int i = 0;
 

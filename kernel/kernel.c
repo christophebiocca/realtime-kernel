@@ -8,6 +8,7 @@
 #include <kernel/task.h>
 #include <user/syscall.h>
 #include <user/init.h>
+#include <lib.h>
 
 static void dispatchSyscall(struct TaskDescriptor *task,
         unsigned int syscall_id, unsigned int *args) {
@@ -59,6 +60,7 @@ static void dispatchSyscall(struct TaskDescriptor *task,
 }
 
 int main(void) {
+    libinit();
     static volatile unsigned int hardware_pc;
     hardware_pc = 0;
 
