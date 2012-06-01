@@ -1,7 +1,7 @@
 #include <bwio.h>
 #include <ts7200.h>
 
-#include <user/init.h>
+#include <user/timer.h>
 #include <user/syscall.h>
 
 // timer 1 underflow interrupt
@@ -62,7 +62,7 @@ static void timerServer(void) {
                 int i;
 
                 // FIXME: binary search?
-                for (i = 0; i < (MAX_DELAYS - 1); ++i) {
+                for (i = 0; i < (ndelays - 1); ++i) {
                     if (delays[i].trigger > request) {
                         break;
                     }
@@ -70,7 +70,7 @@ static void timerServer(void) {
 
                 // shift everything down
                 // FIXME: memmove?
-                for (int j = i + 1; j < MAX_DELAYS; ++j) {
+                for (int j = i + 1; j <= ndelays; ++j) {
                     delays[j] = delays[j - 1];
                 }
 
@@ -90,7 +90,7 @@ static void timerServer(void) {
         }
 
         int triggered = 0;
-        for (int i = 0; i < ndelays && delays[i].trigger >= ticks; ++i) {
+        for (int i = 0; i < ndelays && ticks >= delays[i].trigger; ++i) {
             Reply(delays[i].tid, (char *) &ticks, sizeof(int));
             ++triggered;
         }
@@ -108,16 +108,18 @@ static void timerServer(void) {
 }
 
 static void idleTask(void) {
-    while(1) {
+    while (1) {
         Pass();
     }
+
+    Exit();
 }
 
 static int g_timer_server_tid;
 void timerInitTask(void) {
     g_timer_server_tid = Create(2, timerServer);
     if (g_timer_server_tid < 0) {
-        bwprintf(COM2, "Error creating timer server\r\n");
+        bwputstr(COM2, "Error creating timer server\r\n");
     }
 
     Create(31, idleTask);
@@ -125,15 +127,7 @@ void timerInitTask(void) {
 }
 
 int Delay(int ticks) {
-    int response;
-
-    Send(
-        g_timer_server_tid,
-        (char *) &ticks, sizeof(int),
-        (char *) &response, sizeof(int)
-    );
-
-    return response;
+    return DelayUntil(Time() + ticks);
 }
 
 int Time(void) {
@@ -149,5 +143,13 @@ int Time(void) {
 }
 
 int DelayUntil(int nticks) {
-    return Delay(nticks - Time());
+    int response;
+
+    Send(
+        g_timer_server_tid,
+        (char *) &nticks, sizeof(int),
+        (char *) &response, sizeof(int)
+    );
+
+    return response;
 }
