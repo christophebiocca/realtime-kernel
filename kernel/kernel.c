@@ -6,6 +6,7 @@
 
 #include <kernel/ipc.h>
 #include <kernel/task.h>
+#include <kernel/interrupts.h>
 #include <user/syscall.h>
 #include <user/init.h>
 #include <lib.h>
@@ -81,6 +82,7 @@ int main(void) {
     *((unsigned int *)0x08) = 0xe59ff018;
     *((unsigned int *)0x18) = 0xe59ff018;
 
+    initInterruptSystem();
     initTaskSystem(&interrupterTask);
 
     struct TaskDescriptor* active;
@@ -127,6 +129,7 @@ int main(void) {
             // the interrupt occurred.
             *sp = hardware_pc - 12;
 
+            handleInterrupt();
 
             // reset so we don't confuse all kernel entries as hardware
             // interrupts
