@@ -48,4 +48,9 @@ int Receive(int *tid, char *msg, int msglen);
 // -3: task isn't waiting for a reply.
 int Reply(int tid, char *reply, int replylen);
 
+// Waits until the correct interrupt fires.
+// 0: interrupt has fired
+// -1: invalid eventid
+int AwaitEvent(int eventid);
+
 #endif

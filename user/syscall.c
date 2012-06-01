@@ -87,3 +87,12 @@ int Reply(int tid, char *reply, int replylen){
         : "r"(msg_in), "r"(msglen_in));
     return (int) tid_in_len_out;
 }
+
+
+int AwaitEvent(int eventid){
+    register unsigned int event_in_ret_out asm("r0") = eventid;
+    asm volatile(
+        syscall(SYS_AWAIT_EVENT)
+        : "+r"(event_in_ret_out));
+    return (int) event_in_ret_out;
+}
