@@ -4,7 +4,7 @@
 
 #include <kernel/task.h>
 #include "task_internal.h"
-#include <kernel/assert.h>
+#include <debug.h>
 
 struct TaskDescriptor g_task_table[MAX_TASKS];
 static int g_next_task_id;
