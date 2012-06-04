@@ -9,12 +9,13 @@ struct ClientInstructions {
     short int numDelays;
 };
 
+
 void clientTask(void){
     static_assert(sizeof(struct ClientInstructions) == 4);
     int tid = MyTid();
     int pid = MyParentTid();
     struct ClientInstructions instr;
-    int ret = Send(pid, (char *) 0, 0, (char *) &instr, 4);
+    int ret = Send(pid, (char *) 0, 0, (char *) &instr, sizeof(struct ClientInstructions));
     if(ret != 4){
         // Start bitching
         bwprintf(COM2, "Expected send to return 4, got %d\r\n", ret);
@@ -57,12 +58,12 @@ void timerInitialTask(void){
     }
     for(int i = 0; i < 4; ++i){
         int tid;
-        struct ClientInstructions instr;
-        int ret = Receive(&tid, (char*) &instr, 0);
+        int ret = Receive(&tid, (char*) 0, 0);
         if(ret != 0){
             bwprintf(COM2, "Expected receive to return 0, got %d.\r\n", ret);
             Exit();
         }
+        struct ClientInstructions instr;
         for(int j = 0; j < 4; ++j){
             if(tids[j] == tid){
                 instr.delayTime = delayTimes[j];
@@ -71,7 +72,7 @@ void timerInitialTask(void){
                 break;
             }
         }
-        ret = Reply(tid, (char*) &instr, 4);
+        ret = Reply(tid, (char*) &instr, sizeof(struct ClientInstructions));
         if(ret != 0){
             bwprintf(COM2, "Expected reply to return 0, got %d.\r\n", ret);
         }
