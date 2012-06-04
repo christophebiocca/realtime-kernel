@@ -27,6 +27,11 @@ void clientTask(void){
         ret = Delay(instr.delayTime);
         bwprintf(COM2, "[Task: %d]: interval=%d, delay #%d\r\n", tid, instr.delayTime, i+1);
     }
+    // Reply to the parent
+    int rtid;
+    Receive(&rtid, (char *) 0, 0);
+    assert(rtid == pid);
+    Reply(rtid, (char *) 0, 0);
     Exit();
     return;
 }
@@ -81,5 +86,11 @@ void parentTask(void){
             trace("Expected reply to return 0, got %d.", ret);
         }
     }
+    /* Block on all the children, waiting for them to exit */
+    for(int i=0; i < 4; ++i){
+        Send(tids[i], (char *) 0, 0, (char *) 0, 0);
+    }
+    // Stop the clock server //
+    TimeQuit();
     Exit();
 }
