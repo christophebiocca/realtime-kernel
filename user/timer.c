@@ -88,7 +88,7 @@ static void timerServer(void) {
                 int i;
 
                 // FIXME: binary search?
-                for (i = 0; i < (ndelays - 1); ++i) {
+                for (i = 0; i < ndelays; ++i) {
                     if (delays[i].trigger > request) {
                         break;
                     }
@@ -96,7 +96,7 @@ static void timerServer(void) {
 
                 // shift everything down
                 // FIXME: memmove?
-                for (int j = i + 1; j <= ndelays; ++j) {
+                for (int j = ndelays; j > i; --j) {
                     delays[j] = delays[j - 1];
                 }
 
