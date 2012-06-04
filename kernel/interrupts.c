@@ -13,6 +13,9 @@ void initInterruptSystem(void){
     }
     vic[0] = 0x800B0000;
     vic[1] = 0x800C0000;
+    for(int i = 0; i < 2; ++i){
+        *((volatile unsigned int *)(vic[i]+VIC_INT_ENABLE_CLEAR)) = 0xffffffff;
+    }
 }
 
 int awaitInterrupt(int interruptID){

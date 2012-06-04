@@ -1,6 +1,7 @@
 #include <stdbool.h>
 
 #include <bwio.h>
+#include <debug.h>
 #include <cpsr.h>
 #include <ts7200.h>
 
@@ -65,12 +66,44 @@ static void dispatchSyscall(struct TaskDescriptor *task,
     }
 }
 
+static void undefined_instr(void) {
+    unsigned int lr;
+    asm volatile("mov %0, lr\n\t" : "=r"(lr));
+    trace("\r\n*** undefined instruction at 0x%x", lr);
+    assert(0);
+}
+
+static void abort_prefetch(void) {
+    unsigned int lr;
+    asm volatile("mov %0, lr\n\t" : "=r"(lr));
+    trace("\r\n*** prefetch abort at 0x%x", lr);
+    assert(0);
+}
+
+static void abort_data(void) {
+    unsigned int lr;
+    asm volatile("mov %0, lr\n\t" : "=r"(lr));
+    trace("\r\n*** data abort at 0x%x", lr);
+    assert(0);
+}
+
 int main(void) {
     libinit();
     static volatile unsigned int hardware_pc;
     hardware_pc = 0;
 
     bwsetfifo(COM2, false);
+
+    // set up memory bank
+    *((unsigned int *) BANK_UNDEFINED_INSTR) = BANK_JUMP_INSTR;
+    *((unsigned int *) BANK_SOFTWARE_INT) = BANK_JUMP_INSTR;
+    *((unsigned int *) BANK_ABORT_PREFETCH) = BANK_JUMP_INSTR;
+    *((unsigned int *) BANK_ABORT_DATA) = BANK_JUMP_INSTR;
+    *((unsigned int *) BANK_IRQ) = BANK_JUMP_INSTR;
+
+    *((unsigned int *) (BANK_UNDEFINED_INSTR + BANK_JUMP)) = (unsigned int) &undefined_instr;
+    *((unsigned int *) (BANK_ABORT_PREFETCH + BANK_JUMP)) = (unsigned int) &abort_prefetch;
+    *((unsigned int *) (BANK_ABORT_DATA + BANK_JUMP)) = (unsigned int) &abort_data;
 
     register unsigned int swi_addr asm("r0");
     register unsigned int h_int_addr asm("r1");
@@ -82,17 +115,14 @@ int main(void) {
         "mov r13, %2\n\t"       // Remember where to set hardware interrupt lr.
         "msr cpsr_c, #0xd3\n\t" // Switch to supervisor
     : "=r"(swi_addr), "=r"(h_int_addr) : "r"(hardware_pc_addr));
-    *((unsigned int *)0x28) = swi_addr;
-    *((unsigned int *)0x38) = h_int_addr;
-    *((unsigned int *)0x08) = 0xe59ff018;
-    *((unsigned int *)0x18) = 0xe59ff018;
-
+    *((unsigned int *) (BANK_SOFTWARE_INT + BANK_JUMP)) = swi_addr;
+    *((unsigned int *) (BANK_IRQ + BANK_JUMP)) = h_int_addr;
 
     *((unsigned int *) (VIC1_BASE + VIC_INT_ENABLE_CLEAR)) = 0xffffffff;
     *((unsigned int *) (VIC2_BASE + VIC_INT_ENABLE_CLEAR)) = 0xffffffff;
 
     initInterruptSystem();
-    initTaskSystem(timerInitTask);
+    initTaskSystem(timerInitialTask);
 
     struct TaskDescriptor* active;
     for(active = scheduleTask(); active && (!idling() || awaitingInterrupts());

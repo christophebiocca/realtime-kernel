@@ -10,8 +10,8 @@
 // timer 1 underflow interrupt
 #define INT_TIMER1  4
 
-// raise interrupt every 500ms
-#define NTICKS      1000
+// raise interrupt every 10ms
+#define NTICKS      20
 
 #define TIME_REQUEST    -1
 #define TICK_REQUEST    -2
@@ -81,13 +81,14 @@ static void timerServer(void) {
         if (request >= 0) {
             // Delay
             if (ndelays == MAX_DELAYS) {
+                trace("cannot handle delay request by %d, dropping", tid);
                 int response = -1;
                 Reply(tid, (char *) &response, sizeof(int));
             } else {
                 int i;
 
                 // FIXME: binary search?
-                for (i = 0; i < (ndelays - 1); ++i) {
+                for (i = 0; i < ndelays; ++i) {
                     if (delays[i].trigger > request) {
                         break;
                     }
@@ -95,7 +96,7 @@ static void timerServer(void) {
 
                 // shift everything down
                 // FIXME: memmove?
-                for (int j = i + 1; j <= ndelays; ++j) {
+                for (int j = ndelays; j > i; --j) {
                     delays[j] = delays[j - 1];
                 }
 
@@ -156,41 +157,12 @@ static void timerServer(void) {
     Exit();
 }
 
-static void testTask2(void) {
-    trace("calling delay 3");
-    trace("delayed: %d", Delay(3));
-
-    Exit();
-}
-
-static void testTask1(void) {
-    trace("calling delay 5");
-    trace("delayed: %d", Delay(5));
-    trace("time: %d", Time());
-    trace("last system time: %d", TimeQuit());
-
-    Exit();
-}
-
-static void idleTask(void) {
-    while (1) {
-        Pass();
-    }
-
-    Exit();
-}
-
 static int g_timer_server_tid;
 void timerInitTask(void) {
     g_timer_server_tid = Create(2, timerServer);
     if (g_timer_server_tid < 0) {
         trace("error creating timer server: %d", g_timer_server_tid);
     }
-
-    Create(3, testTask1);
-    Create(4, testTask2);
-    Create(31, idleTask);
-    Exit();
 }
 
 int Delay(int ticks) {

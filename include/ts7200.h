@@ -175,9 +175,16 @@
 // Blocks access to these registers in user mode.
 #define VIC_PROTECTION          0x020
 
-enum {
-    INT_TC1UI = 1 << 4,
-    INT_TC2UI = 1 << 5,
-};
+// initial memory bank //
+#define BANK_UNDEFINED_INSTR    0x4
+#define BANK_SOFTWARE_INT       0x8
+#define BANK_ABORT_PREFETCH     0xc
+#define BANK_ABORT_DATA         0x10
+#define BANK_IRQ                0x18
+#define BANK_FIQ                0x1c
+
+#define BANK_JUMP               0x20
+// instruction to jump BANK_JUMP bytes
+#define BANK_JUMP_INSTR         0xe59ff018
 
 /* TODO: When/if we start vectored interrupts, we'll need to deal with more registers, see EP93xx docs, page 170 (6-8) */
