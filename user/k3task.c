@@ -77,4 +77,5 @@ void timerInitialTask(void){
             bwprintf(COM2, "Expected reply to return 0, got %d.\r\n", ret);
         }
     }
+    Exit();
 }
