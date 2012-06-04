@@ -54,7 +54,6 @@ void timerInitialTask(void){
             trace("Expected create to return an id, got %d.", tids[i]);
             Exit();
         }
-        bwprintf(COM2, "Created %d\r\n", tids[i]);
     }
     for(int i = 0; i < 4; ++i){
         int tid;

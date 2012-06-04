@@ -166,7 +166,6 @@ void timerInitTask(void) {
 }
 
 int Delay(int ticks) {
-    bwprintf(COM2, "Waiting %d\r\n", ticks);
     return DelayUntil(Time() + ticks);
 }
 
