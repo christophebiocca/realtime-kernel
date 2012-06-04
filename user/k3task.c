@@ -34,7 +34,6 @@ void clientTask(void){
 void idlearound(void){
     while(1){
         for(int i = 0; i < 10000; ++i);
-        bwputc(COM2, '.');
     }
 }
 
