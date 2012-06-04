@@ -1,3 +1,4 @@
+#include <kernel/assert.h>
 #include <user/timer.h>
 #include <user/k3task.h>
 #include <user/syscall.h>
@@ -9,6 +10,7 @@ struct ClientInstructions {
 };
 
 void clientTask(void){
+    static_assert(sizeof(struct ClientInstructions) == 4);
     int tid = MyTid();
     int pid = MyParentTid();
     struct ClientInstructions instr;
