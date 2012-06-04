@@ -18,10 +18,10 @@ void clientTask(void){
     int ret = Send(pid, (char *) 0, 0, (char *) &instr, sizeof(struct ClientInstructions));
     if(ret != 4){
         // Start bitching
-        bwprintf(COM2, "Expected send to return 4, got %d\r\n", ret);
+        trace("Expected send to return 4, got %d", ret);
         Exit();
     }
-    bwprintf(COM2, "%d: going to wait %d times for %d ticks\r\n", tid, instr.numDelays, instr.delayTime);
+    trace("%d: going to wait %d times for %d ticks", tid, instr.numDelays, instr.delayTime);
     for(int i = 0; i < instr.numDelays; ++i){
         // Timed wait.
         ret = Delay(instr.delayTime);
@@ -51,7 +51,7 @@ void timerInitialTask(void){
     for(int i = 0; i < 4; ++i){
         tids[i] = Create(priorities[i], clientTask);
         if(tids[i] < 1){
-            bwprintf(COM2, "Expected create to return an id, got %d.\r\n", tids[i]);
+            trace("Expected create to return an id, got %d.", tids[i]);
             Exit();
         }
         bwprintf(COM2, "Created %d\r\n", tids[i]);
@@ -60,7 +60,7 @@ void timerInitialTask(void){
         int tid;
         int ret = Receive(&tid, (char*) 0, 0);
         if(ret != 0){
-            bwprintf(COM2, "Expected receive to return 0, got %d.\r\n", ret);
+            trace("Expected receive to return 0, got %d.", ret);
             Exit();
         }
         struct ClientInstructions instr;
@@ -68,13 +68,13 @@ void timerInitialTask(void){
             if(tids[j] == tid){
                 instr.delayTime = delayTimes[j];
                 instr.numDelays = delayNums[j];
-                bwprintf(COM2, "Set speed for %d\r\n", tids[j]);
+                trace("Set speed for %d.", tids[j]);
                 break;
             }
         }
         ret = Reply(tid, (char*) &instr, sizeof(struct ClientInstructions));
         if(ret != 0){
-            bwprintf(COM2, "Expected reply to return 0, got %d.\r\n", ret);
+            trace("Expected reply to return 0, got %d.", ret);
         }
     }
     Exit();
