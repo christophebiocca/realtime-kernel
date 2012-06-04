@@ -1,4 +1,4 @@
-#include <kernel/assert.h>
+#include <debug.h>
 #include <user/timer.h>
 #include <user/k3task.h>
 #include <user/syscall.h>

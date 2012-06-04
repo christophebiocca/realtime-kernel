@@ -4,8 +4,9 @@
 
 #ifdef PRODUCTION
 
-#define assert(expr)    (void)(0)
-#define trace(fmt, ...) (void)(0)
+#define assert(expr)        (void)(0)
+#define static_assert(e)    (void)(0)
+#define trace(fmt, ...)     (void)(0)
 
 #else
 
@@ -24,6 +25,11 @@ static void __assert_fail (__const char *__assertion, __const char *__file,
         __function, __assertion);
     while(1){asm volatile("nop");};
 }
+
+#define static_assert(e)                                                    \
+    do {                                                                    \
+        enum { assert_static__ = 1/(e) };                                   \
+    } while (0)
 
 #define assert(expr)                                                        \
   ((expr)                                                                   \

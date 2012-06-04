@@ -1,3 +1,6 @@
+#include <stdbool.h>
+
+#include <debug.h>
 #include <bwio.h>
 #include <ts7200.h>
 
@@ -30,6 +33,11 @@ static void timerNotifier(void) {
             (char *) &request, sizeof(int),
             (char *) &response, sizeof(int)
         );
+
+        if (!response) {
+            trace("quit");
+            break;
+        }
     }
 
     Exit();
@@ -37,6 +45,16 @@ static void timerNotifier(void) {
 
 // max number of tasks we support delaying
 #define MAX_DELAYS  64
+
+// Request: int
+//      >= 0                Delay n ticks before replying with current ticks
+//      == TIME_REQUEST     Reply with current number of ticks
+//      == TICK_REQUEST     Increment ticks
+//      == QUIT             Quit notifier on next TICK_REQUEST and then quit
+// Reply: int
+//      >= 0                Number of ticks that have elapsed
+//      == -1               Too many tasks are delaying
+//      == -2               Unknown request
 static void timerServer(void) {
     int tid;
     int request;
@@ -51,6 +69,9 @@ static void timerServer(void) {
     Create(1, timerNotifier);
 
     while (1) {
+        assert(ticks >= 0);
+        assert(ndelays >= 0);
+
         Receive(&tid, (char *) &request, sizeof(int));
 
         if (request >= 0) {
@@ -84,9 +105,10 @@ static void timerServer(void) {
             Reply(tid, (char *) &ticks, sizeof(int));
             ++ticks;
         } else {
-            bwprintf(COM2, "[time-server]: Invalid Request: %d\r\n", request);
-            // reply to unblock sender
-            Reply(tid, (char *) &ticks, sizeof(int));
+            trace("invalid request: %d", request);
+
+            int response = -2;
+            Reply(tid, (char *) &response, sizeof(int));
         }
 
         int triggered = 0;
@@ -102,6 +124,17 @@ static void timerServer(void) {
             }
             ndelays -= triggered;
         }
+
+        if (should_quit >= 0 && has_quit) {
+            // clear out everyone blocked on us
+            for (int i = 0; i < ndelays; ++i) {
+                Reply(delays[i].tid, (char *) &ticks, sizeof(int));
+            }
+
+            trace("quit");
+            Reply(should_quit, (char *) &ticks, sizeof(int));
+            break;
+        }
     }
 
     Exit();
@@ -111,7 +144,7 @@ static int g_timer_server_tid;
 void timerInitTask(void) {
     g_timer_server_tid = Create(2, timerServer);
     if (g_timer_server_tid < 0) {
-        bwputstr(COM2, "Error creating timer server\r\n");
+        trace("error creating timer server: %d", g_timer_server_tid);
     }
 }
 
