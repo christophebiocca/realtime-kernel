@@ -25,7 +25,7 @@ void clientTask(void){
     for(int i = 0; i < instr.numDelays; ++i){
         // Timed wait.
         ret = Delay(instr.delayTime);
-        bwprintf(COM2, "Task: %d, interval: %d, delay #%d\r\n", tid, instr.delayTime, i);
+        bwprintf(COM2, "[Task: %d]: interval=%d, delay #%d\r\n", tid, instr.delayTime, i+1);
     }
     Exit();
     return;
