@@ -81,6 +81,7 @@ static void timerServer(void) {
         if (request >= 0) {
             // Delay
             if (ndelays == MAX_DELAYS) {
+                trace("cannot handle delay request by %d, dropping", tid);
                 int response = -1;
                 Reply(tid, (char *) &response, sizeof(int));
             } else {
