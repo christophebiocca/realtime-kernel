@@ -154,6 +154,10 @@ int createTask(unsigned int priority, void (*code)(void),
     return t->id;
 }
 
+int getActiveTaskId(void) {
+    return g_active_task->id;
+}
+
 void exitCurrentTask(void){
     g_active_task->status = TSK_ZOMBIE;
     g_active_task = 0;

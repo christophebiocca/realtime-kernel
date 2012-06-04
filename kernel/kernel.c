@@ -1,7 +1,6 @@
 #include <stdbool.h>
 
 #include <bwio.h>
-#include <debug.h>
 #include <cpsr.h>
 #include <ts7200.h>
 
@@ -69,22 +68,34 @@ static void dispatchSyscall(struct TaskDescriptor *task,
 static void undefined_instr(void) {
     unsigned int lr;
     asm volatile("mov %0, lr\n\t" : "=r"(lr));
-    trace("\r\n*** undefined instruction at 0x%x", lr);
-    assert(0);
+
+    bwprintf(COM2, "\r\n*** UNDEFINED INSTRUCTION: 0x%x\r\n", lr);
+    bwprintf(COM2, "Task ID: %d\r\n", getActiveTaskId());
+
+    // loop forever
+    while (1);
 }
 
 static void abort_prefetch(void) {
     unsigned int lr;
     asm volatile("mov %0, lr\n\t" : "=r"(lr));
-    trace("\r\n*** prefetch abort at 0x%x", lr);
-    assert(0);
+
+    bwprintf(COM2, "\r\n*** ABORT PREFETCH: 0x%x\r\n", lr);
+    bwprintf(COM2, "Task ID: %d\r\n", getActiveTaskId());
+
+    // loop forever
+    while (1);
 }
 
 static void abort_data(void) {
     unsigned int lr;
     asm volatile("mov %0, lr\n\t" : "=r"(lr));
-    trace("\r\n*** data abort at 0x%x", lr);
-    assert(0);
+
+    bwprintf(COM2, "\r\n*** ABORT DATA: 0x%x\r\n", lr);
+    bwprintf(COM2, "Task ID: %d\r\n", getActiveTaskId());
+
+    // loop forever
+    while (1);
 }
 
 int main(void) {
