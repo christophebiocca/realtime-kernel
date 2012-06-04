@@ -37,9 +37,15 @@ void idlearound(void){
     }
 }
 
+void parentTask(void);
+
 void timerInitialTask(void){
     timerInitTask();
+    Create(2,parentTask);
+    Exit();
+}
 
+void parentTask(void){
     int priorities[4] = {3,4,5,6};
     int tids[4];
     int delayTimes[4] = {10,23,33,71};
