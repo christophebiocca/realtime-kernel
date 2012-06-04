@@ -18,6 +18,11 @@ static void __assert_fail (__const char *__assertion, __const char *__file,
     while(1){asm volatile("nop");};    
 }
 
+#define static_assert(e)                        \
+    do {                                        \
+        enum { assert_static__ = 1/(e) };   \
+    } while (0)
+
 #define assert(expr)							\
   ((expr)								\
    ? (void)(0)						                \
