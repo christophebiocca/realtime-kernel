@@ -9,7 +9,6 @@
 #include <kernel/interrupts.h>
 #include <user/syscall.h>
 #include <user/init.h>
-#include <user/timer.h>
 #include <lib.h>
 
 static void dispatchSyscall(struct TaskDescriptor *task,

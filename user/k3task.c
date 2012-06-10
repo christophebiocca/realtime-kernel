@@ -1,5 +1,5 @@
 #include <debug.h>
-#include <user/timer.h>
+#include <user/clock.h>
 #include <user/k3task.h>
 #include <user/syscall.h>
 #include <bwio.h>
@@ -45,7 +45,7 @@ void idlearound(void){
 void parentTask(void);
 
 void timerInitialTask(void){
-    timerInitTask();
+    clockInitTask();
     Create(2,parentTask);
     Exit();
 }
@@ -91,6 +91,6 @@ void parentTask(void){
         Send(tids[i], (char *) 0, 0, (char *) 0, 0);
     }
     // Stop the clock server //
-    TimeQuit();
+    ClockQuit();
     Exit();
 }

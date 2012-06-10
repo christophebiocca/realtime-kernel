@@ -4,7 +4,7 @@
 #include <bwio.h>
 #include <ts7200.h>
 
-#include <user/timer.h>
+#include <user/clock.h>
 #include <user/syscall.h>
 
 // timer 1 underflow interrupt
@@ -17,7 +17,7 @@
 #define TICK_REQUEST    -2
 #define QUIT            -3
 
-static void timerNotifier(void) {
+static void clockNotifier(void) {
     int serverTid = MyParentTid();
     int request = TICK_REQUEST;
     int response;
@@ -56,7 +56,7 @@ static void timerNotifier(void) {
 //      >= 0                Number of ticks that have elapsed
 //      == -1               Too many tasks are delaying
 //      == -2               Unknown request
-static void timerServer(void) {
+static void clockServer(void) {
     int tid;
     int request;
     int ticks = 0;
@@ -70,7 +70,7 @@ static void timerServer(void) {
     int should_quit = -1;
     bool has_quit;
 
-    Create(1, timerNotifier);
+    Create(1, clockNotifier);
 
     while (1) {
         assert(ticks >= 0);
@@ -157,11 +157,11 @@ static void timerServer(void) {
     Exit();
 }
 
-static int g_timer_server_tid;
-void timerInitTask(void) {
-    g_timer_server_tid = Create(2, timerServer);
-    if (g_timer_server_tid < 0) {
-        trace("error creating timer server: %d", g_timer_server_tid);
+static int g_clock_server_tid;
+void clockInitTask(void) {
+    g_clock_server_tid = Create(2, clockServer);
+    if (g_clock_server_tid < 0) {
+        trace("error creating timer server: %d", g_clock_server_tid);
     }
 }
 
@@ -173,7 +173,7 @@ int Time(void) {
     int request = TIME_REQUEST, response;
 
     Send(
-        g_timer_server_tid,
+        g_clock_server_tid,
         (char *) &request, sizeof(int),
         (char *) &response, sizeof(int)
     );
@@ -185,7 +185,7 @@ int DelayUntil(int nticks) {
     int response;
 
     Send(
-        g_timer_server_tid,
+        g_clock_server_tid,
         (char *) &nticks, sizeof(int),
         (char *) &response, sizeof(int)
     );
@@ -193,11 +193,11 @@ int DelayUntil(int nticks) {
     return response;
 }
 
-int TimeQuit(void) {
+int ClockQuit(void) {
     int request = QUIT, response;
 
     Send(
-        g_timer_server_tid,
+        g_clock_server_tid,
         (char *) &request, sizeof(int),
         (char *) &response, sizeof(int)
     );
