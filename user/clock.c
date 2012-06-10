@@ -5,6 +5,7 @@
 #include <ts7200.h>
 
 #include <user/clock.h>
+#include <user/priorities.h>
 #include <user/syscall.h>
 
 // timer 1 underflow interrupt
@@ -70,7 +71,7 @@ static void clockServer(void) {
     int should_quit = -1;
     bool has_quit;
 
-    Create(1, clockNotifier);
+    Create(CLOCK_NOTIFIER_PRIORITY, clockNotifier);
 
     while (1) {
         assert(ticks >= 0);
@@ -159,10 +160,8 @@ static void clockServer(void) {
 
 static int g_clock_server_tid;
 void clockInitTask(void) {
-    g_clock_server_tid = Create(2, clockServer);
-    if (g_clock_server_tid < 0) {
-        trace("error creating timer server: %d", g_clock_server_tid);
-    }
+    g_clock_server_tid = Create(CLOCK_SERVER_PRIORITY, clockServer);
+    assert(g_clock_server_tid >= 0);
 }
 
 int Delay(int ticks) {
@@ -170,6 +169,7 @@ int Delay(int ticks) {
 }
 
 int Time(void) {
+    assert(g_clock_server_tid >= 0);
     int request = TIME_REQUEST, response;
 
     Send(
@@ -182,6 +182,7 @@ int Time(void) {
 }
 
 int DelayUntil(int nticks) {
+    assert(g_clock_server_tid >= 0);
     int response;
 
     Send(
@@ -194,6 +195,7 @@ int DelayUntil(int nticks) {
 }
 
 int ClockQuit(void) {
+    assert(g_clock_server_tid >= 0);
     int request = QUIT, response;
 
     Send(
