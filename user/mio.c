@@ -2,9 +2,17 @@
 #include <ts7200.h>
 
 #include <user/mio.h>
+#include <user/priorities.h>
 #include <user/string.h>
+#include <user/syscall.h>
 
-#define INT_UART2   54
+/* For AwaitEvent() */
+#define INT_UART2       54
+
+/* Where is INT_UART2 actually defined */
+#define SOFTINT_BASE    VIC2_BASE
+/* Position in the software interrupt register */
+#define SOFTINT_POS     (1 << (INT_UART2 - 32))
 
 #define MIO_TX_BUFFER_LEN   512
 static struct {
@@ -14,6 +22,8 @@ static struct {
 } g_mio_tx_buffer;
 
 static void mioNotifier(void) {
+    int serverTid = MyParentTid();
+
     /* set baud: 115.2 kbps */
     *((volatile unsigned int *) (UART2_BASE + UART_LCRM_OFFSET)) = 0x0;
     *((volatile unsigned int *) (UART2_BASE + UART_LCRL_OFFSET)) = 0x3;
@@ -27,7 +37,7 @@ static void mioNotifier(void) {
 
     while (1) {
         /* always enable receive interrupts. FIXME: what about modem status? */
-        unsigned int flags = UARTEN_MASK | RIEN_MASK;
+        unsigned short int_flags = UARTEN_MASK | RIEN_MASK;
         /* DANGER WILL ROBINSON: THIS CAN BREAK HORRIBLY!
          *
          * To prevent useless interrupts when we have nothing to send, we only
@@ -58,26 +68,54 @@ static void mioNotifier(void) {
          */
         if (g_mio_tx_buffer.head != g_mio_tx_buffer.tail) {
             /* only enable transmit interrupt if we have stuff to send */
-            flags |= TIEN_MASK;
+            int_flags |= TIEN_MASK;
         }
-        *((volatile unsigned short *) (UART2_BASE + UART_CTLR_OFFSET)) = flags;
+        *((volatile unsigned short *) (UART2_BASE + UART_CTLR_OFFSET)) =
+            int_flags;
 
         /* Wait for something to happen */
         AwaitEvent(INT_UART2);
 
-        unsigned short status =
+        unsigned short intr =
             *((volatile unsigned short *) (UART2_BASE + UART_INTR_OFFSET));
+        volatile unsigned short *data =
+            (volatile unsigned short *) (UART2_BASE + UART_DATA_OFFSET);
+        volatile unsigned short *flags =
+            (volatile unsigned short *) (UART2_BASE + UART_FLAG_OFFSET);
 
-        if (status & RIS_MASK) {
+        if (intr & RIS_MASK) {
             /* receive interrupt */
+            struct String str;
+            sinit(&str);
+            str.tag = 0; //FIXME
+
+            while (!(*flags & RXFE_MASK)) {
+                sputc(&str, *data);
+            }
+
+            Send(
+                serverTid,
+                (char *) &str, sizeof (struct String),
+                (char *) 0, 0
+            );
         }
 
-        if (status & TIS_MASK) {
+        /* FIXME: we don't care about CTS for monitor? */
+        if (intr & TIS_MASK) {
             /* transmit interrupt */
+            while (g_mio_tx_buffer.head != g_mio_tx_buffer.tail &&
+                    !(*flags & TXFF_MASK)) {
+                *data = g_mio_tx_buffer.buffer[g_mio_tx_buffer.head];
+                g_mio_tx_buffer.head =
+                    (g_mio_tx_buffer.head + 1) % MIO_TX_BUFFER_LEN;
+            }
         }
 
-        if (!((status & RIS_MASK) | (status & TIS_MASK))) {
-            /* software interrupt */
+        if (!((intr & RIS_MASK) | (intr & TIS_MASK))) {
+            /* Software interrupt. Just clear it so we can re-evaluate the
+             * transmit buffer state. */
+            *((volatile unsigned int *)
+                (SOFTINT_BASE + VIC_SOFTWARE_INT_CLEAR)) = SOFTINT_POS;
         }
     }
 
