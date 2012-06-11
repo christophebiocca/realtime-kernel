@@ -1,6 +1,11 @@
 #ifndef STRING_H
 #define STRING_H    1
 
+#include <debug.h>
+
+// FIXME: we can't make struct String opaque because we need to be able to
+// allocate it on the stack.
+
 // The definition of this structure is carefully chosen:
 //      - offset needs to have enough bits to
 //        represent 0 - STRING_MAX_BUFFER_LEN
@@ -15,9 +20,38 @@ struct String {
 };
 
 // (re-)initializes a string
-void sinit(struct String *s);
+static inline void sinit(struct String *s) {
+    // make sure String can be memcpy16()'d
+    static_assert(sizeof(struct String) % 16 == 0);
+    s->offset = 0;
+}
 
-void sputc(struct String *s, char c);
-void sputstr(struct String *s, char *str);
+static inline unsigned int slen(struct String *s) {
+    return s->offset;
+}
+
+static inline char *sbuffer(struct String *s) {
+    return s->buffer;
+}
+
+static inline unsigned int stag(struct String *s) {
+    return s->tag;
+}
+
+static inline void ssettag(struct String *s, unsigned int tag) {
+    assert(tag < 4); // only have 2 bits
+    s->tag = tag;
+}
+
+static inline void sputc(struct String *s, char c) {
+    assert(s->offset < STRING_MAX_BUFFER_LEN);
+    s->buffer[s->offset++] = c;
+}
+
+static inline void sputstr(struct String *s, char *str) {
+    for (; *str != '\0'; ++str) {
+        sputc(s, *str);
+    }
+}
 
 #endif
