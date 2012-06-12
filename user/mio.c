@@ -15,11 +15,16 @@
 #define SOFTINT_POS     (1 << (INT_UART2 - 32))
 
 #define MIO_TX_BUFFER_LEN   512
-static struct {
+static volatile struct {
     unsigned int head;
     unsigned int tail;
     char buffer[MIO_TX_BUFFER_LEN];
 } g_mio_tx_buffer;
+
+/* Server Message Commands */
+#define CMD_NOTIFIER_RX 0
+#define CMD_USER_TX     1
+#define CMD_USER_RX     2
 
 static void mioNotifier(void) {
     int serverTid = MyParentTid();
@@ -51,20 +56,6 @@ static void mioNotifier(void) {
          * interrupt in software (after loading data into g_mio_tx_buffer). This
          * will eventually bring us to the top of our loop, where we'll
          * re-evaluate our state and enable the transmit interrupt.
-         *
-         * There does exist a race condition: what if the notifier checks
-         * g_mio_tx_buffer and detects no data to transmit. However, before it
-         * can AwaitEvent(), the server queues on some data and raises the
-         * interrupt in software. Since nobody is awaiting that interrupt, it
-         * gets dropped silently, and by the time the notifier AwaitEvent()'s,
-         * we've missed the boat.
-         *
-         * We solve this by exploiting our knowledge of the scheduler. Since the
-         * kernel never preempts a task and there is no system call in between
-         * the check for data to transmit and the AwaitEvent(), there is no
-         * possible way the server can be scheduled. Furthermore, the notifier
-         * runs at a higher priority than the server, and thus if both of them
-         * are capable of running, the notifier will always be picked first.
          */
         if (g_mio_tx_buffer.head != g_mio_tx_buffer.tail) {
             /* only enable transmit interrupt if we have stuff to send */
@@ -87,7 +78,7 @@ static void mioNotifier(void) {
             /* receive interrupt */
             struct String str;
             sinit(&str);
-            str.tag = 0; //FIXME
+            str.tag = CMD_NOTIFIER_RX;
 
             while (!(*flags & RXFE_MASK)) {
                 sputc(&str, *data);
@@ -111,7 +102,8 @@ static void mioNotifier(void) {
             }
         }
 
-        if (!((intr & RIS_MASK) | (intr & TIS_MASK))) {
+        if (*((volatile unsigned int *)
+                SOFTINT_BASE + VIC_SOFTWARE_INT) & SOFTINT_POS) {
             /* Software interrupt. Just clear it so we can re-evaluate the
              * transmit buffer state. */
             *((volatile unsigned int *)
@@ -124,6 +116,62 @@ static void mioNotifier(void) {
 
 static void mioServer(void) {
     Create(MIO_NOTIFIER_PRIORITY, mioNotifier);
+
+    int rx_tid = -1;
+    struct String rx_buffer;
+    sinit(&rx_buffer);
+
+    while (1) {
+        int tid;
+        struct String str;
+        sinit(&str);
+
+        Receive(&tid, (char *) &str, sizeof(struct String));
+
+        switch (str.tag) {
+            case CMD_NOTIFIER_RX:
+                sconcat(&rx_buffer, &str);
+                break;
+
+            case CMD_USER_TX: {
+                char *buf = sbuffer(&str);
+
+                for (unsigned int i = 0; i < slen(&str); ++i) {
+                    g_mio_tx_buffer.buffer[g_mio_tx_buffer.tail] = buf[i];
+                    g_mio_tx_buffer.tail =
+                        (g_mio_tx_buffer.tail + 1) % MIO_TX_BUFFER_LEN;
+
+                    /* make sure we never wrap around */
+                    assert(g_mio_tx_buffer.tail != g_mio_tx_buffer.head);
+                }
+
+                /* raise a software interrupt to inform the notifier */
+                *((volatile unsigned int *)
+                    (SOFTINT_BASE + VIC_SOFTWARE_INT)) = SOFTINT_POS;
+
+                break;
+            }
+
+            case CMD_USER_RX:
+                /* make sure no one else is already waiting for input */
+                assert(rx_tid == -1);
+                rx_tid = tid;
+
+                break;
+
+            default:
+                assert(0);
+        }
+
+        if (slen(&rx_buffer) != 0 && rx_tid >= 0) {
+            Reply(rx_tid, (char *) &rx_buffer, sizeof(struct String));
+
+            sinit(&rx_buffer);
+            rx_tid = -1;
+        }
+    }
+
+    Exit();
 }
 
 static int g_mio_server_tid;

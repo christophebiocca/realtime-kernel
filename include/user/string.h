@@ -54,4 +54,10 @@ static inline void sputstr(struct String *s, char *str) {
     }
 }
 
+static inline void sconcat(struct String *to, struct String *from) {
+    for (int i = 0; i < from->offset; ++i) {
+        sputc(to, from->buffer[i]);
+    }
+}
+
 #endif
