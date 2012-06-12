@@ -180,5 +180,23 @@ void mioInit(void) {
     assert(g_mio_server_tid >= 0);
 }
 
-void mio_print(struct String *s) {
+void mioPrint(struct String *s) {
+    ssettag(s, CMD_USER_TX);
+    Send(
+        g_mio_server_tid,
+        (char *) s, sizeof(struct String),
+        (char *) 0, 0
+    );
+}
+
+void mioRead(struct String *s) {
+    struct String cmd;
+    sinit(&cmd);
+    ssettag(&cmd, CMD_USER_RX);
+
+    Send(
+        g_mio_server_tid,
+        (char *) &cmd, sizeof(struct String),
+        (char *) s, sizeof(struct String)
+    );
 }
