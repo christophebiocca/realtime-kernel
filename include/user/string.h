@@ -14,8 +14,8 @@
 // tag is included to allow a String to be used with Send/Receive.
 #define STRING_MAX_BUFFER_LEN   63
 struct String {
-    unsigned int tag : 2;
-    unsigned int offset : 6;
+    unsigned tag : 2;
+    unsigned offset : 6;
     char buffer[STRING_MAX_BUFFER_LEN];
 };
 
@@ -48,7 +48,7 @@ static inline void sputc(struct String *s, char c) {
     s->buffer[s->offset++] = c;
 }
 
-static inline void sputstr(struct String *s, char *str) {
+static inline void sputstr(struct String *s, const char *str) {
     for (; *str != '\0'; ++str) {
         sputc(s, *str);
     }
