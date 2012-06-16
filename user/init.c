@@ -5,6 +5,9 @@
 #include <user/syscall.h>
 #include <user/init.h>
 
+#include <user/string.h>
+#include <user/mio.h>
+
 static void childTask() {
     int tid = MyTid();
     int p_tid = MyParentTid();
@@ -123,14 +126,38 @@ void annoyingTask(void){
 }
 
 void idlerTask(void){
-    for(volatile int i = 0; i < 100000; ++i);
-    bwprintf(COM2, "Idling.\r\n");
+    while(1)
+        ;
 }
 
 void interrupterTask(void) {
     bwprintf(COM2, "Spawning listener child\r\n");
     Create(1, listenerTask);
     Create(2, annoyingTask);
+    Create(31, idlerTask);
+    Exit();
+}
+
+/* Monitor IO test */
+void echoTask(void) {
+    struct String s;
+
+    mioInit();
+
+    sinit(&s);
+    sputstr(&s, "Hello world\r\n");
+    mioPrint(&s);
+
+    sinit(&s);
+    sputstr(&s, "Goodbye world\r\n");
+
+    //mioRead(&s);
+    
+    Exit();
+}
+
+void echoTaskInit(void) {
+    Create(1, echoTask);
     Create(31, idlerTask);
     Exit();
 }

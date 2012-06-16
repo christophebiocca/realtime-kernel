@@ -102,8 +102,6 @@ int main(void) {
     static volatile unsigned int hardware_pc;
     hardware_pc = 0;
 
-    bwsetfifo(COM2, false);
-
     // set up memory bank
     *((unsigned int *) BANK_UNDEFINED_INSTR) = BANK_JUMP_INSTR;
     *((unsigned int *) BANK_SOFTWARE_INT) = BANK_JUMP_INSTR;
@@ -132,7 +130,7 @@ int main(void) {
     *((unsigned int *) (VIC2_BASE + VIC_INT_ENABLE_CLEAR)) = 0xffffffff;
 
     initInterruptSystem();
-    initTaskSystem(timerInitialTask);
+    initTaskSystem(echoTaskInit);
 
     struct TaskDescriptor* active;
     for(active = scheduleTask(); active && (!idling() || awaitingInterrupts());

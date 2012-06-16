@@ -6,6 +6,7 @@
 void userModeTask();
 void nsUserModeTask();
 void timeUserModeTask();
+void echoTaskInit();
 
 // rock paper scissors
 void rpsUserModeTask();
