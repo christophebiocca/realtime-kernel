@@ -1,4 +1,5 @@
 #include <debug.h>
+#include <stdbool.h>
 #include <ts7200.h>
 
 #include <user/mio.h>
@@ -32,7 +33,7 @@ static void mioNotifier(void) {
     /* set baud: 115.2 kbps */
     *((volatile unsigned int *) (UART2_BASE + UART_LCRM_OFFSET)) = 0x0;
     *((volatile unsigned int *) (UART2_BASE + UART_LCRL_OFFSET)) = 0x3;
-    /* enable the fifo */
+    /* set the fifo */
     volatile unsigned int *high =
         (volatile unsigned int *) (UART2_BASE + UART_LCRH_OFFSET);
     *high |= FEN_MASK;
@@ -42,7 +43,7 @@ static void mioNotifier(void) {
 
     while (1) {
         /* always enable receive interrupts. FIXME: what about modem status? */
-        unsigned short int_flags = UARTEN_MASK | RIEN_MASK;
+        unsigned short int_flags = UARTEN_MASK | RIEN_MASK | RTIEN_MASK;
         /* DANGER WILL ROBINSON: THIS CAN BREAK HORRIBLY!
          *
          * To prevent useless interrupts when we have nothing to send, we only
@@ -74,7 +75,7 @@ static void mioNotifier(void) {
         volatile unsigned short *flags =
             (volatile unsigned short *) (UART2_BASE + UART_FLAG_OFFSET);
 
-        if (intr & RIS_MASK) {
+        if (intr & (RIS_MASK | RTIS_MASK)) {
             /* receive interrupt */
             struct String str;
             sinit(&str);
@@ -128,7 +129,7 @@ static void mioServer(void) {
 
         Receive(&tid, (char *) &str, sizeof(struct String));
 
-        switch (str.tag) {
+        switch (stag(&str)) {
             case CMD_NOTIFIER_RX:
                 sconcat(&rx_buffer, &str);
                 break;
@@ -144,6 +145,8 @@ static void mioServer(void) {
                     /* make sure we never wrap around */
                     assert(g_mio_tx_buffer.tail != g_mio_tx_buffer.head);
                 }
+
+                Reply(tid, (char *) 0, 0);
 
                 /* raise a software interrupt to inform the notifier */
                 *((volatile unsigned int *)
