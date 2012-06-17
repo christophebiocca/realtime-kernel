@@ -192,12 +192,18 @@ struct TaskDescriptor *scheduleTask(void){
     if(g_active_task){
         priorityQueuePush(taskPriority(g_active_task->id), g_active_task);
     }
+
     if(g_task_queue_mask){
         int priority = countLeadingZeroes(g_task_queue_mask);
+
         g_active_task = priorityQueuePop(priority);
         assert(g_active_task->status == TSK_READY);
+        assert((unsigned int) g_active_task->sp >= STACK_LOW &&
+                (unsigned int) g_active_task->sp <= STACK_HIGH);
+
         return g_active_task;
     }
+
     return 0;
 }
 
