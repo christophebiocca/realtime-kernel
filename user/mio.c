@@ -103,13 +103,10 @@ static void mioNotifier(void) {
             }
         }
 
-        if (*((volatile unsigned int *)
-                SOFTINT_BASE + VIC_SOFTWARE_INT) & SOFTINT_POS) {
-            /* Software interrupt. Just clear it so we can re-evaluate the
-             * transmit buffer state. */
-            *((volatile unsigned int *)
-                (SOFTINT_BASE + VIC_SOFTWARE_INT_CLEAR)) = SOFTINT_POS;
-        }
+        /* Software interrupt. Just clear it so we can re-evaluate the
+         * transmit buffer state. */
+        *((volatile unsigned int *)
+            (SOFTINT_BASE + VIC_SOFTWARE_INT_CLEAR)) = SOFTINT_POS;
     }
 
     Exit();
