@@ -64,34 +64,93 @@ static void dispatchSyscall(struct TaskDescriptor *task,
     }
 }
 
+#define DUMPR(r) do {                                                       \
+    bwputstr(COM2, #r ": ");                                                \
+    asm volatile (                                                          \
+        "mov r0, #1\n\t"                                                    \
+        "ldmfd sp!, {r1}\n\t"                                               \
+        "bl bwputr\n\t"                                                     \
+        ::: "r0", "r1"                                                      \
+    );                                                                      \
+    bwputstr(COM2, "\r\n");                                                 \
+} while(0);
+
 static void undefined_instr(void) {
+    asm volatile ("stmfd sp!, {r0-r12}");
+
     unsigned int lr;
     asm volatile("mov %0, lr\n\t" : "=r"(lr));
 
     bwprintf(COM2, "\r\n*** UNDEFINED INSTRUCTION: 0x%x\r\n", lr);
     bwprintf(COM2, "Task ID: %d\r\n", getActiveTaskId());
 
+    DUMPR(r0);
+    DUMPR(r1);
+    DUMPR(r2);
+    DUMPR(r3);
+    DUMPR(r4);
+    DUMPR(r5);
+    DUMPR(r6);
+    DUMPR(r7);
+    DUMPR(r8);
+    DUMPR(r9);
+    DUMPR(r10);
+    DUMPR(r11);
+    DUMPR(r12);
+
     // loop forever
     while (1);
 }
 
 static void abort_prefetch(void) {
+    asm volatile ("stmfd sp!, {r0-r12}");
+
     unsigned int lr;
     asm volatile("mov %0, lr\n\t" : "=r"(lr));
 
     bwprintf(COM2, "\r\n*** ABORT PREFETCH: 0x%x\r\n", lr);
     bwprintf(COM2, "Task ID: %d\r\n", getActiveTaskId());
 
+    DUMPR(r0);
+    DUMPR(r1);
+    DUMPR(r2);
+    DUMPR(r3);
+    DUMPR(r4);
+    DUMPR(r5);
+    DUMPR(r6);
+    DUMPR(r7);
+    DUMPR(r8);
+    DUMPR(r9);
+    DUMPR(r10);
+    DUMPR(r11);
+    DUMPR(r12);
+
     // loop forever
     while (1);
 }
 
 static void abort_data(void) {
+    asm volatile ("stmfd sp!, {r0-r12}");
+
     unsigned int lr;
     asm volatile("mov %0, lr\n\t" : "=r"(lr));
 
     bwprintf(COM2, "\r\n*** ABORT DATA: 0x%x\r\n", lr);
     bwprintf(COM2, "Task ID: %d\r\n", getActiveTaskId());
+
+    DUMPR(r0);
+    DUMPR(r1);
+    DUMPR(r2);
+    DUMPR(r3);
+    DUMPR(r4);
+    DUMPR(r5);
+    DUMPR(r6);
+    DUMPR(r7);
+    DUMPR(r8);
+    DUMPR(r9);
+    DUMPR(r10);
+    DUMPR(r11);
+    DUMPR(r12);
 
     // loop forever
     while (1);
