@@ -7,6 +7,7 @@
 
 #include <user/string.h>
 #include <user/mio.h>
+#include <user/priorities.h>
 
 static void childTask() {
     int tid = MyTid();
@@ -148,16 +149,20 @@ void echoTask(void) {
     sputstr(&s, "Hello world\r\n");
     mioPrint(&s);
 
+    for (int i = 0; i < 100; ++i) {
+        mioRead(&s);
+        mioPrint(&s);
+    }
+
     sinit(&s);
     sputstr(&s, "Goodbye world\r\n");
-
-    //mioRead(&s);
+    mioPrint(&s);
     
     Exit();
 }
 
 void echoTaskInit(void) {
-    Create(1, echoTask);
+    Create(TASK_PRIORITY, echoTask);
     Create(31, idlerTask);
     Exit();
 }
