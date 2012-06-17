@@ -36,7 +36,7 @@ static void mioNotifier(void) {
     /* set baud: 115.2 kbps */
     *((volatile unsigned int *) (UART2_BASE + UART_LCRM_OFFSET)) = 0x0;
     *((volatile unsigned int *) (UART2_BASE + UART_LCRL_OFFSET)) = 0x3;
-    /* set the fifo */
+    /* enable the fifo */
     volatile unsigned int *high =
         (volatile unsigned int *) (UART2_BASE + UART_LCRH_OFFSET);
     *high |= FEN_MASK;
@@ -44,7 +44,7 @@ static void mioNotifier(void) {
     /* initialize the tx buffer */
     g_mio_tx_buffer.head = g_mio_tx_buffer.tail = 0;
 
-    while (1) {
+    while (true) {
         if (g_mio_quit) {
             break;
         }
@@ -86,7 +86,7 @@ static void mioNotifier(void) {
             /* receive interrupt */
             struct String str;
             sinit(&str);
-            str.tag = CMD_NOTIFIER_RX;
+            ssettag(&str, CMD_NOTIFIER_RX);
 
             while (!(*flags & RXFE_MASK)) {
                 sputc(&str, *data);
@@ -126,7 +126,7 @@ static void mioServer(void) {
     struct String rx_buffer;
     sinit(&rx_buffer);
 
-    while (1) {
+    while (true) {
         int tid;
         struct String str;
         sinit(&str);
@@ -174,6 +174,7 @@ static void mioServer(void) {
 
             case CMD_QUIT:
                 g_mio_quit = true;
+                Reply(tid, (char *) 0, 0);
 
                 /* raise a software interrupt to quit the notifier */
                 *((volatile unsigned int *)
