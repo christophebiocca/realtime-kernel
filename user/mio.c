@@ -129,6 +129,7 @@ static void mioServer(void) {
         switch (stag(&str)) {
             case CMD_NOTIFIER_RX:
                 sconcat(&rx_buffer, &str);
+                Reply(tid, (char *) 0, 0);
                 break;
 
             case CMD_USER_TX: {
