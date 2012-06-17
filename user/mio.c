@@ -26,6 +26,9 @@ static volatile struct {
 #define CMD_NOTIFIER_RX 0
 #define CMD_USER_TX     1
 #define CMD_USER_RX     2
+#define CMD_QUIT        3
+
+static int g_mio_quit;
 
 static void mioNotifier(void) {
     int serverTid = MyParentTid();
@@ -42,6 +45,10 @@ static void mioNotifier(void) {
     g_mio_tx_buffer.head = g_mio_tx_buffer.tail = 0;
 
     while (1) {
+        if (g_mio_quit) {
+            break;
+        }
+
         /* always enable receive interrupts. FIXME: what about modem status? */
         unsigned short int_flags = UARTEN_MASK | RIEN_MASK | RTIEN_MASK;
         /* DANGER WILL ROBINSON: THIS CAN BREAK HORRIBLY!
@@ -124,6 +131,10 @@ static void mioServer(void) {
         struct String str;
         sinit(&str);
 
+        if (g_mio_quit) {
+            break;
+        }
+
         Receive(&tid, (char *) &str, sizeof(struct String));
 
         switch (stag(&str)) {
@@ -161,6 +172,15 @@ static void mioServer(void) {
 
                 break;
 
+            case CMD_QUIT:
+                g_mio_quit = true;
+
+                /* raise a software interrupt to quit the notifier */
+                *((volatile unsigned int *)
+                    (SOFTINT_BASE + VIC_SOFTWARE_INT)) = SOFTINT_POS;
+
+                break;
+
             default:
                 /* HEISENBUG: uncommenting the following assert triggers a weird
                  * copy of it where the filename and assertion condition are
@@ -185,6 +205,7 @@ static void mioServer(void) {
 
 static int g_mio_server_tid;
 void mioInit(void) {
+    g_mio_quit = false;
     g_mio_server_tid = Create(MIO_SERVER_PRIORITY, mioServer);
     assert(g_mio_server_tid >= 0);
 }
@@ -207,5 +228,17 @@ void mioRead(struct String *s) {
         g_mio_server_tid,
         (char *) &cmd, sizeof(struct String),
         (char *) s, sizeof(struct String)
+    );
+}
+
+void mioQuit(void) {
+    struct String cmd;
+    sinit(&cmd);
+    ssettag(&cmd, CMD_QUIT);
+
+    Send(
+        g_mio_server_tid,
+        (char *) &cmd, sizeof(struct String),
+        (char *) 0, 0
     );
 }

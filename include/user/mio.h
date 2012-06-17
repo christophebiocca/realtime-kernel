@@ -7,5 +7,6 @@ void mioInit(void);
 
 void mioPrint(struct String *s);
 void mioRead(struct String *s);
+void mioQuit(void);
 
 #endif /* USER_MIO_H */

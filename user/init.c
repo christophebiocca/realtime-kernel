@@ -155,8 +155,10 @@ void echoTask(void) {
     }
 
     sinit(&s);
-    sputstr(&s, "Goodbye world\r\n");
+    sputstr(&s, "\r\nGoodbye world\r\n");
     mioPrint(&s);
+
+    mioQuit();
     
     Exit();
 }
