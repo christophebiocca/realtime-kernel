@@ -64,6 +64,14 @@ static void dispatchSyscall(struct TaskDescriptor *task,
     }
 }
 
+#define DUMPSAVE asm volatile (                                             \
+    "stmfd sp!, {r0-r12}\n\t"                                               \
+    "msr cpsr_c, #0xd0\n\t"                                                 \
+    "mov r0, sp\n\t"                                                        \
+    "msr cpsr_c, #0xd3\n\t"                                                 \
+    "stmfd sp!, {r0}\n\t"                                                   \
+)
+
 #define DUMPR(r) do {                                                       \
     bwputstr(COM2, #r ": ");                                                \
     asm volatile (                                                          \
@@ -84,6 +92,7 @@ static void undefined_instr(void) {
     bwprintf(COM2, "\r\n*** UNDEFINED INSTRUCTION: 0x%x\r\n", lr);
     bwprintf(COM2, "Task ID: %d\r\n", getActiveTaskId());
 
+    DUMPR(usr_sp);
     DUMPR(r0);
     DUMPR(r1);
     DUMPR(r2);
@@ -111,6 +120,7 @@ static void abort_prefetch(void) {
     bwprintf(COM2, "\r\n*** ABORT PREFETCH: 0x%x\r\n", lr);
     bwprintf(COM2, "Task ID: %d\r\n", getActiveTaskId());
 
+    DUMPR(usr_sp);
     DUMPR(r0);
     DUMPR(r1);
     DUMPR(r2);
@@ -138,6 +148,7 @@ static void abort_data(void) {
     bwprintf(COM2, "\r\n*** ABORT DATA: 0x%x\r\n", lr);
     bwprintf(COM2, "Task ID: %d\r\n", getActiveTaskId());
 
+    DUMPR(usr_sp);
     DUMPR(r0);
     DUMPR(r1);
     DUMPR(r2);
