@@ -21,6 +21,8 @@ __attribute__((always_inline, noreturn));
 
 static void __assert_fail (__const char *__assertion, __const char *__file,
         unsigned int __line, __const char *__function){
+    bwsetfifo(COM2, 0);
+    bwsetspeed(COM2, 115200);
     bwprintf(COM2, "kernel: %s:%d: %s: Assertion `%s' failed\r\n", __file, __line,
         __function, __assertion);
     while(1){asm volatile("nop");};
