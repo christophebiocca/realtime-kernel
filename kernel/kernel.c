@@ -81,10 +81,10 @@ static void dispatchSyscall(struct TaskDescriptor *task,
         ::: "r0", "r1"                                                      \
     );                                                                      \
     bwputstr(COM2, "\r\n");                                                 \
-} while(0);
+} while(0)
 
 static void undefined_instr(void) {
-    asm volatile ("stmfd sp!, {r0-r12}");
+    DUMPSAVE;
 
     unsigned int lr;
     asm volatile("mov %0, lr\n\t" : "=r"(lr));
@@ -112,7 +112,7 @@ static void undefined_instr(void) {
 }
 
 static void abort_prefetch(void) {
-    asm volatile ("stmfd sp!, {r0-r12}");
+    DUMPSAVE;
 
     unsigned int lr;
     asm volatile("mov %0, lr\n\t" : "=r"(lr));
@@ -140,7 +140,7 @@ static void abort_prefetch(void) {
 }
 
 static void abort_data(void) {
-    asm volatile ("stmfd sp!, {r0-r12}");
+    DUMPSAVE;
 
     unsigned int lr;
     asm volatile("mov %0, lr\n\t" : "=r"(lr));
