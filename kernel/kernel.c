@@ -169,8 +169,9 @@ static void abort_data(void) {
 
 int main(void) {
     libinit();
-    static volatile unsigned int hardware_pc;
-    hardware_pc = 0;
+    static volatile unsigned int hardware_pc_spsr[2];
+    hardware_pc_spsr[0] = 0;
+    hardware_pc_spsr[1] = 0;
 
     // set up memory bank
     *((unsigned int *) BANK_UNDEFINED_INSTR) = BANK_JUMP_INSTR;
@@ -185,14 +186,15 @@ int main(void) {
 
     register unsigned int swi_addr asm("r0");
     register unsigned int h_int_addr asm("r1");
-    register unsigned int hardware_pc_addr asm("r2") = (unsigned int) &hardware_pc;
+    register unsigned int hardware_pc_spsr_addr asm("r2") =
+        (unsigned int) &hardware_pc_spsr;
     asm volatile(
         "ldr %0, =kerlabel\n\t" // Load the label from a literal pool
         "ldr %1, =intentry\n\t" // Same
         "msr cpsr_c, #0xd2\n\t" // Switch to irq
         "mov r13, %2\n\t"       // Remember where to set hardware interrupt lr.
         "msr cpsr_c, #0xd3\n\t" // Switch to supervisor
-    : "=r"(swi_addr), "=r"(h_int_addr) : "r"(hardware_pc_addr));
+    : "=r"(swi_addr), "=r"(h_int_addr) : "r"(hardware_pc_spsr_addr));
     *((unsigned int *) (BANK_SOFTWARE_INT + BANK_JUMP)) = swi_addr;
     *((unsigned int *) (BANK_IRQ + BANK_JUMP)) = h_int_addr;
 
@@ -221,7 +223,9 @@ int main(void) {
             "movs pc, r14\n\t"              // JUMP!
 
             "intentry:\n\t"                 // Land here on hardward interrupts
-            "str lr, [r13]\n\t"             // Shove a task's pc into hardware
+            "str lr, [r13]\n\t"             // Shove a task's pc into hardware_pc_spsr[0]
+            "mrs lr, spsr\n\t"              // Put SPSR into LR
+            "str lr, [r13, #4]\n\t"         // Shove SPSR into hardware_pc_spsr[1]
 
             "kerlabel:\n\t"                 // ucode: SWI n
             "msr cpsr_c, #0xdf\n\t"         // Switch to system mode
@@ -239,19 +243,25 @@ int main(void) {
 
         setTaskState(active, sp, spsr);
 
-        if(hardware_pc) {
+        if (hardware_pc_spsr[0]) {
+            setTaskState(active, sp, hardware_pc_spsr[1]);
+
             // Fix the task PC (top of trap frame) with the PC captured by
             // hardware interrupt.
             //
-            // We subtract 12 to reload the 3 instructions in the pipeline when
-            // the interrupt occurred.
-            *sp = hardware_pc - 12;
+            // From the ARM documentation for MOV rd, rn:
+            //      If rd is PC, then the real value moved is PC = rn + 8
+            // 
+            // Since we want to retry the instruction that got interrupted, we
+            // store PC = LR - 8.
+            *sp = hardware_pc_spsr[0] - 8;
 
             handleInterrupt();
 
             // reset so we don't confuse all kernel entries as hardware
             // interrupts
-            hardware_pc = 0;
+            hardware_pc_spsr[0] = 0;
+            hardware_pc_spsr[1] = 0;
         } else {
             unsigned int call = *(((unsigned int *) *sp) - 1) & 0x00FFFFFF;
             dispatchSyscall(active, call, sp + 1);
