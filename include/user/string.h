@@ -54,6 +54,34 @@ static inline void sputstr(struct String *s, const char *str) {
     }
 }
 
+static inline void sputuint(struct String *s,
+        unsigned int num, unsigned short base) {
+
+    int dgt;
+    unsigned int d = 1;
+
+    while ((num / d) >= base) {
+        d *= base;
+    }
+
+    while (d != 0) {
+        dgt = num / d;
+        num %= d;
+        d /= base;
+
+        sputc(s, (dgt < 10) ? dgt + '0' : (dgt - 10) + 'a');
+    }
+}
+
+static inline void sputint(struct String *s, int num, unsigned short base) {
+    if (num < 0) {
+        sputc(s, '-');
+        num *= -1;
+    }
+
+    sputuint(s, num, base);
+}
+
 static inline void sconcat(struct String *to, struct String *from) {
     for (int i = 0; i < from->offset; ++i) {
         sputc(to, from->buffer[i]);
