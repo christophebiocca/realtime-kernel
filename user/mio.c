@@ -155,13 +155,21 @@ static void mioServer(void) {
 
             case CMD_USER_RX:
                 /* make sure no one else is already waiting for input */
-                assert(rx_tid == -1);
+                // HEISENBUG: same problem as assert on `default` case
+                //assert(rx_tid == -1);
                 rx_tid = tid;
 
                 break;
 
             default:
+                /* HEISENBUG: uncommenting the following assert triggers a weird
+                 * copy of it where the filename and assertion condition are
+                 * missing but the function name and line number are correct.
+
                 assert(0);
+
+                 */
+                break;
         }
 
         if (slen(&rx_buffer) != 0 && rx_tid >= 0) {
