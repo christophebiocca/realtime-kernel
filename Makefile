@@ -33,6 +33,9 @@ deploy: kernel.elf
 kernel.elf : $(objects) linker.ld
 	$(LD) $(LDFLAGS) -o $@ $(filter-out linker.ld,$^) -lgcc
 
+%.cpp: %.c
+	$(CC) -o $@ -E $(CFLAGS) $<
+
 %.s: %.c
 	$(CC) -o $@ -S $(CFLAGS) $<
 
