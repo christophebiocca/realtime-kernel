@@ -1,3 +1,4 @@
+#include <debug.h>
 #include <lib.h>
 
 #include <kernel/ipc.h>
@@ -20,6 +21,12 @@ static inline void copyMessage(struct TaskDescriptor *src, struct TaskDescriptor
 
 void ipcSend(unsigned int task_id){
     struct TaskDescriptor *rec = &g_task_table[taskIndex(task_id)];
+
+    // don't send to dead tasks
+    assert(rec->status != TSK_ZOMBIE);
+
+    // don't send to yourself
+    assert(g_active_task->id != rec->id);
 
     if(task_id != rec->id){
         g_active_task->sp[1]=-2;
