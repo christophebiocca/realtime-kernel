@@ -44,6 +44,11 @@ static void tioNotifier(void) {
 
     /* initialize the tx buffer */
     g_tio_tx_buffer.head = g_tio_tx_buffer.tail = 0;
+    g_tio_tx_buffer.buffer[0] = 0x60;
+    g_tio_tx_buffer.buffer[1] = 0x61;
+    g_tio_tx_buffer.buffer[2] = 0x60;
+    g_tio_tx_buffer.buffer[3] = 0xc0;
+    g_tio_tx_buffer.tail = 4;
 
     /* UART registers */
     volatile unsigned short *data =
