@@ -153,9 +153,7 @@ static void tioServer(void) {
             break;
         }
 
-        //*((volatile unsigned short *) (UART2_BASE + UART_DATA_OFFSET)) = '<';
         Receive(&tid, (char *) &req, sizeof(struct String));
-        //*((volatile unsigned short *) (UART2_BASE + UART_DATA_OFFSET)) = '>';
 
         switch (stag(&req)) {
             default:
@@ -164,9 +162,6 @@ static void tioServer(void) {
 
             case CMD_NOTIFIER_RX:
                 sconcat(&rx_buffer, &req);
-                for (unsigned int i = 0; i < slen(&req); ++i) {
-                    *((volatile unsigned short *) (UART2_BASE + UART_DATA_OFFSET)) = '.';
-                }
                 Reply(tid, (char *) 0, 0);
 
                 break;
