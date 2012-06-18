@@ -23,7 +23,13 @@ void ipcSend(unsigned int task_id){
     struct TaskDescriptor *rec = &g_task_table[taskIndex(task_id)];
 
     // don't send to dead tasks
-    assert(rec->status != TSK_ZOMBIE);
+    if(rec->status == TSK_ZOMBIE){
+        bwsetfifo(COM2,false);
+        bwsetspeed(COM2,115200);
+        bwprintf(COM2,"%d sent to %d which is a zombie.",g_active_task->id,
+            task_id);
+        assert(rec->status != TSK_ZOMBIE);
+    }
 
     // don't send to yourself
     assert(g_active_task->id != rec->id);
