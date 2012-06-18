@@ -56,6 +56,10 @@ static void tioNotifier(void) {
     volatile unsigned short *flags =
         (volatile unsigned short *) (UART1_BASE + UART_FLAG_OFFSET);
 
+    while(!(*flags & RXFE_MASK)){
+        (void) *data;
+    }
+
     bool txfe = false, cts = true, clear_cts = true;
 
     while (1) {
