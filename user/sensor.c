@@ -49,6 +49,7 @@ static void updateSensorDisplay(struct RecentSensor *recent_sensors, int recent_
 
         sputstr(&s, CURSOR_HIDE);
         sputstr(&s, CURSOR_SAVE);
+        sputstr(&s, RESET);
         vtPos(&s, SENSOR_ROW, SENSOR_COL + (j * 4));
         sputstr(&s,
             (j == 0) ? RED :

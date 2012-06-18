@@ -13,6 +13,7 @@ void printTime(int time){
     sinit(&s);
     sputstr(&s, CURSOR_HIDE);
     sputstr(&s, CURSOR_SAVE);
+    sputstr(&s, RESET);
     vtPos(&s, TIMER_ROW, TIMER_COL);
     sputc(&s, '0' + time / 3600000);
     sputc(&s, '0' + (time % 3600000) / 360000);
