@@ -49,6 +49,11 @@ kernel.elf : $(objects) linker.ld
 clean:
 	-rm -f kernel.elf $(objects) $(assembled_sources) $(sources:.c=.d) kernel.map
 
+submit: prod
+	mkdir -p ~/cs452/$(DIR)/src/
+	mv kernel.elf ~/cs452/$(DIR)/
+	git archive HEAD --format=tar | tar -x -C ~/cs452/$(DIR)/src/
+
 prod: clean
 	make CFLAGS="$(CFLAGS) -DPRODUCTION"
 
