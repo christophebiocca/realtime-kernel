@@ -10,6 +10,7 @@
 #include <user/turnout.h>
 #include <user/clock.h>
 #include <user/vt100.h>
+#include <user/clock_drawer.h>
 
 union ParserData {
     struct TrainSpeedParse {
@@ -203,7 +204,6 @@ bool parse(struct Parser *parser, char c){
         switch(parser->state){
             case Q_Q:
                 {
-                    sputstr(&s,"Quitting.\r\n");
                     ret = false;
                 }
                 break;
@@ -279,12 +279,15 @@ void commandParser(void){
             active = parse(&parser, s.buffer[i]);
         }
     }
+    sinit(&s);
+    sputstr(&s, "Graceful shutdown in progress\r\n");
+    mioPrint(&s);
     shutdownTrains();
     sensorQuit();
-    Delay(500);
+    clockDrawerQuit();
+    Delay(300);
     mioQuit();
     tioQuit();
-    Delay(500);
     ClockQuit();
     Exit();
 }
