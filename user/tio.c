@@ -159,9 +159,6 @@ static void tioServer(void) {
 
             case CMD_NOTIFIER_RX:
                 sconcat(&rx_buffer, &req);
-                for (unsigned int i = 0; i < slen(&req); ++i) {
-                    *((volatile unsigned short *) (UART2_BASE + UART_DATA_OFFSET)) = '.';
-                }
                 Reply(tid, (char *) 0, 0);
 
                 break;
@@ -203,7 +200,7 @@ static void tioServer(void) {
                 break;
         }
 
-        if (slen(&rx_buffer) != 0 && rx_tid >= 0) {
+        if (slen(&rx_buffer) > 0 && rx_tid >= 0) {
             Reply(rx_tid, (char *) &rx_buffer, sizeof(struct String));
 
             sinit(&rx_buffer);
