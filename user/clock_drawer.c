@@ -29,19 +29,20 @@ void printTime(int time){
     mioPrint(&s);
 }
 
-static int loop;
+static volatile int loop;
 void clockDrawer(void){
     // A tenth of a second is 10 ticks
-    loop = true;
     int now = Time();
     while(loop){
         printTime(now);
         now += 5;
         DelayUntil(now);
     }
+    Exit();
 }
 
 void clockDrawerInit(void){
+    loop = true;
     Create(TASK_PRIORITY, clockDrawer);
 }
 
