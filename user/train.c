@@ -7,6 +7,7 @@
 #include <debug.h>
 #include <stdbool.h>
 
+#define NUM_TRAINS 80
 struct Trainstruction {
     enum {
         SetSpeed,
@@ -33,7 +34,7 @@ void trainEngineer(void){
         switch(mesg.messagetype){
             case SetSpeed:
                 assert(mesg.speed < 15);
-                assert(mesg.train < 80);
+                assert(mesg.train < NUM_TRAINS);
                 sinit(&s);
                 sputc(&s,0xF & mesg.speed);
                 sputc(&s,mesg.train);
@@ -42,7 +43,7 @@ void trainEngineer(void){
                 mesg.messagetype = SpeedReached;
                 break;
             case Reverse:
-                assert(mesg.train < 80);
+                assert(mesg.train < NUM_TRAINS);
                 sinit(&s);
                 sputc(&s,15);
                 sputc(&s,mesg.train);
@@ -59,12 +60,12 @@ void trainEngineer(void){
 static int trainPlannerId;
 void trainPlanner(void){
     trainPlannerId = MyTid();
-    int engineer[80];
-    bool ready[80];
-    char currentSpeed[80];
-    char targetSpeed[80];
-    bool reverse[80];
-    for(int i = 0; i < 80; ++i){
+    int engineer[NUM_TRAINS];
+    bool ready[NUM_TRAINS];
+    char currentSpeed[NUM_TRAINS];
+    char targetSpeed[NUM_TRAINS];
+    bool reverse[NUM_TRAINS];
+    for(int i = 0; i < NUM_TRAINS; ++i){
         engineer[i] = 0;
         ready[i] = false;
         targetSpeed[i] = 0;
@@ -101,7 +102,7 @@ void trainPlanner(void){
                 break;
             case Started:
                 // The train doesn't know its id yet, find it.
-                for(int i = 0; i < 80; ++i){
+                for(int i = 0; i < NUM_TRAINS; ++i){
                     if(engineer[i] == tid){
                         mesg.train = i;
                         break;
