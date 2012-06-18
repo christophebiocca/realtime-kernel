@@ -55,7 +55,7 @@ void turnoutInit(void) {
 }
 
 static void turnoutCmd(char address, char cmd, char *colour, char rep) {
-    int i, row, col;
+    int i = 0, row = 0, col = 0;
 
     if (address >= 1 && address <= 18) {
         i = address - 1;

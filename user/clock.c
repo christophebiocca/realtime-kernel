@@ -68,7 +68,7 @@ static void clockServer(void) {
     int ndelays = 0;
 
     int should_quit = -1;
-    bool has_quit;
+    bool has_quit = false;
 
     Create(CLOCK_NOTIFIER_PRIORITY, clockNotifier);
 
