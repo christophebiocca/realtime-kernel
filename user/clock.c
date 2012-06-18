@@ -12,7 +12,7 @@
 #define INT_TIMER1  4
 
 // raise interrupt every 10ms
-#define NTICKS      20
+#define NTICKS      5080
 
 #define TIME_REQUEST    -1
 #define TICK_REQUEST    -2
@@ -25,7 +25,8 @@ static void clockNotifier(void) {
 
     *((unsigned int *) (TIMER1_BASE + LDR_OFFSET)) = NTICKS;
     // enable a 2kHz periodic timer
-    *((unsigned int *) (TIMER1_BASE + CRTL_OFFSET)) = ENABLE_MASK | MODE_MASK;
+    *((unsigned int *) (TIMER1_BASE + CRTL_OFFSET)) = ENABLE_MASK | MODE_MASK |
+        CLKSEL_MASK;
 
     while (1) {
         AwaitEvent(INT_TIMER1);
