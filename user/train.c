@@ -102,13 +102,14 @@ void trainPlanner(void){
                 reverse[mesg.train] = !reverse[mesg.train];
                 Reply(tid, 0, 0);
                 break;
+            case Stop:
+                shutdown = true;
+                Reply(tid, 0, 0);
+                break;
             case SpeedReached:
                 assert(engineer[mesg.train] == tid);
                 currentSpeed[mesg.train] = mesg.speed;
                 ready[mesg.train] = true;
-                break;
-            case Stop:
-                shutdown = true;
                 break;
             case Reversed:
                 assert(engineer[mesg.train] == tid);
