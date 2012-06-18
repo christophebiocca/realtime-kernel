@@ -36,7 +36,7 @@ void clockDrawer(void){
     int now = Time();
     while(loop){
         printTime(now);
-        now += 5;
+        now += 10;
         DelayUntil(now);
     }
     Exit();

@@ -34,39 +34,33 @@ static void sensorFormat(struct String *s, char byte, char bit) {
     sputc(s, '0' + (bit % 10));
 }
 
-#define NUM_RECENT_SENSORS  9
+#define NUM_RECENT_SENSORS  6
 struct RecentSensor {
     char byte;
     char bit;
 };
 
 static void updateSensorDisplay(struct RecentSensor *recent_sensors, int recent_i) {
+    struct String s;
+    sinit(&s);
+
+    sputstr(&s, CURSOR_HIDE);
+    sputstr(&s, CURSOR_SAVE);
+    vtPos(&s, SENSOR_ROW, SENSOR_COL);
+    sputstr(&s, RESET);
+
     for (int i = (recent_i + 1) % NUM_RECENT_SENSORS, j = 0;
             recent_sensors[i].bit != 0;
             i = (i + 1) % NUM_RECENT_SENSORS, ++j) {
-        struct String s;
-        sinit(&s);
-
-        sputstr(&s, CURSOR_HIDE);
-        sputstr(&s, CURSOR_SAVE);
-        sputstr(&s, RESET);
-        vtPos(&s, SENSOR_ROW, SENSOR_COL + (j * 4));
-        sputstr(&s,
-            (j == 0) ? RED :
-            (j == 1) ? YELLOW :
-            (j == 2) ? GREEN :
-            (j == 3) ? CYAN :
-            RESET
-        );
-
         sensorFormat(&s, recent_sensors[i].byte, recent_sensors[i].bit);
         sputc(&s, ' ');
-        sputstr(&s, RESET);
-        sputstr(&s, CURSOR_RESTORE);
-        sputstr(&s, CURSOR_SHOW);
-
-        mioPrint(&s);
     }
+
+    sputstr(&s, RESET);
+    sputstr(&s, CURSOR_RESTORE);
+    sputstr(&s, CURSOR_SHOW);
+
+    mioPrint(&s);
 }
 
 static void sensorTask(void) {
