@@ -1,0 +1,41 @@
+#ifndef VT100_H
+#define VT100_H
+
+#include <user/string.h>
+
+#define TIMER_ROW         1
+#define TIMER_COL         60
+#define SWITCH_ROW        3
+#define SENSOR_ROW        14
+#define SENSOR_COL        18
+#define CONSOLE_ROW       17
+#define SCROLL_BOTTOM     35
+
+void vtInit(void);
+
+void vtPos(struct String *s, unsigned int row, unsigned int col);
+
+/* dumb hack because CPP doesn't expand macros on stringification */
+#define pp_str(x)   #x
+#define pp_xstr(x)  pp_str(x)
+
+#define ESC               "\033"
+#define CSI               ESC "["
+#define SEP               ";"
+
+#define SCROLL(top, bot)  (CSI pp_xstr(top) SEP pp_xstr(bot) "r")
+
+#define CURSOR_SAVE       (ESC "7")
+#define CURSOR_RESTORE    (ESC "8")
+#define CURSOR_HIDE       (CSI "?25l")
+#define CURSOR_SHOW       (CSI "?25h")
+
+#define CLEAR_SCREEN      (CSI "2J")
+
+#define RESET             (CSI "0m")
+#define RED               (CSI "31m")
+#define GREEN             (CSI "32m")
+#define YELLOW            (CSI "33m")
+#define CYAN              (CSI "36m")
+
+#endif
