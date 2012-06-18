@@ -51,7 +51,7 @@ static void tioNotifier(void) {
     volatile unsigned short *flags =
         (volatile unsigned short *) (UART1_BASE + UART_FLAG_OFFSET);
 
-    bool txfe = false, cts = true;
+    bool txfe = false, cts = true, clear_cts = true;
 
     while (1) {
         if (g_tio_quit) {
@@ -59,12 +59,15 @@ static void tioNotifier(void) {
         }
 
         /* transmit data if possible */
-        if (txfe && cts && g_tio_tx_buffer.head != g_tio_tx_buffer.tail) {
+        if (txfe && clear_cts && cts && !(*flags & TXFF_MASK) &&
+                !(*flags & TXBUSY_MASK) && (*flags & CTS_MASK) &&
+                g_tio_tx_buffer.head != g_tio_tx_buffer.tail) {
             *data = g_tio_tx_buffer.buffer[g_tio_tx_buffer.head];
             g_tio_tx_buffer.head =
                 (g_tio_tx_buffer.head + 1) % TIO_TX_BUFFER_LEN;
             txfe = false;
-            cts = true;
+            cts = false;
+            clear_cts = false;
         }
 
         /* Always enable receive and modem status interrupts.
@@ -112,7 +115,11 @@ static void tioNotifier(void) {
 
         if (intr & MIS_MASK) {
             /* modem status interrupt */
-            cts = *flags & CTS_MASK;
+            if (*flags & CTS_MASK) {
+                cts = true;
+            } else {
+                clear_cts = true;
+            }
             *((volatile unsigned short *) (UART1_BASE + UART_INTR_OFFSET)) = 1;
         }
 
@@ -141,7 +148,9 @@ static void tioServer(void) {
             break;
         }
 
+        //*((volatile unsigned short *) (UART2_BASE + UART_DATA_OFFSET)) = '<';
         Receive(&tid, (char *) &req, sizeof(struct String));
+        //*((volatile unsigned short *) (UART2_BASE + UART_DATA_OFFSET)) = '>';
 
         switch (stag(&req)) {
             default:
@@ -150,6 +159,9 @@ static void tioServer(void) {
 
             case CMD_NOTIFIER_RX:
                 sconcat(&rx_buffer, &req);
+                for (unsigned int i = 0; i < slen(&req); ++i) {
+                    *((volatile unsigned short *) (UART2_BASE + UART_DATA_OFFSET)) = '.';
+                }
                 Reply(tid, (char *) 0, 0);
 
                 break;
@@ -176,7 +188,7 @@ static void tioServer(void) {
             }
 
             case CMD_USER_RX:
-                /* cannot assert(rx_tid == -1) for fear of heisenbug */
+                assert(rx_tid == -1);
                 rx_tid = tid;
                 break;
 
