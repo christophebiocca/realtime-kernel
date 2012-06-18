@@ -9,6 +9,8 @@
 #include <user/mio.h>
 #include <user/tio.h>
 #include <user/priorities.h>
+#include <user/vt100.h>
+#include <user/turnout.h>
 
 /* Train IO test */
 static void idlerTask(void) {
@@ -17,15 +19,8 @@ static void idlerTask(void) {
 }
 
 static void trainTask(void) {
-    mioInit();
-    tioInit();
-
-    struct String str;
-    sinit(&str);
-    sputstr(&str, "Hello World: ");
-    sputuint(&str, 123, 10);
-    sputstr(&str, "\r\n");
-    mioPrint(&str);
+    vtInit();
+    turnoutInit();
 
     struct String out;
     sinit(&out);
@@ -35,6 +30,8 @@ static void trainTask(void) {
     int i = 0;
     while (1) {
         struct String in;
+        struct String str;
+
         tioRead(&in);
 
         sinit(&str);
@@ -61,6 +58,9 @@ static void trainTask(void) {
 }
 
 void trainTaskInit(void) {
+    mioInit();
+    tioInit();
+
     Create(TASK_PRIORITY, trainTask);
     Create(31, idlerTask);
     Exit();
