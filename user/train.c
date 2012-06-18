@@ -14,7 +14,8 @@ struct Trainstruction {
         Reverse,
         Started,
         SpeedReached,
-        Reversed
+        Reversed,
+        Stop
     } messagetype : 8;
     unsigned char train;
     unsigned char speed;
@@ -51,6 +52,14 @@ void trainEngineer(void){
                 Delay(5);
                 mesg.messagetype = Reversed;
                 break;
+            case Stop:
+                assert(mesg.train < NUM_TRAINS);
+                sinit(&s);
+                sputc(&s,0x0);
+                sputc(&s,mesg.train);
+                tioPrint(&s);
+                Delay(400);
+                Exit();
             default:
                 assert(false);
         }
@@ -72,7 +81,9 @@ void trainPlanner(void){
         currentSpeed[i] = 0;
         reverse[i] = false;
     }
-    while(true){
+    bool shutdown = false;
+    bool allTrainsDown = false;
+    while(!shutdown || !allTrainsDown){
         struct Trainstruction mesg;
         int tid;
         int length = Receive(&tid, (char*) &mesg, sizeof(struct Trainstruction));
@@ -94,6 +105,9 @@ void trainPlanner(void){
                 assert(engineer[mesg.train] == tid);
                 currentSpeed[mesg.train] = mesg.speed;
                 ready[mesg.train] = true;
+                break;
+            case Stop:
+                shutdown = true;
                 break;
             case Reversed:
                 assert(engineer[mesg.train] == tid);
@@ -136,7 +150,28 @@ void trainPlanner(void){
             assert(ret == 0);
             ready[mesg.train] = false;
         }
+        if(shutdown){
+            // Traverse the trains and stop them.
+            allTrainsDown = true;
+            for(int i = 0; i < NUM_TRAINS; ++i){
+                if(engineer[i]){
+                    if(ready[i]){
+                        struct Trainstruction t;
+                        t.messagetype = Stop;
+                        t.train = i;
+                        int ret = Reply(engineer[i], (char*) &t,
+                            sizeof(struct Trainstruction));
+                        (void) ret;
+                        assert(ret == 0);
+                        engineer[i] = 0;
+                    } else {
+                        allTrainsDown = false;
+                    }
+                }
+            }
+        }
     }
+    Exit();
 }
 
 // Sets the speed for the given train.
@@ -156,6 +191,15 @@ void reverse(int train){
     struct Trainstruction instr;
     instr.messagetype = Reverse;
     instr.train = train;
+    int length = Send(trainPlannerId, (char*) &instr,
+        sizeof(struct Trainstruction), 0,0);
+    (void) length;
+    assert(length == 0);
+}
+
+void shutdownTrains(void){
+    struct Trainstruction instr;
+    instr.messagetype = Stop;
     int length = Send(trainPlannerId, (char*) &instr,
         sizeof(struct Trainstruction), 0,0);
     (void) length;
