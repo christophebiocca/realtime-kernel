@@ -255,7 +255,9 @@ bool parse(struct Parser *parser, char c){
                 }
                 break;
         }
-        sputstr(&s, "> ");
+        if(ret){
+            sputstr(&s, "> ");
+        }
         parser->state = Empty;
     } // Ignore non printing characters.
     mioPrint(&s);
