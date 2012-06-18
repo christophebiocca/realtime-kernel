@@ -32,9 +32,6 @@ void trainEngineer(void){
         struct String s;
         switch(mesg.messagetype){
             case SetSpeed:
-                sinit(&s);
-                sputstr(&s,"Going to change speeds.\r\n");
-                mioPrint(&s);
                 assert(mesg.speed < 15);
                 assert(mesg.train < 80);
                 sinit(&s);
@@ -42,24 +39,15 @@ void trainEngineer(void){
                 sputc(&s,mesg.train);
                 tioPrint(&s);
                 Delay(400);
-                sinit(&s);
-                sputstr(&s,"Done.\r\n");
-                mioPrint(&s);
                 mesg.messagetype = SpeedReached;
                 break;
             case Reverse:
-                sinit(&s);
-                sputstr(&s,"Reversing!\r\n");
-                mioPrint(&s);
                 assert(mesg.train < 80);
                 sinit(&s);
                 sputc(&s,15);
                 sputc(&s,mesg.train);
                 tioPrint(&s);
                 Delay(5);
-                sinit(&s);
-                sputstr(&s,"Done.\r\n");
-                mioPrint(&s);
                 mesg.messagetype = Reversed;
                 break;
             default:
