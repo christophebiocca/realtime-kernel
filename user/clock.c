@@ -37,7 +37,6 @@ static void clockNotifier(void) {
         );
 
         if (!response) {
-            trace("quit");
             break;
         }
     }
@@ -123,10 +122,7 @@ static void clockServer(void) {
             should_quit = tid;
             has_quit = false;
         } else {
-            trace("invalid request: %d", request);
-
-            int response = -2;
-            Reply(tid, (char *) &response, sizeof(int));
+            assert(false);
         }
 
         int triggered = 0;
@@ -149,7 +145,6 @@ static void clockServer(void) {
                 Reply(delays[i].tid, (char *) &ticks, sizeof(int));
             }
 
-            trace("quit");
             Reply(should_quit, (char *) &ticks, sizeof(int));
             break;
         }
