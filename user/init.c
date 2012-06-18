@@ -25,7 +25,7 @@ static void trainTask(void) {
     sensorInit();
 
     while (1) {
-        ;
+        Pass();
     }
 
     mioQuit();

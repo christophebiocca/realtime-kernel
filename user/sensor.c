@@ -99,23 +99,14 @@ static void sensorTask(void) {
     mioPrint(&s);
 
     while (1) {
-        //*((volatile unsigned short *) (UART2_BASE + UART_DATA_OFFSET)) = '(';
         tioRead(&s);
-        *((volatile unsigned short *) (UART2_BASE + UART_DATA_OFFSET)) = '0' + slen(&s);
-
-        (void) updateSensorDisplay;
 
         for (unsigned int i = 0; i < slen(&s); ++i) {
             char c = sbuffer(&s)[i];
             char old = sensor_state[last_byte];
             char diff = ~old & c;
-            sensor_state[last_byte] = old;
+            sensor_state[last_byte] = c;
 
-            (void) diff;
-            (void) c;
-            (void) old;
-            (void) updateSensorDisplay;
-#if 0
             for (int bit = 1; diff; diff >>= 1, ++bit) {
                 if (diff & 1) {
                     recent_sensors[recent_i].byte = last_byte;
@@ -132,7 +123,6 @@ static void sensorTask(void) {
                     updateSensorDisplay(recent_sensors, recent_i);
                 }
             }
-#endif
 
             last_byte = (last_byte + 1) % 10;
             if (last_byte == 0) {
@@ -140,6 +130,8 @@ static void sensorTask(void) {
             }
         }
     }
+
+    Exit();
 }
 
 void sensorInit(void) {

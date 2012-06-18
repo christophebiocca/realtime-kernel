@@ -208,7 +208,7 @@ static void tioServer(void) {
                 break;
         }
 
-        if (slen(&rx_buffer) != 0 && rx_tid >= 0) {
+        if (slen(&rx_buffer) > 0 && rx_tid >= 0) {
             Reply(rx_tid, (char *) &rx_buffer, sizeof(struct String));
 
             sinit(&rx_buffer);
