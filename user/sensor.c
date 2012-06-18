@@ -98,7 +98,7 @@ static void sensorTask(void) {
     sputstr(&s, "Recent Switches: ");
     mioPrint(&s);
 
-    while (1) {
+    while (!g_sensor_quit) {
         tioRead(&s);
 
         for (unsigned int i = 0; i < slen(&s); ++i) {

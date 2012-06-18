@@ -4,6 +4,7 @@
 #include <user/tio.h>
 #include <user/mio.h>
 #include <user/string.h>
+#include <user/priorities.h>
 #include <debug.h>
 #include <stdbool.h>
 
@@ -204,4 +205,8 @@ void shutdownTrains(void){
         sizeof(struct Trainstruction), 0,0);
     (void) length;
     assert(length == 0);
+}
+
+void trainInit(void){
+    Create(TASK_SERVER_PRIORITY, trainPlanner);
 }

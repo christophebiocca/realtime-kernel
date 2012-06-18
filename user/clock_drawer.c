@@ -4,13 +4,15 @@
 #include <user/string.h>
 #include <stdbool.h>
 #include <user/syscall.h>
+#include <user/vt100.h>
+#include <user/priorities.h>
 
 // Time is in tenths of a second.
 void printTime(int time){
     struct String s;
     sinit(&s);
-    sputc(&s, 'T');
-    sputc(&s, ':');
+    sputstr(&s, CURSOR_SAVE);
+    vtPos(&s, TIMER_ROW, TIMER_COL);
     sputc(&s, '0' + time / 3600000);
     sputc(&s, '0' + (time % 3600000) / 360000);
     sputc(&s, ':');
@@ -21,16 +23,26 @@ void printTime(int time){
     sputc(&s, '0' + (time % 1000) / 100);
     sputc(&s, '.');
     sputc(&s, '0' + (time % 100) / 10);
-    sputstr(&s, "\r\n");
+    sputstr(&s, CURSOR_RESTORE);
     mioPrint(&s);
 }
 
+static int loop;
 void clockDrawer(void){
     // A tenth of a second is 10 ticks
+    loop = true;
     int now = Time();
-    while(true){
+    while(loop){
         printTime(now);
         now += 5;
         DelayUntil(now);
     }
+}
+
+void clockDrawerInit(void){
+    Create(TASK_PRIORITY, clockDrawer);
+}
+
+void clockDrawerQuit(void){
+    loop = false;
 }

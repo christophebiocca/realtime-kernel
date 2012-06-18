@@ -10,8 +10,12 @@
 #include <user/tio.h>
 #include <user/priorities.h>
 #include <user/vt100.h>
+#include <user/parser.h>
 #include <user/turnout.h>
+#include <user/train.h>
 #include <user/sensor.h>
+#include <user/clock.h>
+#include <user/clock_drawer.h>
 
 /* Train IO test */
 static void idlerTask(void) {
@@ -23,14 +27,10 @@ static void trainTask(void) {
     vtInit();
     turnoutInit();
     sensorInit();
-
-    while (1) {
-        Pass();
-    }
-
-    mioQuit();
-    tioQuit();
-
+    trainInit();
+    parserInit();
+    clockInitTask();
+    clockDrawerInit();
     Exit();
 }
 
@@ -42,4 +42,3 @@ void trainTaskInit(void) {
     Create(31, idlerTask);
     Exit();
 }
-

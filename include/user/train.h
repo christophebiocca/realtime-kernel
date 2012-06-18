@@ -7,5 +7,8 @@ void setSpeed(int train, int speed);
 // Reverses the train.
 void reverse(int train);
 
+// Initialize the train process
+void trainInit(void);
+
 // Shutdown trains.
 void shutdownTrains(void);

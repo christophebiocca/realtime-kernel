@@ -3,7 +3,13 @@
 #include <user/string.h>
 #include <user/train.h>
 #include <user/mio.h>
+#include <user/tio.h>
+#include <user/priorities.h>
 #include <user/syscall.h>
+#include <user/sensor.h>
+#include <user/turnout.h>
+#include <user/clock.h>
+#include <user/vt100.h>
 
 union ParserData {
     struct TrainSpeedParse {
@@ -235,7 +241,11 @@ bool parse(struct Parser *parser, char c){
                         sputstr(&s, "Invalid switch number, should"
                             " be in [1-18],[153-156].");
                     } else {
-                        //throwSwitch(switchNumber, parser->data.switchThrow.curved);
+                        if(parser->data.switchThrow.curved){
+                            turnoutCurve(parser->data.switchThrow.switchNumber);
+                        } else {
+                            turnoutStraight(parser->data.switchThrow.switchNumber);
+                        }
                     }
                 }
                 break;
@@ -245,6 +255,7 @@ bool parse(struct Parser *parser, char c){
                 }
                 break;
         }
+        sputstr(&s, "> ");
         parser->state = Empty;
     } // Ignore non printing characters.
     mioPrint(&s);
@@ -256,6 +267,11 @@ void commandParser(void){
     parser.state = Empty;
     struct String s;
     bool active = true;
+    sinit(&s);
+    vtPos(&s, CONSOLE_ROW, 1);
+    sputstr(&s, CURSOR_SHOW);
+    sputstr(&s, "> ");
+    mioPrint(&s);
     while(active){
         sinit(&s);
         mioRead(&s);
@@ -264,5 +280,15 @@ void commandParser(void){
         }
     }
     shutdownTrains();
+    sensorQuit();
+    Delay(500);
+    mioQuit();
+    tioQuit();
+    Delay(500);
+    ClockQuit();
     Exit();
+}
+
+void parserInit(void){
+    Create(TASK_PRIORITY, commandParser);
 }
