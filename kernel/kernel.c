@@ -254,7 +254,7 @@ int main(void) {
             // 
             // Since we want to retry the instruction that got interrupted, we
             // store PC = LR - 8.
-            *sp = hardware_pc_spsr[0] - 8;
+            *sp = hardware_pc_spsr[0] - 4;
 
             handleInterrupt();
 
