@@ -11,6 +11,7 @@
 void printTime(int time){
     struct String s;
     sinit(&s);
+    sputstr(&s, CURSOR_HIDE);
     sputstr(&s, CURSOR_SAVE);
     vtPos(&s, TIMER_ROW, TIMER_COL);
     sputc(&s, '0' + time / 3600000);
@@ -24,6 +25,7 @@ void printTime(int time){
     sputc(&s, '.');
     sputc(&s, '0' + (time % 100) / 10);
     sputstr(&s, CURSOR_RESTORE);
+    sputstr(&s, CURSOR_SHOW);
     mioPrint(&s);
 }
 

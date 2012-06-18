@@ -47,6 +47,7 @@ static void updateSensorDisplay(struct RecentSensor *recent_sensors, int recent_
         struct String s;
         sinit(&s);
 
+        sputstr(&s, CURSOR_HIDE);
         sputstr(&s, CURSOR_SAVE);
         vtPos(&s, SENSOR_ROW, SENSOR_COL + (j * 4));
         sputstr(&s,
@@ -61,6 +62,7 @@ static void updateSensorDisplay(struct RecentSensor *recent_sensors, int recent_
         sputc(&s, ' ');
         sputstr(&s, RESET);
         sputstr(&s, CURSOR_RESTORE);
+        sputstr(&s, CURSOR_SHOW);
 
         mioPrint(&s);
     }
