@@ -95,6 +95,7 @@ static void sensorTask(void) {
     sputstr(&s, "Recent Switches: ");
     mioPrint(&s);
 
+    bool first_loop = true;
     while (!g_sensor_quit) {
         tioRead(&s);
 
@@ -104,7 +105,7 @@ static void sensorTask(void) {
             char diff = ~old & c;
             sensor_state[last_byte] = c;
 
-            for (int bit = 1; diff; diff >>= 1, ++bit) {
+            for (int bit = 1; !first_loop && diff; diff >>= 1, ++bit) {
                 if (diff & 1) {
                     recent_sensors[recent_i].byte = last_byte;
                     recent_sensors[recent_i].bit = bit;
@@ -116,13 +117,13 @@ static void sensorTask(void) {
 
                     recent_sensors[recent_i].byte = 0;
                     recent_sensors[recent_i].bit = 0;
-
                     updateSensorDisplay(recent_sensors, recent_i);
                 }
             }
 
             last_byte = (last_byte + 1) % 10;
             if (last_byte == 0) {
+                first_loop = false;
                 tioPrint(&query);
             }
         }
