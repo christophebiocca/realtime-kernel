@@ -3,6 +3,7 @@
 #include <user/string.h>
 #include <user/train.h>
 #include <user/mio.h>
+#include <user/syscall.h>
 
 union ParserData {
     struct TrainSpeedParse {
@@ -60,7 +61,8 @@ static inline int appendDecDigit(char c, int *num){
 }
 
 // Main entry point for parsing, allows us to
-void parse(struct Parser *parser, char c){
+bool parse(struct Parser *parser, char c){
+    bool ret = true;
     struct String s;
     sinit(&s);
     // Only feeds printable chars + new line to the parser.
@@ -196,6 +198,7 @@ void parse(struct Parser *parser, char c){
             case Q_Q:
                 {
                     sputstr(&s,"Quitting.\r\n");
+                    ret = false;
                 }
                 break;
             case TR_trainSpeed:
@@ -245,17 +248,21 @@ void parse(struct Parser *parser, char c){
         parser->state = Empty;
     } // Ignore non printing characters.
     mioPrint(&s);
+    return ret;
 }
 
 void commandParser(void){
     struct Parser parser;
     parser.state = Empty;
     struct String s;
-    while(true){
+    bool active = true;
+    while(active){
         sinit(&s);
         mioRead(&s);
         for(int i = 0; i < s.offset; ++i){
-            parse(&parser, s.buffer[i]);
+            active = parse(&parser, s.buffer[i]);
         }
     }
+    shutdownTrains();
+    Exit();
 }
