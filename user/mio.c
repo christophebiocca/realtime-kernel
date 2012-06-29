@@ -150,9 +150,6 @@ static void mioServer(void) {
                     g_mio_tx_buffer.buffer[g_mio_tx_buffer.tail] = buf[i];
                     g_mio_tx_buffer.tail =
                         (g_mio_tx_buffer.tail + 1) % MIO_TX_BUFFER_LEN;
-
-                    /* make sure we never wrap around */
-                    assert(g_mio_tx_buffer.tail != g_mio_tx_buffer.head);
                 }
 
                 Reply(tid, (char *) 0, 0);
@@ -166,8 +163,7 @@ static void mioServer(void) {
 
             case CMD_USER_RX:
                 /* make sure no one else is already waiting for input */
-                // HEISENBUG: same problem as assert on `default` case
-                //assert(rx_tid == -1);
+                assert(rx_tid == -1);
                 rx_tid = tid;
 
                 break;
@@ -183,14 +179,7 @@ static void mioServer(void) {
                 break;
 
             default:
-                /* HEISENBUG: uncommenting the following assert triggers a weird
-                 * copy of it where the filename and assertion condition are
-                 * missing but the function name and line number are correct.
-
                 assert(0);
-
-                 */
-                break;
         }
 
         if (slen(&rx_buffer) != 0 && rx_tid >= 0) {

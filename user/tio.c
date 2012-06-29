@@ -161,8 +161,7 @@ static void tioServer(void) {
 
         switch (stag(&req)) {
             default:
-                /* cannot assert(0) for fear of heisenbug */
-                break;
+                assert(0);
 
             case CMD_NOTIFIER_RX:
                 sconcat(&rx_buffer, &req);
@@ -177,9 +176,6 @@ static void tioServer(void) {
                     g_tio_tx_buffer.buffer[g_tio_tx_buffer.tail] = buf[i];
                     g_tio_tx_buffer.tail =
                         (g_tio_tx_buffer.tail + 1) % TIO_TX_BUFFER_LEN;
-
-                    /* make sure we never wrap around */
-                    assert(g_tio_tx_buffer.tail != g_tio_tx_buffer.head);
                 }
 
                 Reply(tid, (char *) 0, 0);
