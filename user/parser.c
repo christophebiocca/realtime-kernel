@@ -426,6 +426,7 @@ bool parse(struct Parser *parser, char c){
                 }
 
                 sensorTimer(sensor1, sensor1Number, sensor2, sensor2Number);
+                break;
             }
 
             case E_E: {
