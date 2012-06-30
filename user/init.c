@@ -16,6 +16,7 @@
 #include <user/sensor.h>
 #include <user/clock.h>
 #include <user/clock_drawer.h>
+#include <user/engineer.h>
 
 /* Train IO test */
 static void idlerTask(void) {
@@ -31,6 +32,7 @@ static void trainTask(void) {
     parserInit();
     clockInitTask();
     clockDrawerInit();
+    initEngineer(39);
     Exit();
 }
 
