@@ -74,6 +74,31 @@ void memcpy32(void *dest, void *src, unsigned int n) {
     }
 }
 
+void memset16(void *dest, unsigned int word, unsigned int n) {
+    if (!n) return;
+
+    if (n == 4) {
+        *((unsigned int *) dest) = word;
+    } else {
+        register void *rdest asm("r0") = dest;
+        register unsigned int rn asm("r1") = n;
+        register unsigned int rword asm("r2") = word;
+
+        asm volatile (
+            "mov r3, %2\n\t"                // Copy word into 3 other registers
+            "mov r4, %2\n\t"
+            "mov r5, %2\n\t"
+            "memset16_loop:\n\t"
+            "stmia %0!, {%2,r3-r5}\n\t"     // load them into dest
+            "subs %1, %1, #16\n\t"          // subtract 16 from n and set COND
+            "bgt memset16_loop\n\t"         // top of loop on greater than zero
+            : /* no outputs */
+            : "r"(rdest), "r"(rn), "r"(rword)
+            : "r3", "r4", "r5"
+        );
+    }
+}
+
 int countLeadingZeroes(int num){
     return LOOKUP[(((unsigned int) num & -num) * BRUJIN_SEQUENCE) >> 27];
 }
