@@ -5,6 +5,10 @@
  *
  */
 
+#define TIMER4_VAL      ((volatile unsigned int *) 0x80810060)
+#define TIMER4_CRTL     ((volatile unsigned int *) 0x80810064)
+#define TIMER4_ENABLE   0x1ff
+
 // T1 and T2 are 16 bits wide, T3 is 32 bits wide.
 #define	TIMER1_BASE	0x80810000
 #define	TIMER2_BASE	0x80810020

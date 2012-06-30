@@ -1,8 +1,10 @@
-Track A: Train 39
-=================
+Stopping
+========
 
-Stopping at D11
----------------
+Track A: Train 39
+-----------------
+
+### Stopping at D11 ###
 
  F8 | 496 mm | 494 mm | 494 mm
  B8 | 608 mm | 609 mm | 619 mm
@@ -10,8 +12,7 @@ Stopping at D11
 F10 | 616 mm | 605 mm | 615 mm
 B10 | 725 mm | 721 mm | 723 mm
 
-Stopping at C8, S7 curved
--------------------------
+### Stopping at C8, S7 curved ###
 
  F8 | 510 mm | 510 mm | 490 mm | 485 mm
  B8 | 620 mm | 615 mm | 620 mm | 626 mm
@@ -24,3 +25,56 @@ B12 | 898 mm | 877 mm | 878 mm | 886 mm
 ----+--------+--------+--------+-------
 F14 | 830 mm | 835 mm | 838 mm | 845 mm
 B14 | 955 mm | 961 mm | 957 mm | 966 mm
+
+Speed
+=====
+
+Track A: Train 39
+-----------------
+
+Ticks measured by 908.3 kHz debug timer.
+
+Straight: D11 -> C16: 407 mm
+Slight Curve: C6 -> B15: 485 mm
+Deep Curve: C9 -> B15: 380 mm
+
+### Speed 14 ###
+
+### Forward: Straight ###
+
+(
+    668068 +
+    668163 +
+    666063 +
+    666985 +
+    666395 +
+    666729
+) / 6 = 667067.1666666666 ticks
+
+Total: 5541.842238275356 um / cs
+
+#### Forward: Slight Curve ####
+
+(
+    795303 +
+    793315 +
+    795292 +
+    793214 +
+    793442 +
+    793212
+) / 6 = 793963 ticks
+
+Total: 5548.438655201817 um / cs
+
+### Forward: Deep Curve ###
+
+(
+    604567 +
+    604183 +
+    606190 +
+    606242 +
+    604183 +
+    604362
+) / 6 = 604954.5
+
+Total: 5705.453881242308 um / cs

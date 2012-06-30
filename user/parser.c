@@ -32,6 +32,13 @@ union ParserData {
         int sensor;
         int sensorNumber;
     } sensorInterrupt;
+
+    struct SensorTimerParse {
+        int sensor1;
+        int sensor1Number;
+        int sensor2;
+        int sensor2Number;
+    } sensorTimer;
 };
 
 struct Parser {
@@ -60,6 +67,13 @@ struct Parser {
         I_secondSpace,
         I_sensorAlpha,
         I_sensorNumber,
+        D_D,
+        D_firstSpace,
+        D_firstSensorAlpha,
+        D_firstSensorNumber,
+        D_secondSpace,
+        D_secondSensorAlpha,
+        D_secondSensorNumber,
         Q_Q
     } state;
     union ParserData data;
@@ -106,12 +120,59 @@ bool parse(struct Parser *parser, char c){
                     case 's':
                         parser->state = SW_S;
                         break;
+                    case 'd':
+                        parser->state = D_D;
+                        break;
                     case 'i':
                         parser->state = I_I;
                         break;
                     default:
                         parser->state = ErrorState;
                         break;
+                }
+                break;
+
+            case D_D:
+                EXPECT_EXACT(' ', D_firstSpace);
+                break;
+
+            case D_firstSpace:
+                parser->data.sensorTimer.sensor1 = c;
+                parser->state = D_firstSensorAlpha;
+                break;
+
+            case D_firstSensorAlpha:
+                parser->data.sensorTimer.sensor1Number = 0;
+                if (appendDecDigit(c, &parser->data.sensorTimer.sensor1Number)) {
+                    parser->state = D_firstSensorNumber;
+                } else {
+                    parser->state = ErrorState;
+                }
+                break;
+
+            case D_firstSensorNumber:
+                if (!appendDecDigit(c, &parser->data.sensorTimer.sensor1Number)) {
+                    EXPECT_EXACT(' ', D_secondSpace);
+                }
+                break;
+
+            case D_secondSpace:
+                parser->data.sensorTimer.sensor2 = c;
+                parser->state = D_secondSensorAlpha;
+                break;
+
+            case D_secondSensorAlpha:
+                parser->data.sensorTimer.sensor2Number = 0;
+                if (appendDecDigit(c, &parser->data.sensorTimer.sensor2Number)) {
+                    parser->state = D_secondSensorNumber;
+                } else {
+                    parser->state = ErrorState;
+                }
+                break;
+
+            case D_secondSensorNumber:
+                if (!appendDecDigit(c, &parser->data.sensorTimer.sensor2Number)) {
+                    parser->state = ErrorState;
                 }
                 break;
 
@@ -334,6 +395,29 @@ bool parse(struct Parser *parser, char c){
                 }
 
                 sensorInterrupt(trainNumber, sensor, sensorNumber);
+                break;
+            }
+
+            case D_secondSensorNumber: {
+                int sensor1 = parser->data.sensorTimer.sensor1;
+                int sensor1Number = parser->data.sensorTimer.sensor1Number;
+                int sensor2 = parser->data.sensorTimer.sensor2;
+                int sensor2Number = parser->data.sensorTimer.sensor2Number;
+
+                if (sensor1 < 'a' || sensor2 < 'a' || sensor1 > 'e' || sensor2 > 'e') {
+                    sputstr(&s, "Invalid sensor, should"
+                        " be between [A, E]\r\n");
+                    break;
+                }
+
+                if (sensor1Number < 1 || sensor2Number < 1
+                        || sensor1Number > 16 || sensor2Number > 16) {
+                    sputstr(&s, "Invalid sensor number, should"
+                        " be between [1, 16]\r\n");
+                    break;
+                }
+
+                sensorTimer(sensor1, sensor1Number, sensor2, sensor2Number);
                 break;
             }
 

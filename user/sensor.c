@@ -71,6 +71,13 @@ static struct {
     int bit;
 } g_current_sensor_interrupt;
 
+static struct {
+    int sensor1_byte;
+    int sensor1_bit;
+    int sensor2_byte;
+    int sensor2_bit;
+} g_current_sensor_timer;
+
 static void sensorTask(void) {
     struct RecentSensor recent_sensors[NUM_RECENT_SENSORS];
     int recent_i;
@@ -123,6 +130,27 @@ static void sensorTask(void) {
                         setSpeed(g_current_sensor_interrupt.train_number, 0);
                     }
 
+                    if (last_byte == g_current_sensor_timer.sensor1_byte
+                            && bit == g_current_sensor_timer.sensor1_bit) {
+                        *(TIMER4_CRTL) = TIMER4_ENABLE;
+                    }
+
+                    if (last_byte == g_current_sensor_timer.sensor2_byte
+                            && bit == g_current_sensor_timer.sensor2_bit) {
+                        unsigned int ticks = *(TIMER4_VAL);
+                        *(TIMER4_CRTL) = 0;
+                        struct String s;
+
+                        sinit(&s);
+                        sputstr(&s, CURSOR_SAVE);
+                        vtPos(&s, TIMER_ROW, 1);
+                        sputstr(&s, "Ticks: ");
+                        sputuint(&s, ticks, 10);
+                        sputstr(&s, "        ");
+                        sputstr(&s, CURSOR_RESTORE);
+                        mioPrint(&s);
+                    }
+
                     /* becase modulo of a negative number can be negative >_> */
                     if (--recent_i < 0) {
                         recent_i += NUM_RECENT_SENSORS;
@@ -150,20 +178,44 @@ void sensorInit(void) {
     Create(TASK_PRIORITY, sensorTask);
 
     g_current_sensor_interrupt.byte = -1;
+    g_current_sensor_timer.sensor1_byte = -1;
+    g_current_sensor_timer.sensor2_byte = -1;
 }
 
 void sensorQuit(void) {
     g_sensor_quit = true;
 }
 
-void sensorInterrupt(int train_number, int sensor, int sensor_number) {
-    int byte = (sensor - 'a') * 2;
-    if (sensor_number > 8) {
-        ++byte;
-        sensor_number -= 8;
+static inline void sensorToByteBit(int sensor, int number, int *byte, int *bit) {
+    *byte = (sensor - 'a') * 2;
+    if (number > 8) {
+        ++(*byte);
+        number -= 8;
     }
 
+    *bit = 9 - number;
+}
+
+void sensorInterrupt(int train_number, int sensor, int sensor_number) {
     g_current_sensor_interrupt.train_number = train_number;
-    g_current_sensor_interrupt.byte = byte;
-    g_current_sensor_interrupt.bit = 9 - sensor_number;
+
+    sensorToByteBit(
+        sensor, sensor_number,
+        &g_current_sensor_interrupt.byte,
+        &g_current_sensor_interrupt.bit
+    );
+}
+
+void sensorTimer(int sensor1, int sensor1_num, int sensor2, int sensor2_num) {
+    sensorToByteBit(
+        sensor1, sensor1_num,
+        &g_current_sensor_timer.sensor1_byte,
+        &g_current_sensor_timer.sensor1_bit
+    );
+
+    sensorToByteBit(
+        sensor2, sensor2_num,
+        &g_current_sensor_timer.sensor2_byte,
+        &g_current_sensor_timer.sensor2_bit
+    );
 }
