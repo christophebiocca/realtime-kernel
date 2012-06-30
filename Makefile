@@ -21,7 +21,7 @@ vpath %.h include include/kernel include/user
 vpath %.c $(srcdirs)
 
 generated_sources = user/track_data.c
-generated_headers = user/track_data.h
+generated_headers = include/user/track_data.h
 
 sources := $(foreach sdir,$(srcdirs),$(wildcard $(sdir)/*.c)) $(generated_sources)
 assembled_sources := $(patsubst %c,%s,$(sources))
@@ -37,7 +37,7 @@ kernel.elf: $(objects) linker.ld
 	$(LD) $(LDFLAGS) -o $@ $(filter-out linker.ld,$^) -lgcc
 
 user/track_data.c: data/parse_track.py data/tracka data/trackb
-	data/parse_track.py -C user/track_data.c -H user/track_data.h data/tracka data/trackb
+	data/parse_track.py -C user/track_data.c -H include/user/track_data.h -S 77 data/tracka data/trackb
 
 %.cpp: %.c
 	$(CC) -o $@ -E $(CFLAGS) $<

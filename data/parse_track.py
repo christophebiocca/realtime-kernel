@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 import sys
+from ctypes import c_uint
+
+def djb2(s):
+    h = c_uint(5381)
+    for c in s:
+        h = c_uint(((h.value << 5) + h.value) + ord(c))
+    return h.value
 
 ########################################################################
 #### Usage and Options.
@@ -13,8 +20,11 @@ parser.add_option('-C', dest='c', default='track_data.c',
 parser.add_option('-H', dest='h', default='track_data.h',
   help='output .h file (default is track_data.h)',
   metavar='OUTPUT-H-FILE')
+parser.add_option('-S', dest='s',
+  help='Compute hashes with hash table of size SIZE',
+  metavar='SIZE')
 (options, args) = parser.parse_args()
-if len(args) == 0 or not options.c or not options.h:
+if len(args) == 0 or not options.c or not options.h or not options.s:
   parser.print_help()
   exit(0)
 
@@ -288,41 +298,25 @@ if errors > 0:
   exit(1)
 
 ########################################################################
-#### Output the .h code.
-# This is the right place to make changes that you want to appear in
-# the generated file (as opposed to in the file itself, since it will
-# be overwritten when this script is run again).
-maxidx = max([len(tracks[function].nodes) for function in tracks])
-fh = open(options.h, 'w')
-fh.write('''/* THIS FILE IS GENERATED CODE -- DO NOT EDIT */
-
-#include <user/track_node.h>
-
-// The track initialization functions expect an array of this size.
-#define TRACK_MAX %d
-
-''' % maxidx)
-for fun in tracks:
-  fh.write("void %s(track_node *track);\n" % fun)
-fh.close()
-
-########################################################################
 #### Output the .c code.
 fh = open(options.c, 'w')
 fh.write('''/* THIS FILE IS GENERATED CODE -- DO NOT EDIT */
 
-#include "%s"
+#include <user/track_data.h>
 
 static void *memset(void *s, int c, unsigned int n) {
   unsigned char *p = s;
   while(n --> 0) { *p++ = (unsigned char)c; }
   return s;
 }
-''' % options.h)
+''')
 for fun in tracks:
+  hashtbl = {}
+  max_collisions = 0
+
   fh.write('''
-void %s(track_node *track) {
-  memset(track, 0, TRACK_MAX*sizeof(track_node));
+void %s(struct TrackNode *track, struct TrackHashNode *hashtbl) {
+  memset(track, 0, TRACK_MAX*sizeof(struct TrackNode));
 ''' % fun)
   for nd in tracks[fun].nodes:
     idx = nd.index
@@ -349,5 +343,91 @@ void %s(track_node *track) {
           (idx, dir.upper(), idx2))
         fh.write("  track[%d].edge[DIR_%s].dist = %s;\n" % \
           (idx, dir.upper(), dist))
+
+    djb_hash = djb2(nd.name) % int(options.s)
+    if djb_hash not in hashtbl:
+        hashtbl[djb_hash] = 0
+
+    fh.write('  hashtbl[%d].chain[%d] = &track[%d];\n' %
+        (djb_hash, hashtbl[djb_hash], idx))
+
+    hashtbl[djb_hash] += 1
+    if hashtbl[djb_hash] > max_collisions:
+        max_collisions = hashtbl[djb_hash]
+
+  for i in range(int(options.s)):
+      if i in hashtbl:
+          val = hashtbl[i]
+      else:
+          val = 0
+
+      fh.write('  hashtbl[%d].length = %d;\n' %
+        (i, val))
+
+
+  print max_collisions
+  tracks[fun].max_collisions = max_collisions
+
   fh.write("}\n")
+fh.close()
+
+########################################################################
+#### Output the .h code.
+# This is the right place to make changes that you want to appear in
+# the generated file (as opposed to in the file itself, since it will
+# be overwritten when this script is run again).
+maxidx = max([len(tracks[function].nodes) for function in tracks])
+maxhn = max([tracks[function].max_collisions for function in tracks])
+fh = open(options.h, 'w')
+fh.write('''#ifndef USER_TRACK_DATA_H
+#define USER_TRACK_DATA_H 1
+
+/* THIS FILE IS GENERATED CODE -- DO NOT EDIT */
+
+typedef enum {
+  NODE_NONE,
+  NODE_SENSOR,
+  NODE_BRANCH,
+  NODE_MERGE,
+  NODE_ENTER,
+  NODE_EXIT,
+} node_type;
+
+#define DIR_AHEAD 0
+#define DIR_STRAIGHT 0
+#define DIR_CURVED 1
+
+struct TrackNode;
+
+struct TrackEdge {
+  struct TrackEdge *reverse;
+  struct TrackNode *src, *dest;
+  int dist;             /* in millimetres */
+};
+
+struct TrackNode {
+  const char *name;
+  node_type type;
+  int num;              /* sensor or switch number */
+  struct TrackNode *reverse;  /* same location, but opposite direction */
+  struct TrackEdge edge[2];
+};
+
+#define MAX_HASHNODE_CHAIN_LENGTH %d
+
+struct TrackHashNode {
+  int length;
+  struct TrackNode *chain[MAX_HASHNODE_CHAIN_LENGTH];
+};
+
+#define MAX_HASHNODES %d
+
+// The track initialization functions expect an array of this size.
+#define TRACK_MAX %d
+
+''' % (maxhn, int(options.s), maxidx))
+for fun in tracks:
+  fh.write("void %s(struct TrackNode *track, struct TrackHashNode *hashtbl);\n" % fun)
+
+fh.write('#endif\n')
 fh.close()

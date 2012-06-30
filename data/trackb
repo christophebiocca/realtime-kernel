@@ -1,4 +1,4 @@
-function init_trackb
+function initTrackB
 
 node A1:
   sensor 0
