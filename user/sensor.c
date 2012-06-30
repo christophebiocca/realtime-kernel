@@ -65,9 +65,11 @@ static void updateSensorDisplay(struct RecentSensor *recent_sensors, int recent_
     mioPrint(&s);
 }
 
-static int g_interrupt_train_number;
-static int g_interrupt_byte;
-static int g_interrupt_bit;
+static struct {
+    int train_number;
+    int byte;
+    int bit;
+} g_current_sensor_interrupt;
 
 static void sensorTask(void) {
     struct RecentSensor recent_sensors[NUM_RECENT_SENSORS];
@@ -116,8 +118,9 @@ static void sensorTask(void) {
                     recent_sensors[recent_i].byte = last_byte;
                     recent_sensors[recent_i].bit = bit;
 
-                    if (last_byte == g_interrupt_byte && bit == g_interrupt_bit) {
-                        setSpeed(g_interrupt_train_number, 0);
+                    if (last_byte == g_current_sensor_interrupt.byte
+                            && bit == g_current_sensor_interrupt.bit) {
+                        setSpeed(g_current_sensor_interrupt.train_number, 0);
                     }
 
                     /* becase modulo of a negative number can be negative >_> */
@@ -146,7 +149,7 @@ void sensorInit(void) {
     g_sensor_quit = false;
     Create(TASK_PRIORITY, sensorTask);
 
-    g_interrupt_byte = -1;
+    g_current_sensor_interrupt.byte = -1;
 }
 
 void sensorQuit(void) {
@@ -159,20 +162,8 @@ void sensorInterrupt(int train_number, int sensor, int sensor_number) {
         ++byte;
         sensor_number -= 8;
     }
-    int bit = 9 - sensor_number;
 
-    /*
-    struct String s;
-    sinit(&s);
-    sputstr(&s, "Byte: ");
-    sputint(&s, byte, 10);
-    sputstr(&s, ", Bit: ");
-    sputint(&s, bit, 10);
-    sputstr(&s, "\r\n");
-    mioPrint(&s);
-    */
-
-    g_interrupt_train_number = train_number;
-    g_interrupt_byte = byte;
-    g_interrupt_bit = bit;
+    g_current_sensor_interrupt.train_number = train_number;
+    g_current_sensor_interrupt.byte = byte;
+    g_current_sensor_interrupt.bit = 9 - sensor_number;
 }
