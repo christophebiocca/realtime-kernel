@@ -11,6 +11,7 @@
 #include <user/clock.h>
 #include <user/vt100.h>
 #include <user/clock_drawer.h>
+#include <user/engineer.h>
 
 union ParserData {
     struct TrainSpeedParse {
@@ -60,6 +61,7 @@ struct Parser {
         I_secondSpace,
         I_sensorAlpha,
         I_sensorNumber,
+        E_E,
         Q_Q
     } state;
     union ParserData data;
@@ -108,6 +110,9 @@ bool parse(struct Parser *parser, char c){
                         break;
                     case 'i':
                         parser->state = I_I;
+                        break;
+                    case 'e':
+                        parser->state = E_E;
                         break;
                     default:
                         parser->state = ErrorState;
@@ -246,6 +251,9 @@ bool parse(struct Parser *parser, char c){
             case SW_S_Or_C:
                 parser->state = ErrorState;
                 break;
+            case E_E:
+                parser->state = ErrorState;
+                break;
             case Q_Q:
                 parser->state = ErrorState;
                 break;
@@ -334,6 +342,19 @@ bool parse(struct Parser *parser, char c){
                 }
 
                 sensorInterrupt(trainNumber, sensor, sensorNumber);
+                break;
+            }
+
+            case E_E: {
+                struct EngineerTarget target;
+                target.speed = 14;
+                target.time = Time() + 800;
+                target.distance = 2000000;
+                Send(engineerID, (char*) &target, sizeof(struct EngineerTarget), 0, 0);
+                target.speed = 0;
+                target.time += 800;
+                target.distance += 2000000;
+                Send(engineerID, (char*) &target, sizeof(struct EngineerTarget), 0, 0);
                 break;
             }
 
