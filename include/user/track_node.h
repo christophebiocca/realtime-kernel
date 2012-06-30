@@ -1,3 +1,6 @@
+#ifndef USER_TRACK_NODE_H
+#define USER_TRACK_NODE_H   1
+
 typedef enum {
   NODE_NONE,
   NODE_SENSOR,
@@ -28,3 +31,5 @@ struct track_node {
   track_node *reverse;  /* same location, but opposite direction */
   track_edge edge[2];
 };
+
+#endif

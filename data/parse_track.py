@@ -296,7 +296,7 @@ maxidx = max([len(tracks[function].nodes) for function in tracks])
 fh = open(options.h, 'w')
 fh.write('''/* THIS FILE IS GENERATED CODE -- DO NOT EDIT */
 
-#include "track_node.h"
+#include <user/track_node.h>
 
 // The track initialization functions expect an array of this size.
 #define TRACK_MAX %d
