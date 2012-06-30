@@ -17,13 +17,21 @@ union ParserData {
         int trainNumber;
         int trainSpeed;
     } trainSpeed;
+
     struct SwitchThrowParse {
         int switchNumber;
         bool curved;
     } switchThrow;
+
     struct TrainReverseParse {
         int trainNumber;
     } trainReverse;
+
+    struct SensorInterruptParse {
+        int trainNumber;
+        int sensor;
+        int sensorNumber;
+    } sensorInterrupt;
 };
 
 struct Parser {
@@ -46,6 +54,12 @@ struct Parser {
         SW_switchNumber,
         SW_secondSpace,
         SW_S_Or_C,
+        I_I,
+        I_firstSpace,
+        I_trainNumber,
+        I_secondSpace,
+        I_sensorAlpha,
+        I_sensorNumber,
         Q_Q
     } state;
     union ParserData data;
@@ -92,11 +106,54 @@ bool parse(struct Parser *parser, char c){
                     case 's':
                         parser->state = SW_S;
                         break;
+                    case 'i':
+                        parser->state = I_I;
+                        break;
                     default:
                         parser->state = ErrorState;
                         break;
                 }
                 break;
+
+            case I_I:
+                EXPECT_EXACT(' ', I_firstSpace);
+                break;
+
+            case I_firstSpace:
+                parser->data.sensorInterrupt.trainNumber = 0;
+                if (appendDecDigit(c, &parser->data.sensorInterrupt.trainNumber)) {
+                    parser->state = I_trainNumber;
+                } else {
+                    parser->state = ErrorState;
+                }
+                break;
+
+            case I_trainNumber:
+                if (!appendDecDigit(c, &parser->data.sensorInterrupt.trainNumber)) {
+                    EXPECT_EXACT(' ', I_secondSpace);
+                }
+                break;
+
+            case I_secondSpace:
+                parser->data.sensorInterrupt.sensor = c;
+                parser->state = I_sensorAlpha;
+                break;
+
+            case I_sensorAlpha:
+                parser->data.sensorInterrupt.sensorNumber = 0;
+                if (appendDecDigit(c, &parser->data.sensorInterrupt.sensorNumber)) {
+                    parser->state = I_sensorNumber;
+                } else {
+                    parser->state = ErrorState;
+                }
+                break;
+
+            case I_sensorNumber:
+                if (!appendDecDigit(c, &parser->data.sensorInterrupt.sensorNumber)) {
+                    parser->state = ErrorState;
+                }
+                break;
+
             case TR_T:
                 EXPECT_EXACT('r', TR_R);
                 break;
@@ -207,6 +264,7 @@ bool parse(struct Parser *parser, char c){
                     ret = false;
                 }
                 break;
+
             case TR_trainSpeed:
                 {
                     int trainSpeed = parser->data.trainSpeed.trainSpeed;
@@ -222,6 +280,7 @@ bool parse(struct Parser *parser, char c){
                     }
                 }
                 break;
+
             case RV_trainNumber:
                 {
                     int trainNumber = parser->data.trainReverse.trainNumber;
@@ -233,6 +292,7 @@ bool parse(struct Parser *parser, char c){
                     }
                 }
                 break;
+
             case SW_S_Or_C:
                 {
                     int switchNumber = parser->data.switchThrow.switchNumber;
@@ -249,6 +309,34 @@ bool parse(struct Parser *parser, char c){
                     }
                 }
                 break;
+
+            case I_sensorNumber: {
+                int trainNumber = parser->data.sensorInterrupt.trainNumber;
+                int sensor = parser->data.sensorInterrupt.sensor;
+                int sensorNumber = parser->data.sensorInterrupt.sensorNumber;
+
+                if (trainNumber < 0 || trainNumber > 80) {
+                    sputstr(&s, "Invalid train number, should"
+                        " be between [0, 80]\r\n");
+                    break;
+                }
+
+                if (sensor < 'a' || sensor > 'e') {
+                    sputstr(&s, "Invalid sensor, should"
+                        " be between [A, E]\r\n");
+                    break;
+                }
+
+                if (sensorNumber < 1 || sensorNumber > 16) {
+                    sputstr(&s, "Invalid sensor number, should"
+                        " be between [1, 16]\r\n");
+                    break;
+                }
+
+                sensorInterrupt(trainNumber, sensor, sensorNumber);
+                break;
+            }
+
             default:
                 {
                     sputstr(&s, "Your syntax is invalid.\r\n");

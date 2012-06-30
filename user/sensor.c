@@ -9,6 +9,8 @@
 #include <user/tio.h>
 #include <user/vt100.h>
 
+#include <user/train.h>
+
 /* 0 <= sensor < NUM_SENSORS
  *  * 0 <= bit < 16 */
 #define SENSOR_POS(s, sensor, bit) vtPos(s, SENSOR_ROW + sensor, bit * 4 + 1)
@@ -63,6 +65,10 @@ static void updateSensorDisplay(struct RecentSensor *recent_sensors, int recent_
     mioPrint(&s);
 }
 
+static int g_interrupt_train_number;
+static int g_interrupt_byte;
+static int g_interrupt_bit;
+
 static void sensorTask(void) {
     struct RecentSensor recent_sensors[NUM_RECENT_SENSORS];
     int recent_i;
@@ -110,6 +116,10 @@ static void sensorTask(void) {
                     recent_sensors[recent_i].byte = last_byte;
                     recent_sensors[recent_i].bit = bit;
 
+                    if (last_byte == g_interrupt_byte && bit == g_interrupt_bit) {
+                        setSpeed(g_interrupt_train_number, 0);
+                    }
+
                     /* becase modulo of a negative number can be negative >_> */
                     if (--recent_i < 0) {
                         recent_i += NUM_RECENT_SENSORS;
@@ -135,8 +145,34 @@ static void sensorTask(void) {
 void sensorInit(void) {
     g_sensor_quit = false;
     Create(TASK_PRIORITY, sensorTask);
+
+    g_interrupt_byte = -1;
 }
 
 void sensorQuit(void) {
     g_sensor_quit = true;
+}
+
+void sensorInterrupt(int train_number, int sensor, int sensor_number) {
+    int byte = (sensor - 'a') * 2;
+    if (sensor_number > 8) {
+        ++byte;
+        sensor_number -= 8;
+    }
+    int bit = 9 - sensor_number;
+
+    /*
+    struct String s;
+    sinit(&s);
+    sputstr(&s, "Byte: ");
+    sputint(&s, byte, 10);
+    sputstr(&s, ", Bit: ");
+    sputint(&s, bit, 10);
+    sputstr(&s, "\r\n");
+    mioPrint(&s);
+    */
+
+    g_interrupt_train_number = train_number;
+    g_interrupt_byte = byte;
+    g_interrupt_bit = bit;
 }

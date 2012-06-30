@@ -1,3 +1,6 @@
+#ifndef USER_TRAIN_H
+#define USER_TRAIN_H    1
+
 // Process that manages trains
 void trainPlanner(void);
 
@@ -12,3 +15,5 @@ void trainInit(void);
 
 // Shutdown trains.
 void shutdownTrains(void);
+
+#endif
