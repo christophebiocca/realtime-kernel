@@ -22,7 +22,9 @@ static void dispatchSyscall(struct TaskDescriptor *task,
                     args[0],
                     (void (*)(void)) args[1],
                     DEFAULT_STACK_SIZE,
-                    taskID(task)
+                    taskID(task),
+                    args[2],
+                    ((int *) args[3])
                 )
             );
             break;

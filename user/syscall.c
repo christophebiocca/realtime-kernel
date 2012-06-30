@@ -1,19 +1,34 @@
 #include <bwio.h>
+#include <debug.h>
 #include <user/syscall.h>
 
 #define syscall_num(id) "swi " #id "\n\t"
 #define syscall(name) syscall_num(name)
 
 int Create(int priority, void (*code)()){
+    return CreateArgs(priority, code, 0);
+}
+
+int CreateArgs(int priority, void (*code)(), int argc, ...){
     if(priority >= 32 || priority < 0){
         return -1; // Invalid priority.
     }
+    int argv[4];
+    assert(argc <= 4);
+    va_list vlist;
+    va_start(vlist, argc);
+    for(int i = 0; i < argc; ++i){
+        argv[i] = va_arg(vlist, int);
+    }
+    va_end(vlist);
     register unsigned int priority_in_ret_out asm("r0") = priority;
     register void (*code_in)() asm("r1") = code;
+    register int argc_in asm("r2") = argc;
+    register int *argv_in asm("r3") = argv;
     asm volatile(
         syscall(SYS_CREATE)
         : "+r"(priority_in_ret_out)
-        : "r"(code_in));
+        : "r"(code_in), "r"(argc_in), "r"(argv_in));
     return priority_in_ret_out;
 }
 

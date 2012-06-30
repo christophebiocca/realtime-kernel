@@ -3,6 +3,7 @@
 #include <lib.h>
 
 #include <kernel/task.h>
+#include <kernel/trampoline.h>
 #include "task_internal.h"
 #include <debug.h>
 
@@ -100,7 +101,7 @@ void initTaskSystem(void (*initialTask)(void)) {
     // Priority 0 because init task must run to completion before anything else
     // it may even issue multiple syscalls and must be guaranteed to run after
     // them.
-    int ret = createTask(0, initialTask, DEFAULT_STACK_SIZE, -1);
+    int ret = createTask(0, initialTask, DEFAULT_STACK_SIZE, -1, 0, 0);
     if(ret < 0){
         bwprintf(COM2, "Fatal error, %d when setting up initial task\r\n");
     }
@@ -117,7 +118,8 @@ void initTaskSystem(void (*initialTask)(void)) {
 #define TRAP_FRAME_SIZE 15
 
 int createTask(unsigned int priority, void (*code)(void),
-        unsigned int stack_size, int parent_task_id) {
+        unsigned int stack_size, int parent_task_id, int argc, int *argv) {
+    (void) argc; (void) argv;
     if (priority >= MAX_PRIORITY) {
         return -1;
     }
@@ -146,8 +148,12 @@ int createTask(unsigned int priority, void (*code)(void),
     // FIXME: zero out the trap frame
 
     // see trap frame layout above TRAP_FRAME_SIZE
-    *(t->sp) = ((unsigned int) code);
+    *(t->sp) = ((unsigned int) trampoline);
+    for(int i = 0; i < argc; ++i){
+        *(t->sp + 1 + i) = argv[i];
+    }
     *(t->sp + 12) = (unsigned int) t->sp;  // for now, set frame pointer = stack pointer
+    *(t->sp + 13) = ((unsigned int) code); // Store code to jump to in ip.
 
     priorityQueuePush(priority, t);
 

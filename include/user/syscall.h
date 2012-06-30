@@ -17,6 +17,10 @@
 // -2 Not enough task descriptors
 int Create(int priority, void (*code)());
 
+// Same as above except that it accepts 0-4 arguments to pass
+// to the spawned function. They must have 1 word widths.
+int CreateArgs(int priority, void (*code)(), int argc, ...);
+
 // Always returns the current task's tid.
 int MyTid(void);
 

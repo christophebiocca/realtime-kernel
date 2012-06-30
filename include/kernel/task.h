@@ -46,7 +46,9 @@ int createTask(
     unsigned int priority,
     void (*code)(void),
     unsigned int stack_size,
-    int parent_task_id
+    int parent_task_id,
+    int argc,
+    int *argv
 );
 #define DEFAULT_STACK_SIZE 0x400
 
