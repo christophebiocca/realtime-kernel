@@ -24,6 +24,7 @@ void engineer(int trainID){
     int accel[14] = {100,40,30,20,10,10,10, 10,10,10,10,10,10,10};
     // transition time into a speed from the one above, in ticks.
     int decel[14] = {100,40,30,20,10,10,10, 10,10,10,10,10,10,10};
+
     // pre compute a giant transition table.
     int speedChange[15][15];
     for(int to = 0; to < 15; ++to){
@@ -35,6 +36,7 @@ void engineer(int trainID){
             speedChange[from][to] = speedChange[from-1][to] + decel[from-1];
         }
     }
+
     // Spawn a clock waiter.
     int waiter = CreateArgs(TASK_PRIORITY, clockWaiter, 1, MyTid());
     int time;
@@ -44,6 +46,7 @@ void engineer(int trainID){
         assert(tid == waiter);
         assert(len == sizeof(int));
     }
+
     bool waiting = false;
     int currentDistance = 0;
     int currentTime = time;
@@ -61,7 +64,8 @@ void engineer(int trainID){
         int tid;
         int len = Receive(&tid, mesg, 16);
         (void) len;
-        if(tid == waiter){
+
+        if (tid == waiter){
             assert(len == sizeof(int));
             waiting = false;
             time = *((int*) mesg);
@@ -85,13 +89,16 @@ void engineer(int trainID){
             targets[depth].distance = target->distance;
             ++depth;
         }
+
         if(!waiting && depth > 0){
             struct EngineerTarget *target = targets;
             int deltatime = speedChange[currentSpeed][target->speed];
             int deltadist = deltatime * (speedTable[currentSpeed] + speedTable[target->speed])/2;
-            if(!(deltatime <= (target->time - currentTime))){
+
+            if(!(deltatime <= (target->time - currentTime))) {
                 struct String s;
                 sinit(&s);
+
                 sputuint(&s,deltatime,10);
                 sputstr(&s, " <= (");
                 sputuint(&s, target->time, 10);
@@ -99,12 +106,15 @@ void engineer(int trainID){
                 sputuint(&s, currentTime, 10);
                 sputstr(&s, "))");
                 mioPrint(&s);
+
                 for(int i = 0; i < 1000000; ++i);
+
                 assert(deltatime <= (target->time - currentTime));
             }
             if(!(deltadist <= (target->distance - currentDistance))){
                 struct String s;
                 sinit(&s);
+
                 sputuint(&s,deltadist,10);
                 sputstr(&s, " <= (");
                 sputuint(&s, target->distance, 10);
@@ -112,21 +122,29 @@ void engineer(int trainID){
                 sputuint(&s, currentDistance, 10);
                 sputstr(&s, "))");
                 mioPrint(&s);
+
                 for(int i = 0; i < 1000000; ++i);
+
                 assert(deltadist <= (target->distance - currentDistance));
             }
+
             int dist1 = currentDistance + deltadist + speedTable[currentSpeed]*(target->time - currentTime);
             int dist2 = currentDistance + deltadist + speedTable[target->speed]*(target->time - currentTime);
+
             assert(dist1 <= target->distance || dist2 <= target->distance);
             assert(dist1 >= target->distance || dist2 >= target->distance);
+
             int firetime = (-target->distance + currentDistance - speedTable[currentSpeed]*currentTime +
                 deltadist + speedTable[target->speed]*target->time - speedTable[target->speed]*deltatime)
                 /(speedTable[target->speed]-speedTable[currentSpeed]);
+
             assert(firetime >= currentTime);
             assert(firetime <= target->time);
+
             nextTime = target->time;
             nextSpeed = target->speed;
             nextDistance = target->distance;
+
             {
                 struct String s;
                 sinit(&s);
@@ -135,13 +153,16 @@ void engineer(int trainID){
                 sputstr(&s, "\r\n");
                 mioPrint(&s);
             }
+
             Reply(waiter,(char*)&firetime,sizeof(int));
             waiting = true;
+
             for(int i = 0; i < depth-1; ++i){
                 targets[i].speed = targets[i+1].speed;
                 targets[i].time = targets[i+1].time;
                 targets[i].distance = targets[i+1].distance;
             }
+
             --depth;
         }
     }
