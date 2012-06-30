@@ -28,7 +28,7 @@ int MyParentTid(void);
 void Pass(void);
 
 // Stop executing this task. Never returns.
-void Exit(void);
+void Exit(void) __attribute__((noreturn));
 
 // Sends a message to another task, only returns on error or success.
 // -1: impossible task id

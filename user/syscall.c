@@ -37,8 +37,9 @@ void Pass(void){
     asm volatile(syscall(SYS_PASS));
 }
 
-void Exit(void){
+__attribute__((noreturn)) void Exit(void){
     asm volatile(syscall(SYS_EXIT));
+    while(1); // To shut gcc up about returns.
 }
 
 int Send(int tid, char *msg, int msglen, char *reply, int replylen){
