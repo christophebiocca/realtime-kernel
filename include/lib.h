@@ -5,7 +5,7 @@ void libinit(void);
 
 // consider replacing with static moves memcpy
 char *strncpy(char *dest, char *from, unsigned int max_len);
-int strcmp(char *s1, char *s2);
+int strcmp(const char *s1, const char *s2);
 
 // Copies memory 16 or 32 bytes at a time.
 // Special case exists for n == 4 (1 word).

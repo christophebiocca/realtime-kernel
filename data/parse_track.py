@@ -302,6 +302,7 @@ if errors > 0:
 fh = open(options.c, 'w')
 fh.write('''/* THIS FILE IS GENERATED CODE -- DO NOT EDIT */
 
+#include <lib.h>
 #include <user/track_data.h>
 
 static void *memset(void *s, int c, unsigned int n) {
@@ -369,6 +370,42 @@ void %s(struct TrackNode *track, struct TrackHashNode *hashtbl) {
   tracks[fun].max_collisions = max_collisions
 
   fh.write("}\n")
+
+maxhn = max([tracks[function].max_collisions for function in tracks])
+
+fh.write('''
+static unsigned int djb2(const char *str) {
+    unsigned int hash = 5381;
+
+    for (; *str != '\\0'; ++str) {
+        hash = ((hash << 5) + hash) + *str;
+    }
+
+    return hash;
+}
+
+struct TrackNode *lookupTrackNode(struct TrackHashNode *hashtbl, const char *name) {
+    struct TrackHashNode *node = &hashtbl[djb2(name) %% %d];
+    
+    switch (node->length) {
+        case 3:
+            if (strcmp(name, node->chain[2]->name) == 0) {
+                return node->chain[2];
+            }
+        case 2:
+            if (strcmp(name, node->chain[1]->name) == 0) {
+                return node->chain[1];
+            }
+        case 1:
+            if (strcmp(name, node->chain[0]->name) == 0) {
+                return node->chain[0];
+            }
+        default:
+            return (struct TrackNode*) 0;
+    }
+}
+''' % maxhn)
+
 fh.close()
 
 ########################################################################
@@ -377,21 +414,20 @@ fh.close()
 # the generated file (as opposed to in the file itself, since it will
 # be overwritten when this script is run again).
 maxidx = max([len(tracks[function].nodes) for function in tracks])
-maxhn = max([tracks[function].max_collisions for function in tracks])
 fh = open(options.h, 'w')
 fh.write('''#ifndef USER_TRACK_DATA_H
 #define USER_TRACK_DATA_H 1
 
 /* THIS FILE IS GENERATED CODE -- DO NOT EDIT */
 
-typedef enum {
+enum NodeType {
   NODE_NONE,
   NODE_SENSOR,
   NODE_BRANCH,
   NODE_MERGE,
   NODE_ENTER,
   NODE_EXIT,
-} node_type;
+};
 
 #define DIR_AHEAD 0
 #define DIR_STRAIGHT 0
@@ -407,7 +443,7 @@ struct TrackEdge {
 
 struct TrackNode {
   const char *name;
-  node_type type;
+  enum NodeType type;
   int num;              /* sensor or switch number */
   struct TrackNode *reverse;  /* same location, but opposite direction */
   struct TrackEdge edge[2];
@@ -424,6 +460,8 @@ struct TrackHashNode {
 
 // The track initialization functions expect an array of this size.
 #define TRACK_MAX %d
+
+struct TrackNode *lookupTrackNode(struct TrackHashNode *hashtbl, const char *name);
 
 ''' % (maxhn, int(options.s), maxidx))
 for fun in tracks:

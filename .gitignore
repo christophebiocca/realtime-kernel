@@ -5,4 +5,4 @@
 *.bin
 *.map
 /user/track_data.c
-/user/track_data.h
+/include/user/track_data.h

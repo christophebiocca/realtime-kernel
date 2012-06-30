@@ -24,7 +24,7 @@ char *strncpy(char *dest, char *from, unsigned int max_len) {
     return dest;
 }
 
-int strcmp(char *s1, char *s2) {
+int strcmp(const char *s1, const char *s2) {
     while (*s1 && *s2 && *s1++ == *s2++)
         ;
     return *s1 - *s2;
