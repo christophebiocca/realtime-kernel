@@ -202,3 +202,19 @@ int ClockQuit(void) {
 
     return response;
 }
+
+void clockWaiter(void){
+    int parent = MyParentTid();
+    int time = Time();
+    while(true){
+        int len = Send(parent,(char*)&time,sizeof(int),
+            (char*)&time, sizeof(int));
+        (void) len;
+        assert(len == sizeof(int));
+        if(time >= 0){
+            DelayUntil(time);
+        } else {
+            Exit();
+        }
+    }
+}

@@ -8,4 +8,6 @@ int Time(void);
 int DelayUntil(int nticks);
 int ClockQuit(void);
 
+void clockWaiter(void);
+
 #endif
