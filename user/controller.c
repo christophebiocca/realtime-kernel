@@ -208,13 +208,10 @@ static void controllerServer(void) {
 
                 int train_id = expectations[request.sensorTriggered.sensor]
                     [request.sensorTriggered.number];
-                VALIDATE_TRAIN_ID(train_id);
 
-                int engineer_tid = train_status[train_id].engineer_tid;
-
-                if (engineer_tid >= 0) {
+                if (train_id >= 0 && train_id < MAX_TRAINS) {
                     engineerSensorTriggered(
-                        engineer_tid,
+                        train_status[train_id].engineer_tid,
                         request.sensorTriggered.sensor,
                         request.sensorTriggered.number
                     );
