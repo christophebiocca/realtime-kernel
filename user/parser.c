@@ -479,11 +479,10 @@ bool parse(struct Parser *parser, char c){
                 break;
             }
 
-            default:
-                {
-                    sputstr(&s, "Your syntax is invalid.\r\n");
-                }
+            default: {
+                sputstr(&s, "Your syntax is invalid.\r\n");
                 break;
+            }
         }
         if(ret){
             sputstr(&s, "> ");
