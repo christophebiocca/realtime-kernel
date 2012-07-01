@@ -321,6 +321,7 @@ void %s(struct TrackNode *track, struct TrackHashNode *hashtbl) {
 ''' % fun)
   for nd in tracks[fun].nodes:
     idx = nd.index
+    fh.write("  track[%d].idx = %d;\n" % (idx, idx))
     fh.write("  track[%d].name = \"%s\";\n" % (idx, nd.name))
     nodetype = 'NODE_' + nd.nodetype.upper()
     fh.write("  track[%d].type = %s;\n" % (idx, nodetype))
@@ -445,6 +446,7 @@ struct TrackNode {
   const char *name;
   enum NodeType type;
   int num;              /* sensor or switch number */
+  int idx;
   struct TrackNode *reverse;  /* same location, but opposite direction */
   struct TrackEdge edge[2];
 };
