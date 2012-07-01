@@ -21,7 +21,7 @@ inline static int getTotal(struct PathNode *node){
     return node->total;
 }
 
-HEAP(PathHeap, struct PathNode*, getTotal, 16, <)
+HEAP(PathHeap, struct PathNode*, getTotal, 9, <)
 
 int heuristic(struct TrackNode *here, struct TrackNode *goal){
     // Gotta define something here. Use the dumbest one for now.
@@ -29,63 +29,70 @@ int heuristic(struct TrackNode *here, struct TrackNode *goal){
     return 0;
 }
 
-int planPath(struct TrackNode *start, struct TrackNode *goal, struct TrackNode **output){
-    struct PathNode nodes[TRACK_MAX * 2];
+int planPath(struct TrackNode *list, struct TrackNode *start, struct TrackNode *goal, struct TrackNode **output){
+    struct PathNode nodes[TRACK_MAX];
+    for(int i = 0; i < TRACK_MAX; ++i){
+        nodes[i].node = &list[i];
+        nodes[i].cost = 0x7FFFFFFF;
+        nodes[i].total = 0x7FFFFFFF;
+        nodes[i].from = 0;
+    }
     struct PathHeap heap;
     heap.count = 0;
-    // Placeholder goal node.
-    nodes[0].node = goal;
-    nodes[0].cost = 0x7FFFFFFF;
-    nodes[0].total = 0x7FFFFFFF;
-    nodes[0].from = 0;
+    // Goal Node
     // Start Node
-    nodes[1].node = start;
-    nodes[1].cost = 0;
-    nodes[1].total = heuristic(start, goal);
-    nodes[1].from = 0;
-    int count = 2;
-    PathHeapPush(&heap, &nodes[1]);
-    struct PathNode *goalNode = &nodes[0];
-    while(heap.heap[1]->total <= goalNode->cost){
+    {
+        nodes[start->idx].cost = 0;
+        nodes[start->idx].total = heuristic(start, goal);
+        nodes[start->idx].from = 0;
+    }
+    // Start Node, reverse direction
+    {
+        nodes[start->reverse->idx].cost = 0;
+        nodes[start->reverse->idx].total = heuristic(start->reverse, goal);
+        nodes[start->reverse->idx].from = &nodes[start->idx];
+    }
+    PathHeapPush(&heap, &nodes[start->idx]);
+    PathHeapPush(&heap, &nodes[start->reverse->idx]);
+    struct PathNode *goalNode = &nodes[goal->idx];
+    while(heap.count && heap.heap[1]->total <= goalNode->cost){
         struct PathNode *next = PathHeapPop(&heap);
-        {
-            // The reverse, considered to have no cost.
-            nodes[count].node = next->node->reverse;
-            nodes[count].cost = next->cost + 1000;
-            nodes[count].total = nodes[count].cost + heuristic(nodes[count].node, goal);
-            nodes[count].from = next;
-            if(nodes[count].node == goal && nodes[count].cost < goalNode->cost){
-                goalNode = &nodes[count];
-            } else {
-                PathHeapPush(&heap,&nodes[count]);
-            }
-            ++count;
+        struct TrackNode *seq[3];
+        int seqCost[3];
+        int seqCount = 0;
+        if(next->node->type == NODE_BRANCH || next->node->type == NODE_MERGE || next->node->reverse == goal){
+            seq[seqCount] = next->node->reverse;
+            seqCost[seqCount++] = 1000;
         }
         if(next->node->type != NODE_EXIT){
-            // The straight/ahead segment, almost always exits.
-            nodes[count].node = next->node->edge[0].dest;
-            nodes[count].cost = next->cost + next->node->edge[0].dist;
-            nodes[count].total = nodes[count].cost + heuristic(nodes[count].node, goal);
-            nodes[count].from = next;
-            if(nodes[count].node == goal && nodes[count].cost < goalNode->cost){
-                goalNode = &nodes[count];
-            } else {
-                PathHeapPush(&heap,&nodes[count]);
-            }
-            ++count;
+            seq[seqCount] = next->node->edge[0].dest;
+            seqCost[seqCount++] = next->node->edge[0].dist;
         }
         if(next->node->type == NODE_BRANCH){
-            // The curved branch segment, only available on branches.
-            nodes[count].node = next->node->edge[1].dest;
-            nodes[count].cost = next->cost + next->node->edge[1].dist;
-            nodes[count].total = nodes[count].cost + heuristic(nodes[count].node, goal);
-            nodes[count].from = next;
-            if(nodes[count].node == goal && nodes[count].cost < goalNode->cost){
-                goalNode = &nodes[count];
-            } else {
-                PathHeapPush(&heap,&nodes[count]);
+            seq[seqCount] = next->node->edge[1].dest;
+            seqCost[seqCount++] = next->node->edge[1].dist;
+        }
+        for(int i = 0; i < seqCount; ++i){
+            struct TrackNode *node = seq[i];
+            int cost = seqCost[i];
+            if(next->cost + cost < nodes[node->idx].cost){
+                nodes[node->idx].cost = next->cost + cost;
+                nodes[node->idx].total = nodes[node->idx].cost + heuristic(nodes[node->idx].node, goal);
+                nodes[node->idx].from = next;
+                if(nodes[node->idx].total < goalNode->total && node != goal){
+                    {
+                        struct String s;
+                        sinit(&s);
+                        sputstr(&s, "Push ");
+                        sputstr(&s, node->name);
+                        sputc(&s, ' ');
+                        sputuint(&s, nodes[node->idx].total,10);
+                        sputstr(&s, "\r\n");
+                        mioPrint(&s);
+                    }
+                    PathHeapPush(&heap,&nodes[node->idx]);
+                }
             }
-            ++count;
         }
     }
     // At this point, the current goal node has the shortest path made out of back-pointers.
@@ -164,7 +171,7 @@ void planRoute(char *src, char *dest){
     assert(destNode);
 
     struct TrackNode *route[50];
-    int count = planPath(srcNode, destNode, route);
+    int count = planPath(trackNodes, srcNode, destNode, route);
     for(int i = 0; i < count; ++i){
         struct String s;
         sinit(&s);
