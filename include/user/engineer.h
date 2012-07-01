@@ -7,7 +7,6 @@
 void planRoute(char *start, char *end);
 
 extern volatile int engineerID;
-void initEngineer(int trainID);
 int engineerCreate(int trainID);
 void engineerQuit(int engineer_tid);
 

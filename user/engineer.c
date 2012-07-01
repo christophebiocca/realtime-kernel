@@ -112,13 +112,7 @@ void engineer(int trainID){
     (void) trainID;
 }
 
-static struct TrackHashNode hashtbl[MAX_HASHNODES];
-static struct TrackNode trackNodes[TRACK_MAX];
 
-void initEngineer(int trainID){
-    (void) trainID;
-    initTrackA(trackNodes, hashtbl);
-}
 
 int engineerCreate(int trainID){
     return CreateArgs(TASK_PRIORITY, engineer, 1, trainID);
@@ -158,7 +152,7 @@ void planRoute(char *src, char *dest){
     assert(destNode);
 
     struct TrackNode *route[50];
-    int count = planPath(trackNodes, srcNode, destNode, route);
+    int count = planPath(nodes, srcNode, destNode, route);
     for(int i = 0; i < count; ++i){
         struct String s;
         sinit(&s);
