@@ -4,11 +4,12 @@
 #include <user/string.h>
 
 #define TIMER_ROW         1
+#define TRAIN_ROW         2
 #define TIMER_COL         60
-#define SWITCH_ROW        3
-#define SENSOR_ROW        14
+#define SWITCH_ROW        4
+#define SENSOR_ROW        15
 #define SENSOR_COL        18
-#define CONSOLE_ROW       17
+#define CONSOLE_ROW       18
 #define SCROLL_BOTTOM     35
 
 void vtInit(void);
@@ -31,6 +32,7 @@ void vtPos(struct String *s, unsigned int row, unsigned int col);
 #define CURSOR_SHOW       (CSI "?25h")
 
 #define CLEAR_SCREEN      (CSI "2J")
+#define CLEAR_LINE        (CSI "2K")
 
 #define RESET             (CSI "0m")
 #define RED               (CSI "31m")

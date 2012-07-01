@@ -7,6 +7,8 @@
 #include <user/priorities.h>
 #include <user/turnout.h>
 #include <user/syscall.h>
+#include <user/vt100.h>
+#include <user/mio.h>
 
 #define MAX_TRAINS          80
 #define MAX_SENSORS         5
@@ -162,7 +164,22 @@ static void controllerServer(void) {
                 train_status[train_id].node = request.updatePosition.node;
                 train_status[train_id].mm = request.updatePosition.mm;
 
-                // FIXME: print new position to screen
+                // FIXME: multiple trains?
+                struct String s;
+                sinit(&s);
+                sputstr(&s, CURSOR_SAVE);
+                sputstr(&s, CURSOR_HIDE);
+                vtPos(&s, TRAIN_ROW, 1);
+
+                sputstr(&s, "Train: ");
+                sputstr(&s, request.updatePosition.node->name);
+                sputc(&s, ' ');
+                sputint(&s, request.updatePosition.mm, 10);
+                sputstr(&s, "mm");
+
+                sputstr(&s, CURSOR_SHOW);
+                sputstr(&s, CURSOR_RESTORE);
+                mioPrint(&s);
 
                 break;
             }
