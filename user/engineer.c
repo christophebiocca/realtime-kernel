@@ -13,9 +13,25 @@ void engineer(int trainID){
 
 void initEngineer(int trainID){
     (void) trainID;
-    initTrackA(trackNodes, hashtbl);
+    //initTrackA(trackNodes, hashtbl);
 }
 
 int engineerCreate(int trainID){
     return CreateArgs(TASK_PRIORITY, engineer, 1, trainID);
+}
+
+void engineerSend(int engineer_tid, struct TrackNode *dest, int mm) {
+    (void) engineer_tid;
+    (void) dest;
+    (void) mm;
+}
+
+void engineerSensorTriggered(int engineer_tid, int sensor, int number) {
+    (void) engineer_tid;
+    (void) sensor;
+    (void) number;
+}
+
+void engineerQuit(int engineer_tid) {
+    (void) engineer_tid;
 }

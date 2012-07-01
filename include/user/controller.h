@@ -1,7 +1,7 @@
 #ifndef USER_CONTROLLER_H
 #define USER_CONTROLLER_H   1
 
-#include <user/track_node.h>
+#include <user/track_data.h>
 
 void controllerInit(void);
 void controllerQuit(void);
@@ -22,9 +22,9 @@ void controllerSendTrain(int train_id, struct TrackNode *node, int mm);
 // meant to be called only by the sensor server
 void controllerSensorTriggered(int sensor, int number);
 
-// returns non-zero if the request could not be fulfilled
 // meant to be called by engineers
-int controllerTurnoutCurve(int address);
-int controllerTurnoutStraight(int address);
+// FIXME: this could possibly fail when we implement reservations
+void controllerTurnoutCurve(int address);
+void controllerTurnoutStraight(int address);
 
 #endif

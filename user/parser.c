@@ -429,19 +429,6 @@ bool parse(struct Parser *parser, char c){
                 break;
             }
 
-            case E_E: {
-                struct EngineerTarget target;
-                target.speed = 14;
-                target.time = Time() + 800;
-                target.distance = 2000000;
-                Send(engineerID, (char*) &target, sizeof(struct EngineerTarget), 0, 0);
-                target.speed = 0;
-                target.time += 800;
-                target.distance += 2000000;
-                Send(engineerID, (char*) &target, sizeof(struct EngineerTarget), 0, 0);
-                break;
-            }
-
             default:
                 {
                     sputstr(&s, "Your syntax is invalid.\r\n");
