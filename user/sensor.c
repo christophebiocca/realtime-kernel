@@ -1,6 +1,7 @@
 #include <ts7200.h>
 #include <stdbool.h>
 
+#include <user/controller.h>
 #include <user/mio.h>
 #include <user/priorities.h>
 #include <user/sensor.h>
@@ -159,6 +160,14 @@ static void sensorTask(void) {
                     recent_sensors[recent_i].byte = 0;
                     recent_sensors[recent_i].bit = 0;
                     updateSensorDisplay(recent_sensors, recent_i);
+
+                    // update the controller
+                    int sensor = last_byte / 2;
+                    int number = 8 - bit;
+                    if (last_byte % 2) {
+                        number += 8;
+                    }
+                    controllerSensorTriggered(sensor, number);
                 }
             }
 

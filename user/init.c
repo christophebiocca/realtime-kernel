@@ -1,22 +1,24 @@
 #include <bwio.h>
-
 #include <ts7200.h>
-#include <user/nameserver.h>
-#include <user/syscall.h>
-#include <user/init.h>
 
-#include <user/string.h>
-#include <user/mio.h>
-#include <user/tio.h>
+#include <user/init.h>
 #include <user/priorities.h>
+#include <user/string.h>
+#include <user/syscall.h>
 #include <user/vt100.h>
-#include <user/parser.h>
-#include <user/turnout.h>
-#include <user/train.h>
-#include <user/sensor.h>
+
+#include <user/mio.h>
+#include <user/nameserver.h>
+#include <user/tio.h>
+
 #include <user/clock.h>
 #include <user/clock_drawer.h>
+#include <user/controller.h>
 #include <user/engineer.h>
+#include <user/parser.h>
+#include <user/sensor.h>
+#include <user/train.h>
+#include <user/turnout.h>
 
 /* Train IO test */
 static void idlerTask(void) {
@@ -32,6 +34,7 @@ static void trainTask(void) {
     parserInit();
     clockInitTask();
     clockDrawerInit();
+    controllerInit();
     initEngineer(39);
     Exit();
 }

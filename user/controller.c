@@ -377,3 +377,15 @@ void controllerTurnoutStraight(int address) {
         (char *) 0, 0
     );
 }
+
+void controllerQuit(void) {
+    struct ControllerMessage msg;
+
+    msg.type = QUIT;
+
+    Send(
+        g_controller_server_tid,
+        (char *) &msg, sizeof(struct ControllerMessage),
+        (char *) 0, 0
+    );
+}

@@ -12,6 +12,7 @@
 #include <user/vt100.h>
 #include <user/clock_drawer.h>
 #include <user/engineer.h>
+#include <user/controller.h>
 
 union ParserData {
     struct TrainSpeedParse {
@@ -513,6 +514,7 @@ void commandParser(void){
     sinit(&s);
     sputstr(&s, "Graceful shutdown in progress\r\n");
     mioPrint(&s);
+    controllerQuit();
     shutdownTrains();
     sensorQuit();
     clockDrawerQuit();
