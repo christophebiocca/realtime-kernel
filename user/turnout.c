@@ -46,11 +46,11 @@ void turnoutInit(void) {
     mioPrint(&s);
 
     for (int i = 1; i <= 18; ++i) {
-        turnoutStraight(i);
+        turnoutCurve(i);
     }
 
     for (int i = 153; i <= 156; ++i) {
-        turnoutStraight(i);
+        turnoutCurve(i);
     }
 }
 
