@@ -1,6 +1,8 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#define NULLPTR ((void*)0)
+
 void libinit(void);
 
 // consider replacing with static moves memcpy

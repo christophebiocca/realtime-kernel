@@ -70,6 +70,7 @@ struct ControllerMessage {
     };
 };
 
+#define MAX_AWAITING_TRAINS 16
 static void controllerServer(void) {
     struct {
         int engineer_tid;
@@ -84,6 +85,14 @@ static void controllerServer(void) {
 
     static_assert(sizeof(expectations) % 16 == 0);
     memset16(expectations, -1, sizeof(expectations));
+
+    struct {
+        int tid_buffer[MAX_AWAITING_TRAINS];
+        int head;
+        int tail;
+    } awaiting_trains;
+    awaiting_trains.head = 0;
+    awaiting_trains.tail = 0;
 
     bool quitting = false;
     struct ControllerMessage request;
@@ -106,6 +115,11 @@ static void controllerServer(void) {
 
                 train_status[train_id].engineer_tid =
                     engineerCreate(train_id);
+                train_status[train_id].node = NULLPTR;
+
+                awaiting_trains.tid_buffer[awaiting_trains.tail++] =
+                    train_status[train_id].engineer_tid;
+                awaiting_trains.tail %= MAX_AWAITING_TRAINS;
 
                 break;
             }
@@ -114,7 +128,36 @@ static void controllerServer(void) {
                 int train_id = request.updatePosition.train_id;
 
                 VALIDATE_TRAIN_ID(train_id);
-                assert(train_status[train_id].engineer_tid >= 0);
+
+                int engineer_tid = train_status[train_id].engineer_tid;
+                assert(engineer_tid >= 0);
+
+                if (train_status[train_id].node == NULLPTR) {
+                    // engineer is checking in for the first time
+                    // remove them from awaiting queue
+                    int i;
+
+                    for (i = awaiting_trains.head;
+                            i != awaiting_trains.tail;
+                            i = (i + 1) % MAX_AWAITING_TRAINS) {
+                        if (awaiting_trains.tid_buffer[i] == engineer_tid) {
+                            // swap current pos with head
+                            int tmp = awaiting_trains.tid_buffer[i];
+                            awaiting_trains.tid_buffer[i] =
+                                awaiting_trains.tid_buffer[awaiting_trains.head];
+                            awaiting_trains.tid_buffer[awaiting_trains.head] = tmp;
+
+                            // throw away what's at head
+                            awaiting_trains.head =
+                                (awaiting_trains.head + 1) % MAX_AWAITING_TRAINS;
+
+                            break;
+                        }
+                    }
+
+                    // make sure we found an awaiting train
+                    assert(i != awaiting_trains.tail);
+                }
 
                 train_status[train_id].node = request.updatePosition.node;
                 train_status[train_id].mm = request.updatePosition.mm;
@@ -145,11 +188,16 @@ static void controllerServer(void) {
                 int engineer_tid = train_status[train_id].engineer_tid;
                 assert(engineer_tid >= 0);
 
-                engineerSend(
-                    engineer_tid,
-                    request.sendTrain.node,
-                    request.sendTrain.mm
-                );
+                if (train_status[train_id].node != NULLPTR) {
+                    engineerSend(
+                        engineer_tid,
+                        request.sendTrain.node,
+                        request.sendTrain.mm
+                    );
+                }
+
+                // FIXME: log an error about engineer not being ready to be
+                // routed
 
                 break;
             }
@@ -163,13 +211,30 @@ static void controllerServer(void) {
                 VALIDATE_TRAIN_ID(train_id);
 
                 int engineer_tid = train_status[train_id].engineer_tid;
-                assert(engineer_tid >= 0);
 
-                engineerSensorTriggered(
-                    engineer_tid,
-                    request.sensorTriggered.sensor,
-                    request.sensorTriggered.number
-                );
+                if (engineer_tid >= 0) {
+                    engineerSensorTriggered(
+                        engineer_tid,
+                        request.sensorTriggered.sensor,
+                        request.sensorTriggered.number
+                    );
+                } else {
+                    // no one expected this sensor
+                    // send it to everyone awaiting
+
+                    // make sure someone is awaiting
+                    assert(awaiting_trains.head != awaiting_trains.tail);
+
+                    for (int i = awaiting_trains.head;
+                            i != awaiting_trains.tail;
+                            i = (i + 1) % MAX_AWAITING_TRAINS) {
+                        engineerSensorTriggered(
+                            awaiting_trains.tid_buffer[i],
+                            request.sensorTriggered.sensor,
+                            request.sensorTriggered.number
+                        );
+                    }
+                }
 
                 break;
             }
