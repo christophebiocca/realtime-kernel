@@ -144,21 +144,8 @@ void planRoute(char *src, char *dest){
         mioPrint(&s);
     }
 
-    struct TrackNode *srcNode = 0;
-    for(int i = 0; i < TRACK_MAX; ++i){
-        if(!strcmp(trackNodes[i].name, srcName)){
-            srcNode = &trackNodes[i];
-            break;
-        }
-    }
-
-    struct TrackNode *destNode = 0;
-    for(int i = 0; i < TRACK_MAX; ++i){
-        if(!strcmp(trackNodes[i].name, destName)){
-            destNode = &trackNodes[i];
-            break;
-        }
-    }
+    struct TrackNode *srcNode = lookupTrackNode(hashtbl, srcName);
+    struct TrackNode *destNode = lookupTrackNode(hashtbl, destName);
 
     assert(srcNode);
     assert(destNode);

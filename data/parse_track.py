@@ -371,13 +371,12 @@ void %s(struct TrackNode *track, struct TrackHashNode *hashtbl) {
 
   fh.write("}\n")
 
-maxhn = max([tracks[function].max_collisions for function in tracks])
 
-fh.write('''
+fh.write(r'''
 static unsigned int djb2(const char *str) {
     unsigned int hash = 5381;
 
-    for (; *str != '\\0'; ++str) {
+    for (; *str != '\0'; ++str) {
         hash = ((hash << 5) + hash) + *str;
     }
 
@@ -385,8 +384,8 @@ static unsigned int djb2(const char *str) {
 }
 
 struct TrackNode *lookupTrackNode(struct TrackHashNode *hashtbl, const char *name) {
-    struct TrackHashNode *node = &hashtbl[djb2(name) %% %d];
-    
+    struct TrackHashNode *node = &hashtbl[djb2(name) %% %s];
+
     switch (node->length) {
         case 3:
             if (strcmp(name, node->chain[2]->name) == 0) {
@@ -404,7 +403,7 @@ struct TrackNode *lookupTrackNode(struct TrackHashNode *hashtbl, const char *nam
             return (struct TrackNode*) 0;
     }
 }
-''' % maxhn)
+''' % options.s)
 
 fh.close()
 
@@ -414,6 +413,7 @@ fh.close()
 # the generated file (as opposed to in the file itself, since it will
 # be overwritten when this script is run again).
 maxidx = max([len(tracks[function].nodes) for function in tracks])
+maxhn = max([tracks[function].max_collisions for function in tracks])
 fh = open(options.h, 'w')
 fh.write('''#ifndef USER_TRACK_DATA_H
 #define USER_TRACK_DATA_H 1
