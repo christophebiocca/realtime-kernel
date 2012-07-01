@@ -23,10 +23,6 @@ inline static int getTotal(struct PathNode *node){
 
 HEAP(PathHeap, struct PathNode*, getTotal, 16, <)
 
-static void busyWait(){
-    for(int i = 0; i < 100000; ++i);
-}
-
 int heuristic(struct TrackNode *here, struct TrackNode *goal){
     // Gotta define something here. Use the dumbest one for now.
     (void) here; (void) goal;

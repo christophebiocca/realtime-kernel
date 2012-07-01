@@ -40,6 +40,11 @@ union ParserData {
         int sensor2;
         int sensor2Number;
     } sensorTimer;
+
+    struct RouteFindParse {
+        char src[5];
+        char dest[5];
+    } routeFind;
 };
 
 struct Parser {
@@ -75,7 +80,11 @@ struct Parser {
         D_secondSpace,
         D_secondSensorAlpha,
         D_secondSensorNumber,
-        E_E,
+        P_P,
+        P_firstSpace,
+        P_src,
+        P_secondSpace,
+        P_dest,
         Q_Q
     } state;
     union ParserData data;
@@ -128,8 +137,8 @@ bool parse(struct Parser *parser, char c){
                     case 'i':
                         parser->state = I_I;
                         break;
-                    case 'e':
-                        parser->state = E_E;
+                    case 'p':
+                        parser->state = P_P;
                         break;
                     default:
                         parser->state = ErrorState;
@@ -312,8 +321,44 @@ bool parse(struct Parser *parser, char c){
             case SW_S_Or_C:
                 parser->state = ErrorState;
                 break;
-            case E_E:
-                parser->state = ErrorState;
+            case P_P:
+                for(int i = 0; i < 5; ++i){
+                    parser->data.routeFind.src[i] = 0;
+                    parser->data.routeFind.dest[i] = 0;
+                }
+                EXPECT_EXACT(' ', P_firstSpace);
+                break;
+            case P_firstSpace:
+                parser->data.routeFind.src[0] = c;
+                parser->state = P_src;
+                break;
+            case P_src:
+                if(c == ' '){
+                    parser->state = P_secondSpace;
+                } else {
+                    int i;
+                    for(i = 1; i < 5 && parser->data.routeFind.src[i]; ++i);
+                    if(i < 5){
+                        parser->data.routeFind.src[i] = c;
+                    } else {
+                        parser->state = ErrorState;
+                    }
+                }
+                break;
+            case P_secondSpace:
+                parser->data.routeFind.dest[0] = c;
+                parser->state = P_dest;
+                break;
+            case P_dest:
+                {
+                    int i;
+                    for(i = 1; i < 5 && parser->data.routeFind.dest[i]; ++i);
+                    if(i < 5){
+                        parser->data.routeFind.dest[i] = c;
+                    } else {
+                        parser->state = ErrorState;
+                    }
+                }
                 break;
             case Q_Q:
                 parser->state = ErrorState;
@@ -429,16 +474,8 @@ bool parse(struct Parser *parser, char c){
                 break;
             }
 
-            case E_E: {
-                struct EngineerTarget target;
-                target.speed = 14;
-                target.time = Time() + 800;
-                target.distance = 2000000;
-                Send(engineerID, (char*) &target, sizeof(struct EngineerTarget), 0, 0);
-                target.speed = 0;
-                target.time += 800;
-                target.distance += 2000000;
-                Send(engineerID, (char*) &target, sizeof(struct EngineerTarget), 0, 0);
+            case P_dest: {
+                planRoute(parser->data.routeFind.src, parser->data.routeFind.dest);
                 break;
             }
 
