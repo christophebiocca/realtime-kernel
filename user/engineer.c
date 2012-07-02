@@ -530,7 +530,7 @@ void engineer(int trainID){
                 
                 if (target) {
                     // FIXME: train orientation
-                    toSet = alongPath(path+current, computed_speed * FORWARD_STOPPING_COEFFICIENT, target);
+                    toSet = alongPath(path+current, computed_speed * FORWARD_STOPPING_COEFFICIENT, target-current);
                     {
                         struct String s;
                         sinit(&s);
