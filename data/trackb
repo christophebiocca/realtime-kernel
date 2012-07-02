@@ -65,11 +65,11 @@ node A16:
   reverse A15
   ahead MR4
 node B1:
-  sensor 16
+  sensor_dead 16
   reverse B2
   ahead D14
 node B2:
-  sensor 17
+  sensor_dead 17
   reverse B1
   ahead MR16
 node B3:
