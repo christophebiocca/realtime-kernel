@@ -20,6 +20,7 @@
 #include <user/sensor.h>
 #include <user/train.h>
 #include <user/turnout.h>
+#include <user/track_data.h>
 
 /* Train IO test */
 static void idlerTask(void) {
@@ -36,7 +37,7 @@ static void trainTask(void) {
     clockInitTask();
     clockDrawerInit();
     controllerInit();
-    initEngineer(39);
+    initTrackA(nodes, hashtbl);
     Exit();
 }
 

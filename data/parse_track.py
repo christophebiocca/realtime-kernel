@@ -305,6 +305,9 @@ fh.write('''/* THIS FILE IS GENERATED CODE -- DO NOT EDIT */
 #include <lib.h>
 #include <user/track_data.h>
 
+struct TrackNode nodes[TRACK_MAX];
+struct TrackHashNode hashtbl[MAX_HASHNODES];
+
 static void *memset(void *s, int c, unsigned int n) {
   unsigned char *p = s;
   while(n --> 0) { *p++ = (unsigned char)c; }
@@ -464,6 +467,9 @@ struct TrackHashNode {
 #define TRACK_MAX %d
 
 struct TrackNode *lookupTrackNode(struct TrackHashNode *hashtbl, const char *name);
+
+extern struct TrackNode nodes[TRACK_MAX];
+extern struct TrackHashNode hashtbl[MAX_HASHNODES];
 
 ''' % (maxhn, int(options.s), maxidx))
 for fun in tracks:
