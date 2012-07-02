@@ -114,6 +114,12 @@ static void controllerServer(void) {
             case PREPARE_TRAIN: {
                 int train_id = request.prepareTrain.train_id;
 
+                struct String s;
+                sinit(&s);
+                sputstr(&s, "prepare train ");
+                sputint(&s, train_id, 10);
+                logS(&s);
+
                 VALIDATE_TRAIN_ID(train_id);
                 assert(train_status[train_id].engineer_tid == -1);
 
@@ -130,6 +136,12 @@ static void controllerServer(void) {
 
             case UPDATE_POSITION: {
                 int train_id = request.updatePosition.train_id;
+
+                struct String s;
+                sinit(&s);
+                sputstr(&s, "update position ");
+                sputint(&s, train_id, 10);
+                logS(&s);
 
                 VALIDATE_TRAIN_ID(train_id);
 
@@ -167,7 +179,6 @@ static void controllerServer(void) {
                 train_status[train_id].mm = request.updatePosition.mm;
 
                 // FIXME: multiple trains?
-                struct String s;
                 sinit(&s);
                 sputstr(&s, CURSOR_SAVE);
                 sputstr(&s, CURSOR_HIDE);
@@ -191,6 +202,17 @@ static void controllerServer(void) {
                 VALIDATE_SENSOR(request.setExpectation.sensor);
                 VALIDATE_SENSOR_NUMBER(request.setExpectation.number);
 
+                struct String s;
+                sinit(&s);
+                sputstr(&s, "expectation[");
+                sputint(&s, request.setExpectation.train_id, 10);
+                sputstr(&s, "]: ");
+                sputint(&s, request.setExpectation.sensor, 10);
+                sputstr(&s, ", ");
+                sputint(&s, request.setExpectation.number, 10);
+                logS(&s);
+
+
                 int *fill = &expectations[request.setExpectation.sensor]
                     [request.setExpectation.number];
 
@@ -207,22 +229,32 @@ static void controllerServer(void) {
                 int engineer_tid = train_status[train_id].engineer_tid;
                 assert(engineer_tid >= 0);
 
+                struct String s;
+                sinit(&s);
+
                 if (train_status[train_id].node != NULLPTR) {
+                    sputstr(&s, "send train ");
+                    sputint(&s, train_id, 10);
+                    sputstr(&s, " around ");
+                    sputstr(&s, request.sendTrain.node->name);
+                    logS(&s);
+
                     engineerSend(
                         engineer_tid,
                         request.sendTrain.node,
                         request.sendTrain.mm
                     );
+                } else {
+                    sputstr(&s, "engineer for ");
+                    sputint(&s, train_id, 10);
+                    sputstr(&s, " not ready");
+                    logS(&s);
                 }
-
-                // FIXME: log an error about engineer not being ready to be
-                // routed
 
                 break;
             }
 
             case SENSOR_TRIGGERED: {
-                logC("sensor triggered");
                 VALIDATE_SENSOR(request.sensorTriggered.sensor);
                 VALIDATE_SENSOR_NUMBER(request.sensorTriggered.number);
 
@@ -241,6 +273,19 @@ static void controllerServer(void) {
 
                     // make sure someone is awaiting
                     //assert(awaiting_trains.head != awaiting_trains.tail);
+                    struct String s;
+                    sinit(&s);
+
+                    if (awaiting_trains.head == awaiting_trains.tail) {
+                        sputstr(&s, "unexpected sensor: ");
+                    } else {
+                        sputstr(&s, "sensor: ");
+                    }
+
+                    sputint(&s, request.sensorTriggered.sensor, 10);
+                    sputstr(&s, ", ");
+                    sputint(&s, request.sensorTriggered.number, 10);
+                    logS(&s);
 
                     for (int i = awaiting_trains.head;
                             i != awaiting_trains.tail;
@@ -257,27 +302,38 @@ static void controllerServer(void) {
             }
 
             case TURNOUT_REQUEST: {
+                struct String s;
+                sinit(&s);
+                sputstr(&s, "turnout ");
+                sputint(&s, request.turnoutRequest.address, 10);
+
                 switch (request.turnoutRequest.orientation) {
                     case CURVE:
+                        sputstr(&s, "curve");
                         turnoutCurve(request.turnoutRequest.address);
                         break;
                     case STRAIGHT:
+                        sputstr(&s, "straight");
                         turnoutStraight(request.turnoutRequest.address);
                         break;
                     default:
                         assert(0);
                 }
 
+                logS(&s);
+
                 break;
             }
 
             case QUIT: {
+                logC("quitting engineers");
                 for (int i = 0; i < MAX_TRAINS; ++i) {
                     if (train_status[i].engineer_tid >= 0) {
                         engineerQuit(train_status[i].engineer_tid);
                     }
                 }
 
+                logC("quitting");
                 quitting = true;
 
                 break;
