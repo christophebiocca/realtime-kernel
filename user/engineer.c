@@ -49,13 +49,13 @@ int planPath(struct TrackNode *list, struct TrackNode *start, struct TrackNode *
         nodes[start->idx].from = 0;
     }
     // Start Node, reverse direction
-    {
-        nodes[start->reverse->idx].cost = 0;
-        nodes[start->reverse->idx].total = heuristic(start->reverse, goal);
-        nodes[start->reverse->idx].from = &nodes[start->idx];
-    }
+    // {
+    //     nodes[start->reverse->idx].cost = 0;
+    //     nodes[start->reverse->idx].total = heuristic(start->reverse, goal);
+    //     nodes[start->reverse->idx].from = &nodes[start->idx];
+    // }
     PathHeapPush(&heap, &nodes[start->idx]);
-    PathHeapPush(&heap, &nodes[start->reverse->idx]);
+    //PathHeapPush(&heap, &nodes[start->reverse->idx]);
     struct PathNode *goalNode = &nodes[goal->idx];
     while(heap.count && heap.heap[1]->total <= goalNode->cost){
         struct PathNode *next = PathHeapPop(&heap);
@@ -145,20 +145,20 @@ static inline void setSpeed(int trainID, int speed){
     tioPrint(&s);
 }
 
-static inline struct TrackNode **alongPath(struct TrackNode **path,
-    int dist, struct TrackNode **end){
-    while(dist > 0 && path != end){
-        struct TrackNode **next = path+1;
-        if((*path)->edge[0].dest == *next){
-            dist -= (*path)->edge[0].dist;
-        } else if((*path)->edge[1].dest == *next){
-            dist -= (*path)->edge[1].dist;
+static inline int alongPath(struct TrackNode **path, int dist, int len){
+    int i = 0;
+    while(dist > 0 && i < len){
+        struct TrackNode *next = path[i+1];
+        if(path[i]->edge[0].dest == next){
+            dist -= path[i]->edge[0].dist;
+        } else if(path[i]->edge[1].dest == next){
+            dist -= path[i]->edge[1].dist;
         } else {
-            assert((*path)->reverse == *next);
+            assert(path[i]->reverse == next);
         }
-        path = next;
+        ++i;
     }
-    return path;
+    return i;
 }
 
 void engineer(int trainID){
@@ -203,10 +203,11 @@ void engineer(int trainID){
     struct TrackNode *position;
     int posTime;
     int speed = 5500;
+    int stoppingDistance = 1000;
     bool needPosUpdate;
     bool needExpect;
     {
-        setSpeed(trainID, 14);
+        setSpeed(trainID, 8);
         // Wait for a sensor message update.
         int tid;
         struct EngineerMessage msg;
@@ -224,23 +225,69 @@ void engineer(int trainID){
     bool quitting = false;
     bool courierQuit = false;
     bool timerQuit = false;
+    struct TrackNode *path[50];
+    int current = 0;
+    int set = 0;
+    int toSet = 0;
+    int target = 0;
     while (!quitting || !courierQuit || !timerQuit) {
-        if (needPosUpdate && courierReady){
-            logC(position->name);
+        {
+            struct String s;
+            sinit(&s);
+            sputstr(&s, "c:");
+            sputuint(&s, current, 10);
+            sputstr(&s, "s:");
+            sputuint(&s, set, 10);
+            sputstr(&s, "tS:");
+            sputuint(&s, toSet, 10);
+            sputstr(&s, "t:");
+            sputuint(&s, target, 10);
+            logS(&s);
+        }
+        if(target && set < toSet && courierReady){
+            do {
+                set++;
+            } while (path[set]->type != NODE_BRANCH && set != toSet);
+            if(set != toSet){
+                if(path[set]->edge[0].dest == path[set+1]){
+                    controllerTurnoutStraight(courier, path[set]->num);
+                } else if(path[set]->edge[1].dest == path[set+1]) {
+                    controllerTurnoutCurve(courier, path[set]->num);
+                } else {
+                    assert(path[set]->reverse = path[set+1]);
+                }
+                courierReady = false;
+            }
+        } else if(needPosUpdate && courierReady){
             controllerUpdatePosition(courier, trainID, position, speed*(time-posTime));
             needPosUpdate = false;
             courierReady = false;
-        } else if (needExpect && courierReady) {
-            struct TrackNode *n = position;
+        } else if(needExpect && courierReady) {
+            struct TrackNode *n;
 
-            do {
-                if(n->type == NODE_BRANCH) {
-                    n = n->edge[1].dest;
-                } else {
-                    n = n->edge[0].dest;
-                }
-            } while(n->type != NODE_SENSOR);
-
+            if(target){
+                int i = current;
+                do {
+                    ++i;
+                } while (path[i]->type != NODE_SENSOR);
+                n = path[i];
+            } else {
+                n = position;
+                do {
+                    if(n->type == NODE_BRANCH){
+                        n = n->edge[1].dest;
+                    } else {
+                        n = n->edge[0].dest;
+                    }
+                } while(n->type != NODE_SENSOR);
+            }
+            {
+                struct String s;
+                sinit(&s);
+                sputstr(&s, "Expect ");
+                sputstr(&s, n->name);
+                logS(&s);
+            }
             controllerSetExpectation(courier, trainID, n->num / 16, n->num % 16);
             courierReady = false;
             needExpect = false;
@@ -293,6 +340,13 @@ void engineer(int trainID){
 
                         break;
 
+                    case GOTO: {
+                        int len = planPath(nodes, position, msg.content.destination.dest, path);
+                        set = current = 0;
+                        target = (len - 1);
+                        break;
+                    }
+
                     case QUIT:
                         setSpeed(trainID, 0);
                         // FIXME: still set expectations for what we expect to
@@ -302,6 +356,10 @@ void engineer(int trainID){
 
                     default:
                         assert(0);
+                }
+                
+                if (target) {
+                    toSet = alongPath(path+current, stoppingDistance, target);
                 }
             }
         }
@@ -322,7 +380,7 @@ void planRoute(char *src, char *dest){
 
     for(int i = 0; i < 5; ++i){
         {
-            char c = src[i];
+char c = src[i];
             if(0x61 <= c && c <= 0x7A) c &= ~0x20;
             srcName[i] = c;
         }
