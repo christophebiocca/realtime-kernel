@@ -52,6 +52,12 @@ union ParserData {
     struct TrainPrep {
         int trainID;
     } prepareTrain;
+
+    struct TrainSend {
+        int train_id;
+        char dest[5];
+        int dest_index;
+    } sendTrain;
 };
 
 struct Parser {
@@ -92,6 +98,11 @@ struct Parser {
         P_src,
         P_secondSpace,
         P_dest,
+        Z_Z,
+        Z_firstSpace,
+        Z_trainNumber,
+        Z_secondSpace,
+        Z_dest,
         E_E,
         E_firstSpace,
         E_train,
@@ -152,6 +163,9 @@ bool parse(struct Parser *parser, char c){
                         break;
                     case 'e':
                         parser->state = E_E;
+                        break;
+                    case 'z':
+                        parser->state = Z_Z;
                         break;
                     default:
                         parser->state = ErrorState;
@@ -240,6 +254,42 @@ bool parse(struct Parser *parser, char c){
                 if (!appendDecDigit(c, &parser->data.sensorInterrupt.sensorNumber)) {
                     parser->state = ErrorState;
                 }
+                break;
+
+            case Z_Z:
+                EXPECT_EXACT(' ', Z_firstSpace);
+                break;
+
+            case Z_firstSpace:
+                parser->data.sendTrain.train_id = 0;
+                if (appendDecDigit(c, &parser->data.sendTrain.train_id)) {
+                    parser->state = Z_trainNumber;
+                } else {
+                    parser->state = ErrorState;
+                }
+                break;
+
+            case Z_trainNumber:
+                if (!appendDecDigit(c, &parser->data.sendTrain.train_id)) {
+                    EXPECT_EXACT(' ', Z_secondSpace);
+                }
+                break;
+
+            case Z_secondSpace:
+                parser->data.sendTrain.dest[0] =
+                    (0x61 <= c && c <= 0x7A) ? c & ~0x20 : c;
+                parser->data.sendTrain.dest_index = 1;
+                parser->state = Z_dest;
+                break;
+
+            case Z_dest:
+                if (parser->data.sendTrain.dest_index >= 4) {
+                    parser->state = ErrorState;
+                    break;
+                }
+
+                parser->data.sendTrain.dest[parser->data.sendTrain.dest_index++] =
+                    (0x61 <= c && c <= 0x7A) ? c & ~0x20 : c;
                 break;
 
             case TR_T:
@@ -510,6 +560,26 @@ bool parse(struct Parser *parser, char c){
                     sputstr(&s, "\r\n");
                     controllerPrepareTrain(parser->data.prepareTrain.trainID);    
                 }
+                break;
+            }
+
+            case Z_dest: {
+                parser->data.sendTrain.dest[parser->data.sendTrain.dest_index] = 0;
+                struct TrackNode *destNode =
+                    lookupTrackNode(hashtbl, parser->data.sendTrain.dest);
+
+                if (!destNode) {
+                    logC("Unknown destination");
+                    break;
+                }
+
+                controllerSendTrain(
+                    parser->data.sendTrain.train_id,
+                    destNode,
+                    // FIXME: accept mm
+                    0
+                );
+
                 break;
             }
 
