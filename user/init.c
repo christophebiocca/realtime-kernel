@@ -38,6 +38,7 @@ static void trainTask(void) {
     clockDrawerInit();
     controllerInit();
     initTrackA(nodes, hashtbl);
+
     Exit();
 }
 

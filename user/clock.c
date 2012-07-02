@@ -8,6 +8,8 @@
 #include <user/priorities.h>
 #include <user/syscall.h>
 
+#include <user/log.h>
+
 // timer 1 underflow interrupt
 #define INT_TIMER1  4
 
@@ -58,6 +60,7 @@ static void clockNotifier(void) {
 //      == -1               Too many tasks are delaying
 //      == -2               Unknown request
 static void clockServer(void) {
+    logAssoc("clock");
     int tid;
     int request;
     int ticks = 0;
@@ -123,12 +126,49 @@ static void clockServer(void) {
             should_quit = tid;
             has_quit = false;
         } else {
-            assert(false);
+            logC("cancelling");
+            // assume the request is the negated tid
+            int response = 1;
+            int wait_tid = request * -1;
+
+            // FIXME: binary search
+            int i;
+            for (i = 0; i < ndelays; ++i) {
+                if (delays[i].tid == wait_tid) {
+                    break;
+                }
+            }
+
+            if (i < ndelays) {
+                response = 0;
+
+                int new_trigger = ticks - 1;
+
+                int j;
+                for (j = i;
+                        j > 0 && new_trigger < delays[j].trigger;
+                        --j) {
+                    delays[j].trigger = delays[j - 1].trigger;
+                    delays[j].tid = delays[j - 1].tid;
+                }
+
+                delays[j].trigger = new_trigger;
+                // keep the negated tid
+                delays[j].tid = wait_tid * -1;
+            }
+
+            Reply(tid, (char *) &response, sizeof(int));
         }
 
         int triggered = 0;
         for (int i = 0; i < ndelays && ticks >= delays[i].trigger; ++i) {
-            Reply(delays[i].tid, (char *) &ticks, sizeof(int));
+            if (delays[i].tid >= 0) {
+                Reply(delays[i].tid, (char *) &ticks, sizeof(int));
+            } else {
+                logC("gotcha");
+                int negticks = ticks * -1;
+                Reply(delays[i].tid * -1, (char *) &negticks, sizeof(int));
+            }
             ++triggered;
         }
 
@@ -184,6 +224,20 @@ int DelayUntil(int nticks) {
     Send(
         g_clock_server_tid,
         (char *) &nticks, sizeof(int),
+        (char *) &response, sizeof(int)
+    );
+
+    return response;
+}
+
+int DelayCancel(int tid) {
+    assert(g_clock_server_tid >= 0);
+    tid *= -1;
+    int response;
+
+    Send(
+        g_clock_server_tid,
+        (char *) &tid, sizeof(int),
         (char *) &response, sizeof(int)
     );
 
