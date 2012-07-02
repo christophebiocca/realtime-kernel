@@ -82,16 +82,6 @@ int planPath(struct TrackNode *list, struct TrackNode *start, struct TrackNode *
                 nodes[node->idx].total = nodes[node->idx].cost + heuristic(nodes[node->idx].node, goal);
                 nodes[node->idx].from = next;
                 if(nodes[node->idx].total < goalNode->total && node != goal){
-                    {
-                        struct String s;
-                        sinit(&s);
-                        sputstr(&s, "Push ");
-                        sputstr(&s, node->name);
-                        sputc(&s, ' ');
-                        sputuint(&s, nodes[node->idx].total,10);
-                        sputstr(&s, "\r\n");
-                        mioPrint(&s);
-                    }
                     PathHeapPush(&heap,&nodes[node->idx]);
                 }
             }
@@ -158,21 +148,11 @@ void engineer(int trainID){
     {
         struct EngineerMessage mesg;
         int tid;
-        {
-            struct String s;
-            sinit(&s);
-            sputstr(&s, "Waiting for trigger.\r\n");
-            mioPrint(&s);
-        }
+        logC("Waiting for trigger.");
         Receive(&tid, (char *)&mesg, sizeof(struct EngineerMessage));
         assert(mesg.messageType == SENSOR);
         Reply(tid,0,0);
-        {
-            struct String s;
-            sinit(&s);
-            sputstr(&s, "Got a sensor notification.\r\n");
-            mioPrint(&s);
-        }
+        logC("Got a sensor notification.");
         sensor = mesg.content.sensor.sensor;
         number = mesg.content.sensor.number;
     }
