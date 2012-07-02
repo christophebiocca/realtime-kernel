@@ -62,9 +62,9 @@ int planPath(struct TrackNode *list, struct TrackNode *start, struct TrackNode *
         struct TrackNode *seq[3];
         int seqCost[3];
         int seqCount = 0;
-        if(next->node->type == NODE_BRANCH || next->node->type == NODE_MERGE || next->node->reverse == goal){
+        if(/*next->node->type == NODE_BRANCH || next->node->type == NODE_MERGE || */next->node->reverse == goal){
             seq[seqCount] = next->node->reverse;
-            seqCost[seqCount++] = 1000;
+            seqCost[seqCount++] = 0;
         }
         if(next->node->type != NODE_EXIT){
             seq[seqCount] = next->node->edge[0].dest;
@@ -82,16 +82,6 @@ int planPath(struct TrackNode *list, struct TrackNode *start, struct TrackNode *
                 nodes[node->idx].total = nodes[node->idx].cost + heuristic(nodes[node->idx].node, goal);
                 nodes[node->idx].from = next;
                 if(nodes[node->idx].total < goalNode->total && node != goal){
-                    {
-                        struct String s;
-                        sinit(&s);
-                        sputstr(&s, "Push ");
-                        sputstr(&s, node->name);
-                        sputc(&s, ' ');
-                        sputuint(&s, nodes[node->idx].total,10);
-                        sputstr(&s, "\r\n");
-                        mioPrint(&s);
-                    }
                     PathHeapPush(&heap,&nodes[node->idx]);
                 }
             }
@@ -158,21 +148,11 @@ void engineer(int trainID){
     {
         struct EngineerMessage mesg;
         int tid;
-        {
-            struct String s;
-            sinit(&s);
-            sputstr(&s, "Waiting for trigger.\r\n");
-            mioPrint(&s);
-        }
+        logC("Waiting for trigger.");
         Receive(&tid, (char *)&mesg, sizeof(struct EngineerMessage));
         assert(mesg.messageType == SENSOR);
         Reply(tid,0,0);
-        {
-            struct String s;
-            sinit(&s);
-            sputstr(&s, "Got a sensor notification.\r\n");
-            mioPrint(&s);
-        }
+        logC("Got a sensor notification.");
         sensor = mesg.content.sensor.sensor;
         number = mesg.content.sensor.number;
     }
@@ -187,7 +167,8 @@ void engineer(int trainID){
     struct TrackNode *atDistance = position;
     struct TrackNode *target = 0;
     struct TrackNode *path[50];
-    (void) path;
+    int pathlen;
+    int pathpos;
     bool waiting = true;
     bool find_sensor = true;
     bool courierReady = false;
@@ -201,13 +182,28 @@ void engineer(int trainID){
             logC("Time");
         } else if(tid == courier) {
             courierReady = true;
-        } else {
+        } else if(mesg.messageType == GOTO){
             Reply(tid,0,0);
+            target = mesg.content.destination.dest;
+            pathlen = planPath(nodes, atDistance, target, path);
+            pathpos = 0;
+            struct String s;
+            sinit(&s);
+            sputstr(&s, "Path plan: ");
+            sputuint(&s, pathlen, 10);
+            logS(&s);
+        } else {
             assert(mesg.messageType == SENSOR);
+            Reply(tid,0,0);
             time = lastUpdate = Time();
             sensor = mesg.content.sensor.sensor;
             number = mesg.content.sensor.number;
             position = find(sensor, number);
+            if(target){
+                while(position != path[pathpos]){
+                    ++pathpos;
+                }
+            }
             find_sensor = true;
             logC("Sensor update");
         }
@@ -216,30 +212,35 @@ void engineer(int trainID){
             controllerUpdatePosition(courier, trainID, position, dist);
         }
         struct TrackNode *sweep = position;
+        int sweeppos = pathpos;
         bool update = false;
         dist += stoppingDistance;
         while(courierReady && dist > 0){
-            int dir = 0;
+            int dir;
+            if(target){
+                struct TrackNode *next = path[sweeppos+1];
+                if(path[sweeppos]->edge[0].dest == next){
+                    dir = 0;
+                } else {
+                    dir = 1;
+                }
+            } else {
+                dir = 1;
+            }
             if(update){
                 if(sweep->type == NODE_BRANCH){
-                    if(target){
+                    logC("Changing turnout");
+                    if(dir == 0){
+                        controllerTurnoutStraight(courier, sweep->num);
                     } else {
-                        logC("Changing turnout");
                         controllerTurnoutCurve(courier, sweep->num);
-                        logC("Changed turnout");
-                        dir = 1;
                     }
+                    logC("Changed turnout");
                 }
                 atDistance = sweep;
             } else {
                 if(sweep == atDistance){
                     update = true;
-                }
-                if(sweep->type == NODE_BRANCH){
-                    if(target){
-                    } else {
-                        dir = 1;
-                    }
                 }
             }
             if(courierReady && find_sensor && sweep != position && sweep->type == NODE_SENSOR){
@@ -250,6 +251,7 @@ void engineer(int trainID){
 
             dist -= sweep->edge[dir].dist;
             sweep = sweep->edge[dir].dest;
+            sweeppos += 1;
         }
         if(!waiting){
             int to = time + 150;
