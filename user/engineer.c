@@ -144,6 +144,16 @@ static inline struct TrackNode *find(int sensor, int number){
 
 #define UPDATE_INTERVAL 10
 
+static inline void setSpeed(int trainID, int speed){
+    assert(0 <= trainID && trainID <= 80);
+    assert(0 <= speed && speed <= 14);
+    struct String s;
+    sinit(&s);
+    sputc(&s, speed);
+    sputc(&s, trainID);
+    tioPrint(&s);
+}
+
 void engineer(int trainID){
     logAssoc("en");
     (void) trainID;
