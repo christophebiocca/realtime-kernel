@@ -164,6 +164,98 @@ static inline int alongPath(struct TrackNode **path, int dist, int len){
     return i;
 }
 
+// number of readings to throw away (while the train accelerates to the desired
+// speed)
+#define THROWAWAY_FIRST 15
+#define THROWAWAY_OTHER 3
+
+// number of readings to average for speed
+#define NUM_READINGS    8
+
+static inline void computeSpeeds(const int train_id,
+        unsigned int *speeds, struct TrackNode **path,
+        const int min, const int max) {
+
+    struct EngineerMessage msg;
+    int tid, len, ret;
+
+    for (int i = min; i <= max; ++i) {
+        setSpeed(train_id, i);
+
+        // throw away a lot of initial readings for first speed since train
+        // needs to accelerate from stopped state.
+        int throwaway = (i == min) ? THROWAWAY_FIRST : THROWAWAY_OTHER;
+
+        for (int j = 0; j < throwaway; ++j) {
+            // throw away some readings while we get up to speed
+            len = Receive(&tid, (char *) &msg, sizeof(struct EngineerMessage));
+            assert(len == sizeof(struct EngineerMessage));
+            assert(msg.messageType == SENSOR);
+
+            ret = Reply(tid, 0, 0);
+            assert(ret == 0);
+        }
+
+        struct TrackNode *last_position = NULLPTR;
+        unsigned int distance_travelled; // in mm
+
+        for (int j = 0; j < NUM_READINGS; ++j) {
+            len = Receive(&tid, (char *) &msg, sizeof(struct EngineerMessage));
+            assert(len == sizeof(struct EngineerMessage));
+            assert(msg.messageType == SENSOR);
+
+            ret = Reply(tid, 0, 0);
+            assert(ret == 0);
+
+            struct TrackNode *position = find(
+                msg.content.sensor.sensor,
+                msg.content.sensor.number
+            );
+            assert(position);
+
+            if (last_position == NULLPTR) {
+                distance_travelled = 0;
+                *(TIMER4_CRTL) = TIMER4_ENABLE;
+            } else {
+                len = planPath(nodes, last_position, position, path) - 1;
+
+                for (int k = 0; k < len; ++k) {
+                    struct TrackNode *next = path[k + 1];
+
+                    if (path[k]->edge[0].dest == next) {
+                        distance_travelled += path[k]->edge[0].dist;
+                    } else if (path[k]->edge[1].dest == next) {
+                        distance_travelled += path[k]->edge[1].dist;
+                    } else {
+                        // wtf, we should have no reverses
+                        assert(0);
+                    }
+                }
+            }
+
+            last_position = position;
+        }
+
+        unsigned int time_taken = *(TIMER4_VAL);
+        *(TIMER4_CRTL) = 0;
+
+        // in mm / ms
+        float time_in_cs = time_taken / 9083.0;
+        float speed = (1000 * distance_travelled) / time_in_cs;
+        speeds[i] = (unsigned int) speed;
+
+        struct String s;
+        sinit(&s);
+        sputstr(&s, "Speed at ");
+        sputint(&s, i, 10);
+        sputstr(&s, " is ");
+        sputuint(&s, speeds[i], 10);
+        logS(&s);
+    }
+}
+
+
+#define STOPPING_DISTANCE_COEFFICIENT   (149)
 void engineer(int trainID){
     logAssoc("en");
     {
@@ -207,82 +299,7 @@ void engineer(int trainID){
     // speeds in um / cs
     unsigned int ideal_speed[15];
     memset16(ideal_speed, 0, sizeof(ideal_speed));
-
-    // calibrate our speeds
-    for (int i = 8; i < 15; ++i) {
-        struct EngineerMessage msg;
-        int tid, len, ret;
-
-        setSpeed(trainID, i);
-        // throw away a lot of initial readings at speed 8 since the train needs
-        // to accelerate from stop to speed 8 which skews the initial readings.
-        int throwaway = (i == 8) ? 10 : 3;
-        for (int j = 0; j < max; ++j) {
-            // throw away some reading while we get up to speed
-            len = Receive(&tid, (char *) &msg, sizeof(struct EngineerMessage));
-            assert(len == sizeof(struct EngineerMessage));
-            assert(msg.messageType == SENSOR);
-
-            ret = Reply(tid, 0, 0);
-            assert(ret == 0);
-        }
-
-        struct TrackNode *last_position = NULLPTR;
-        unsigned int distance_travelled; // in mm
-
-        for (int j = 0; j < 7; ++j) {
-            len = Receive(&tid, (char *) &msg, sizeof(struct EngineerMessage));
-            assert(len == sizeof(struct EngineerMessage));
-            assert(msg.messageType == SENSOR);
-
-            ret = Reply(tid, 0, 0);
-            assert(ret == 0);
-
-            struct TrackNode *position = find(
-                msg.content.sensor.sensor,
-                msg.content.sensor.number
-            );
-            assert(position);
-
-            if (last_position == NULLPTR) {
-                distance_travelled = 0;
-                *(TIMER4_CRTL) = TIMER4_ENABLE;
-            } else {
-                len = planPath(nodes, last_position, position, path) - 1;
-
-                for (int k = 0; k < len; ++k) {
-                    struct TrackNode *next = path[k + 1];
-
-                    if (path[k]->edge[0].dest == next) {
-                        distance_travelled += path[k]->edge[0].dist;
-                    } else if (path[k]->edge[1].dest == next) {
-                        distance_travelled += path[k]->edge[1].dist;
-                    } else {
-                        // wtf, we should have no reverses
-                        assert(0);
-                    }
-                }
-            }
-
-            last_position = position;
-        }
-
-        unsigned int time_taken = *(TIMER4_VAL);
-        *(TIMER4_CRTL) = 0;
-
-        // in mm / ms
-        float time_in_cs = time_taken / 9083.0;
-        float speed = (1000 * distance_travelled) / time_in_cs;
-        ideal_speed[i] = (unsigned int) speed;
-
-        struct String s;
-        sinit(&s);
-        sputstr(&s, "Speed at ");
-        sputint(&s, i, 10);
-        sputstr(&s, " is ");
-        sputuint(&s, ideal_speed[i], 10);
-        logS(&s);
-    }
+    computeSpeeds(trainID, ideal_speed, path, 8, 14);
 
     // Go forth and hit a sensor.
     struct TrackNode *position;
