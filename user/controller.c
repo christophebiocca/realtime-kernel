@@ -199,17 +199,6 @@ static void controllerServer(void) {
                 VALIDATE_SENSOR(request.setExpectation.sensor);
                 VALIDATE_SENSOR_NUMBER(request.setExpectation.number);
 
-                struct String s;
-                sinit(&s);
-                sputstr(&s, "expectation[");
-                sputint(&s, request.setExpectation.train_id, 10);
-                sputstr(&s, "]: ");
-                sputint(&s, request.setExpectation.sensor, 10);
-                sputstr(&s, ", ");
-                sputint(&s, request.setExpectation.number, 10);
-                logS(&s);
-
-
                 int *fill = &expectations[request.setExpectation.sensor]
                     [request.setExpectation.number];
 
@@ -274,19 +263,15 @@ static void controllerServer(void) {
 
                     // make sure someone is awaiting
                     //assert(awaiting_trains.head != awaiting_trains.tail);
-                    struct String s;
-                    sinit(&s);
-
                     if (awaiting_trains.head == awaiting_trains.tail) {
+                        struct String s;
+                        sinit(&s);
                         sputstr(&s, "unexpected sensor: ");
-                    } else {
-                        sputstr(&s, "sensor: ");
+                        sputint(&s, request.sensorTriggered.sensor, 10);
+                        sputstr(&s, ", ");
+                        sputint(&s, request.sensorTriggered.number, 10);
+                        logS(&s);
                     }
-
-                    sputint(&s, request.sensorTriggered.sensor, 10);
-                    sputstr(&s, ", ");
-                    sputint(&s, request.sensorTriggered.number, 10);
-                    logS(&s);
 
                     for (int i = awaiting_trains.head;
                             i != awaiting_trains.tail;
@@ -310,11 +295,11 @@ static void controllerServer(void) {
 
                 switch (request.turnoutRequest.orientation) {
                     case CURVE:
-                        sputstr(&s, "curve");
+                        sputstr(&s, " curve");
                         turnoutCurve(request.turnoutRequest.address);
                         break;
                     case STRAIGHT:
-                        sputstr(&s, "straight");
+                        sputstr(&s, " straight");
                         turnoutStraight(request.turnoutRequest.address);
                         break;
                     default:
