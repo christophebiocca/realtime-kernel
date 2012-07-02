@@ -389,11 +389,9 @@ bool parse(struct Parser *parser, char c){
                     int trainSpeed = parser->data.trainSpeed.trainSpeed;
                     int trainNumber = parser->data.trainSpeed.trainNumber;
                     if(0 > trainNumber || trainNumber > 80){
-                        sputstr(&s, "Invalid train number, should"
-                            " be between 0 and 80 inclusively.\r\n");
+                        logC("Invalid train number, should be in [0, 80]");
                     } else if(0 > trainSpeed || trainSpeed > 14){
-                        sputstr(&s, "Invalid train speed, should"
-                            " be between 0 and 14 inclusively.\r\n");
+                        logC("Invalid train speed, should be in [0, 14]");
                     } else {
                         setSpeed(trainNumber,trainSpeed);
                     }
@@ -404,8 +402,7 @@ bool parse(struct Parser *parser, char c){
                 {
                     int trainNumber = parser->data.trainReverse.trainNumber;
                     if(0 > trainNumber || trainNumber > 80){
-                        sputstr(&s, "Invalid train number, should"
-                            " be between 0 and 80 inclusively.\r\n");
+                        logC("Invalid train number, should be in [0, 80]");
                     } else {
                         reverse(trainNumber);
                     }
@@ -417,8 +414,7 @@ bool parse(struct Parser *parser, char c){
                     int switchNumber = parser->data.switchThrow.switchNumber;
                     if(!((1 <= switchNumber && switchNumber <= 18) ||
                         (153 <= switchNumber && switchNumber <= 156))){
-                        sputstr(&s, "Invalid switch number, should"
-                            " be in [1-18],[153-156].");
+                        logC("Invalid switch number, should be in [1-18],[153-156]");
                     } else {
                         if(parser->data.switchThrow.curved){
                             turnoutCurve(parser->data.switchThrow.switchNumber);
@@ -435,20 +431,17 @@ bool parse(struct Parser *parser, char c){
                 int sensorNumber = parser->data.sensorInterrupt.sensorNumber;
 
                 if (trainNumber < 0 || trainNumber > 80) {
-                    sputstr(&s, "Invalid train number, should"
-                        " be between [0, 80]\r\n");
+                    logC("Invalid train number, should be in [0, 80]");
                     break;
                 }
 
                 if (sensor < 'a' || sensor > 'e') {
-                    sputstr(&s, "Invalid sensor, should"
-                        " be between [A, E]\r\n");
+                    logC("Invalid sensor, should be in [A, E]");
                     break;
                 }
 
                 if (sensorNumber < 1 || sensorNumber > 16) {
-                    sputstr(&s, "Invalid sensor number, should"
-                        " be between [1, 16]\r\n");
+                    logC("Invalid sensor number, should be in [1, 16]");
                     break;
                 }
 
@@ -463,15 +456,13 @@ bool parse(struct Parser *parser, char c){
                 int sensor2Number = parser->data.sensorTimer.sensor2Number;
 
                 if (sensor1 < 'a' || sensor2 < 'a' || sensor1 > 'e' || sensor2 > 'e') {
-                    sputstr(&s, "Invalid sensor, should"
-                        " be between [A, E]\r\n");
+                    logC("Invalid sensor, should be in [A, E]");
                     break;
                 }
 
                 if (sensor1Number < 1 || sensor2Number < 1
                         || sensor1Number > 16 || sensor2Number > 16) {
-                    sputstr(&s, "Invalid sensor number, should"
-                        " be between [1, 16]\r\n");
+                    logC("Invalid sensor number, should be in [1, 16]");
                     break;
                 }
 
@@ -485,7 +476,7 @@ bool parse(struct Parser *parser, char c){
             }
 
             default: {
-                sputstr(&s, "Your syntax is invalid.\r\n");
+                logC("Your syntax is invalid");
                 break;
             }
         }
