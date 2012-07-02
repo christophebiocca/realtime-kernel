@@ -150,7 +150,9 @@ void engineer(int trainID){
 }
 
 int engineerCreate(int trainID){
-    return CreateArgs(TASK_PRIORITY+2, engineer, 1, trainID);
+    int ret = CreateArgs(TASK_PRIORITY+2, engineer, 1, trainID);
+    assert(ret > 0);
+    return ret;
 }
 
 void planRoute(char *src, char *dest){
@@ -223,7 +225,8 @@ void engineerSensorTriggered(int engineer_tid, int sensor, int number) {
             .number = number
         }
     };
-    Send(engineer_tid, (char *)&msg, sizeof(struct EngineerMessage), 0, 0);
+    int len = Send(engineer_tid, (char *)&msg, sizeof(struct EngineerMessage), 0, 0);
+    assert(len == 0);
 }
 
 void engineerQuit(int engineer_tid) {
