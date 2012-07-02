@@ -145,6 +145,22 @@ static inline void setSpeed(int trainID, int speed){
     tioPrint(&s);
 }
 
+static inline struct TrackNode **alongPath(struct TrackNode **path,
+    int dist, struct TrackNode **end){
+    while(dist > 0 && path != end){
+        struct TrackNode **next = path+1;
+        if((*path)->edge[0].dest == *next){
+            dist -= (*path)->edge[0].dist;
+        } else if((*path)->edge[1].dest == *next){
+            dist -= (*path)->edge[1].dist;
+        } else {
+            assert((*path)->reverse == *next);
+        }
+        path = next;
+    }
+    return path;
+}
+
 void engineer(int trainID){
     logAssoc("en");
     {
