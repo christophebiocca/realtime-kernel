@@ -207,7 +207,7 @@ void engineer(int trainID){
     bool needPosUpdate;
     bool needExpect;
     {
-        setSpeed(trainID, 8);
+        setSpeed(trainID, 14);
         // Wait for a sensor message update.
         int tid;
         struct EngineerMessage msg;
