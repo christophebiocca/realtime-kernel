@@ -15,6 +15,7 @@
 #include <user/clock_drawer.h>
 #include <user/controller.h>
 #include <user/engineer.h>
+#include <user/log.h>
 #include <user/parser.h>
 #include <user/sensor.h>
 #include <user/train.h>
@@ -42,6 +43,7 @@ static void trainTask(void) {
 void trainTaskInit(void) {
     mioInit();
     tioInit();
+    logInit();
 
     Create(TASK_PRIORITY, trainTask);
     Create(31, idlerTask);

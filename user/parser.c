@@ -1,5 +1,6 @@
-#include <user/parser.h>
 #include <stdbool.h>
+
+#include <user/parser.h>
 #include <user/string.h>
 #include <user/train.h>
 #include <user/mio.h>
@@ -13,6 +14,7 @@
 #include <user/clock_drawer.h>
 #include <user/engineer.h>
 #include <user/controller.h>
+#include <user/log.h>
 
 union ParserData {
     struct TrainSpeedParse {
@@ -372,7 +374,9 @@ bool parse(struct Parser *parser, char c){
         }
         sputc(&s,c);
     } else if(c == 0x0D){
-        sputstr(&s, "\x1B[0m\r\n");
+        sputstr(&s, CLEAR_LINE);
+        vtPos(&s, CONSOLE_ROW, 1);
+
         switch(parser->state){
             case Q_Q:
                 {
@@ -518,7 +522,9 @@ void commandParser(void){
     shutdownTrains();
     sensorQuit();
     clockDrawerQuit();
-    Delay(300);
+    Delay(150);
+    logQuit();
+    Delay(150);
     mioQuit();
     tioQuit();
     ClockQuit();

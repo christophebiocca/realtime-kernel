@@ -4,11 +4,12 @@
 
 #include <user/controller.h>
 #include <user/engineer.h>
-#include <user/priorities.h>
-#include <user/turnout.h>
-#include <user/syscall.h>
-#include <user/vt100.h>
+#include <user/log.h>
 #include <user/mio.h>
+#include <user/priorities.h>
+#include <user/syscall.h>
+#include <user/turnout.h>
+#include <user/vt100.h>
 
 #define MAX_TRAINS          80
 #define MAX_SENSORS         5
@@ -74,6 +75,7 @@ struct ControllerMessage {
 
 #define MAX_AWAITING_TRAINS 16
 static void controllerServer(void) {
+    logAssoc("tc");
     struct {
         int engineer_tid;
         struct TrackNode *node;
@@ -220,6 +222,7 @@ static void controllerServer(void) {
             }
 
             case SENSOR_TRIGGERED: {
+                logC("sensor triggered");
                 VALIDATE_SENSOR(request.sensorTriggered.sensor);
                 VALIDATE_SENSOR_NUMBER(request.sensorTriggered.number);
 
@@ -237,7 +240,7 @@ static void controllerServer(void) {
                     // send it to everyone awaiting
 
                     // make sure someone is awaiting
-                    assert(awaiting_trains.head != awaiting_trains.tail);
+                    //assert(awaiting_trains.head != awaiting_trains.tail);
 
                     for (int i = awaiting_trains.head;
                             i != awaiting_trains.tail;

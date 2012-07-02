@@ -9,7 +9,7 @@ void vtInit(void) {
     sputstr(&s, CLEAR_SCREEN);
     sputstr(&s, CURSOR_HIDE);
     sputstr(&s, RESET);
-    sputstr(&s, SCROLL(CONSOLE_ROW, SCROLL_BOTTOM));
+    sputstr(&s, SCROLL(LOG_ROW, SCROLL_BOTTOM));
     mioPrint(&s);
 
     sinit(&s);

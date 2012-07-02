@@ -9,8 +9,9 @@
 #define SWITCH_ROW        4
 #define SENSOR_ROW        15
 #define SENSOR_COL        18
-#define CONSOLE_ROW       18
-#define SCROLL_BOTTOM     35
+#define LOG_ROW           17
+#define SCROLL_BOTTOM     32
+#define CONSOLE_ROW       35
 
 void vtInit(void);
 
