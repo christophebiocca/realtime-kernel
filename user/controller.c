@@ -264,6 +264,10 @@ static void controllerServer(void) {
                         request.sensorTriggered.sensor,
                         request.sensorTriggered.number
                     );
+
+                    // clear the expectation
+                    expectations[request.sensorTriggered.sensor]
+                        [request.sensorTriggered.number] = -1;
                 } else {
                     // no one expected this sensor
                     // send it to everyone awaiting
