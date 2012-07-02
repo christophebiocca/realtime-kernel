@@ -162,7 +162,7 @@ class node:
       if len(line) == 0:
         # Empty line, do nothing.
         pass
-      elif line[0] == 'sensor':
+      elif line[0] in ['sensor', 'sensor_dead']:
         # sensor <SENSOR_NUM>
         if self.nodetype != None:
           state.error("duplicate node type")
@@ -171,7 +171,7 @@ class node:
           assert len(line) == 2
           self.num = int(line[1])
         except (AssertionError, ValueError):
-          state.error("expected 'sensor <SENSOR_NUM>'")
+          state.error("expected 'sensor(_dead) <SENSOR_NUM>'")
       elif line[0] in ['branch', 'merge']:
         # branch/merge <SWITCH_NUM>
         if self.nodetype != None:
@@ -427,6 +427,7 @@ fh.write('''#ifndef USER_TRACK_DATA_H
 enum NodeType {
   NODE_NONE,
   NODE_SENSOR,
+  NODE_SENSOR_DEAD,
   NODE_BRANCH,
   NODE_MERGE,
   NODE_ENTER,
