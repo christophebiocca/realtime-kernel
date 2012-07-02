@@ -176,7 +176,9 @@ void engineer(int trainID){
         sensor = mesg.content.sensor.sensor;
         number = mesg.content.sensor.number;
     }
-    int waiter = CreateArgs(TASK_PRIORITY, clockWaiter, 1, MyTid());
+    int myTid = MyTid();
+    int waiter = CreateArgs(TASK_PRIORITY, clockWaiter, 1, myTid);
+    int courier = controllerCourier(myTid);
     int time = Time();
     int lastUpdate = time;
     const int speed = 5500;
@@ -188,18 +190,19 @@ void engineer(int trainID){
     (void) path;
     bool waiting = true;
     bool find_sensor = true;
+    bool courierReady = false;
     while(true){
         struct EngineerMessage mesg;
         int tid;
-        if(waiting){
-            Receive(&tid, (char *) &mesg, sizeof(struct EngineerMessage));
-        }
+        Receive(&tid, (char *) &mesg, sizeof(struct EngineerMessage));
         if(tid == waiter){
             time = *((int*)&mesg);
             waiting = false;
             logC("Time");
-        } else if(mesg.messageType == GOTO){
+        } else if(tid == courier) {
+            courierReady = true;
         } else {
+            Reply(tid,0,0);
             assert(mesg.messageType == SENSOR);
             time = lastUpdate = Time();
             sensor = mesg.content.sensor.sensor;
@@ -209,18 +212,21 @@ void engineer(int trainID){
             logC("Sensor update");
         }
         int dist = speed*(time - lastUpdate);
-        controllerUpdatePosition(trainID, position, dist);
+        if(courierReady){
+            controllerUpdatePosition(courier, trainID, position, dist);
+        }
         struct TrackNode *sweep = position;
         bool update = false;
         dist += stoppingDistance;
-        while(dist > 0){
+        while(courierReady && dist > 0){
             int dir = 0;
             if(update){
                 if(sweep->type == NODE_BRANCH){
                     if(target){
                     } else {
                         logC("Changing turnout");
-                        controllerTurnoutCurve(sweep->num);
+                        controllerTurnoutCurve(courier, sweep->num);
+                        logC("Changed turnout");
                         dir = 1;
                     }
                 }
@@ -236,9 +242,9 @@ void engineer(int trainID){
                     }
                 }
             }
-            if(find_sensor && sweep != position && sweep->type == NODE_SENSOR){
+            if(courierReady && find_sensor && sweep != position && sweep->type == NODE_SENSOR){
                 logC("Expect");
-                controllerSetExpectation(trainID, sweep->num/16, sweep->num%16);
+                controllerSetExpectation(courier, trainID, sweep->num/16, sweep->num%16);
                 find_sensor = false;
             }
 
@@ -246,14 +252,15 @@ void engineer(int trainID){
             sweep = sweep->edge[dir].dest;
         }
         if(!waiting){
-            int to = time + 10;
+            int to = time + 150;
             Reply(waiter, (char *) &to, sizeof(int));
+            waiting = true;
         }
     }
 }
 
 int engineerCreate(int trainID){
-    return CreateArgs(TASK_PRIORITY, engineer, 1, trainID);
+    return CreateArgs(TASK_PRIORITY+2, engineer, 1, trainID);
 }
 
 void planRoute(char *src, char *dest){

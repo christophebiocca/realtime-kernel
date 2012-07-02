@@ -10,6 +10,7 @@
 #include <user/syscall.h>
 #include <user/turnout.h>
 #include <user/vt100.h>
+#include <user/courier.h>
 
 #define MAX_TRAINS          80
 #define MAX_SENSORS         5
@@ -364,7 +365,7 @@ void controllerPrepareTrain(int train_id) {
     );
 }
 
-void controllerUpdatePosition(int train_id, struct TrackNode *node, int mm) {
+void controllerUpdatePosition(int couriertid, int train_id, struct TrackNode *node, int mm) {
     struct ControllerMessage msg;
 
     msg.type = UPDATE_POSITION;
@@ -372,14 +373,13 @@ void controllerUpdatePosition(int train_id, struct TrackNode *node, int mm) {
     msg.updatePosition.node = node;
     msg.updatePosition.mm = mm;
 
-    Send(
-        g_controller_server_tid,
-        (char *) &msg, sizeof(struct ControllerMessage),
-        (char *) 0, 0
+    Reply(
+        couriertid,
+        (char *) &msg, sizeof(struct ControllerMessage)
     );
 }
 
-void controllerSetExpectation(int train_id, int sensor, int number) {
+void controllerSetExpectation(int couriertid, int train_id, int sensor, int number) {
     struct ControllerMessage msg;
 
     msg.type = SET_EXPECTATION;
@@ -387,10 +387,9 @@ void controllerSetExpectation(int train_id, int sensor, int number) {
     msg.setExpectation.sensor = sensor;
     msg.setExpectation.number = number;
 
-    Send(
-        g_controller_server_tid,
-        (char *) &msg, sizeof(struct ControllerMessage),
-        (char *) 0, 0
+    Reply(
+        couriertid,
+        (char *) &msg, sizeof(struct ControllerMessage)
     );
 }
 
@@ -423,31 +422,29 @@ void controllerSensorTriggered(int sensor, int number) {
     );
 }
 
-void controllerTurnoutCurve(int address) {
+void controllerTurnoutCurve(int couriertid, int address) {
     struct ControllerMessage msg;
 
     msg.type = TURNOUT_REQUEST;
     msg.turnoutRequest.orientation = CURVE;
     msg.turnoutRequest.address = address;
 
-    Send(
-        g_controller_server_tid,
-        (char *) &msg, sizeof(struct ControllerMessage),
-        (char *) 0, 0
+    Reply(
+        couriertid,
+        (char *) &msg, sizeof(struct ControllerMessage)
     );
 }
 
-void controllerTurnoutStraight(int address) {
+void controllerTurnoutStraight(int couriertid, int address) {
     struct ControllerMessage msg;
 
     msg.type = TURNOUT_REQUEST;
     msg.turnoutRequest.orientation = STRAIGHT;
     msg.turnoutRequest.address = address;
 
-    Send(
-        g_controller_server_tid,
-        (char *) &msg, sizeof(struct ControllerMessage),
-        (char *) 0, 0
+    Reply(
+        couriertid,
+        (char *) &msg, sizeof(struct ControllerMessage)
     );
 }
 
@@ -461,4 +458,8 @@ void controllerQuit(void) {
         (char *) &msg, sizeof(struct ControllerMessage),
         (char *) 0, 0
     );
+}
+
+int controllerCourier(int sendertid){
+    return CreateArgs(TASK_PRIORITY, courier, 3, sendertid, sizeof(struct ControllerMessage), g_controller_server_tid);
 }
