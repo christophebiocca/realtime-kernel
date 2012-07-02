@@ -450,5 +450,12 @@ void controllerQuit(void) {
 }
 
 int controllerCourier(int sendertid){
-    return CreateArgs(TASK_PRIORITY, courier, 3, sendertid, sizeof(struct ControllerMessage), g_controller_server_tid);
+    return CreateArgs(
+        TASK_PRIORITY,
+        courier,
+        3,
+        sendertid,
+        sizeof(struct ControllerMessage),
+        g_controller_server_tid
+    );
 }

@@ -259,15 +259,21 @@ int ClockQuit(void) {
 
 void clockWaiter(int taskToNotify){
     int time = Time();
-    while(true){
-        int len = Send(taskToNotify,(char*)&time,sizeof(int),
-            (char*)&time, sizeof(int));
+
+    while(true) {
+        int len = Send(
+            taskToNotify,
+            (char *) &time, sizeof(int),
+            (char *) &time, sizeof(int)
+        );
+
         (void) len;
         assert(len == sizeof(int));
+
         if(time >= 0){
             DelayUntil(time);
         } else {
-            return;
+            Exit();
         }
     }
 }

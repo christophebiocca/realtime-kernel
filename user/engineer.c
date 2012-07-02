@@ -103,7 +103,8 @@ int planPath(struct TrackNode *list, struct TrackNode *start, struct TrackNode *
 struct EngineerMessage {
     enum {
         GOTO,
-        SENSOR
+        SENSOR,
+        QUIT
     } messageType;
     union {
         struct {
@@ -203,25 +204,31 @@ void engineer(int trainID){
         needPosUpdate = true;
         needExpect = true;
     }
-    while(true){
-        if(needPosUpdate && courierReady){
+
+    bool quitting = false;
+    bool courierQuit = false;
+    bool timerQuit = false;
+    while (!quitting || !courierQuit || !timerQuit) {
+        if (needPosUpdate && courierReady){
             logC(position->name);
             controllerUpdatePosition(courier, trainID, position, speed*(time-posTime));
             needPosUpdate = false;
             courierReady = false;
-        } else if(needExpect && courierReady) {
+        } else if (needExpect && courierReady) {
             struct TrackNode *n = position;
+
             do {
-                if(n->type == NODE_BRANCH){
+                if(n->type == NODE_BRANCH) {
                     n = n->edge[1].dest;
                 } else {
                     n = n->edge[0].dest;
                 }
             } while(n->type != NODE_SENSOR);
+
             controllerSetExpectation(courier, trainID, n->num / 16, n->num % 16);
             courierReady = false;
             needExpect = false;
-        } else if(!needPosUpdate && timerReady){
+        } else if (!needPosUpdate && timerReady){
             int nextTimer = time + 25;
             int ret = Reply(timer, (char *)&nextTimer, sizeof(int));
             assert(ret == 0);
@@ -230,28 +237,61 @@ void engineer(int trainID){
             int tid;
             struct EngineerMessage msg;
             int len = Receive(&tid, (char *)&msg, sizeof(msg));
-            if(tid == courier){
+
+            if(tid == courier) {
                 assert(len == 0);
-                courierReady = true;
+
+                if (!quitting) {
+                    courierReady = true;
+                } else {
+                    Reply(courier, (char *) 0, 0);
+                    courierQuit = true;
+                    courierReady = false;
+                }
             } else if(tid == timer){
                 assert(len == sizeof(int));
-                timerReady = true;
-                time = *((int*)&msg);
-                needPosUpdate = true;
+
+                if (!quitting) {
+                    timerReady = true;
+                    time = *((int*)&msg);
+                    needPosUpdate = true;
+                } else {
+                    int next = -1;
+                    Reply(timer, (char *) &next, sizeof(int));
+                    timerQuit = true;
+                    timerReady = false;
+                }
             } else {
                 assert(len == sizeof(struct EngineerMessage));
-                assert(msg.messageType == SENSOR);
                 {
                     int ret = Reply(tid, 0, 0);
                     assert(ret == 0);
                 }
-                position = find(msg.content.sensor.sensor, msg.content.sensor.number);
-                posTime = time = Time();
-                needPosUpdate = true;
-                needExpect = true;
+
+                switch (msg.messageType) {
+                    case SENSOR:
+                        position = find(msg.content.sensor.sensor, msg.content.sensor.number);
+                        posTime = time = Time();
+                        needPosUpdate = true;
+                        needExpect = true;
+
+                        break;
+
+                    case QUIT:
+                        setSpeed(trainID, 0);
+                        // FIXME: still set expectations for what we expect to
+                        // trigger, and update to final resting position
+                        quitting = true;
+                        break;
+
+                    default:
+                        assert(0);
+                }
             }
         }
     }
+
+    Exit();
 }
 
 int engineerCreate(int trainID){
@@ -310,7 +350,6 @@ void planRoute(char *src, char *dest){
     }
 }
 
-// FIXME: stubs
 void engineerSend(int engineer_tid, struct TrackNode *dest, int mm) {
     struct EngineerMessage msg = {
         .messageType = GOTO,
@@ -335,5 +374,8 @@ void engineerSensorTriggered(int engineer_tid, int sensor, int number) {
 }
 
 void engineerQuit(int engineer_tid) {
-    (void) engineer_tid;
+    struct EngineerMessage msg = {
+        .messageType = QUIT,
+    };
+    Send(engineer_tid, (char *)&msg, sizeof(struct EngineerMessage), 0, 0);
 }
