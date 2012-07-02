@@ -164,6 +164,31 @@ static inline int alongPath(struct TrackNode **path, int dist, int len){
     return i;
 }
 
+// computes the length of a path in mm
+static inline int distance(struct TrackNode *from, struct TrackNode *to) {
+    // only allow for really small path's
+    struct TrackNode *path[5];
+    // subtract 1 because we access the next element in the loop
+    int len = planPath(nodes, from, to, path) - 1;
+
+    struct TrackNode *next;
+    int dist = 0;
+
+    for (int i = 0; i < len; ++i) {
+        next = path[i + 1];
+
+        if (path[i]->edge[0].dest == next) {
+            dist += path[i]->edge[0].dist;
+        } else if (path[i]->edge[1].dest == next) {
+            dist += path[i]->edge[1].dist;
+        } else {
+            assert(path[i]->reverse == next);
+        }
+    }
+
+    return dist;
+}
+
 // number of readings to throw away (while the train accelerates to the desired
 // speed)
 #define THROWAWAY_FIRST 15
@@ -173,8 +198,7 @@ static inline int alongPath(struct TrackNode **path, int dist, int len){
 #define NUM_READINGS    8
 
 static inline void computeSpeeds(const int train_id,
-        unsigned int *speeds, struct TrackNode **path,
-        const int min, const int max) {
+        int *speeds, const int min, const int max) {
 
     struct EngineerMessage msg;
     int tid, len, ret;
@@ -217,20 +241,7 @@ static inline void computeSpeeds(const int train_id,
                 distance_travelled = 0;
                 *(TIMER4_CRTL) = TIMER4_ENABLE;
             } else {
-                len = planPath(nodes, last_position, position, path) - 1;
-
-                for (int k = 0; k < len; ++k) {
-                    struct TrackNode *next = path[k + 1];
-
-                    if (path[k]->edge[0].dest == next) {
-                        distance_travelled += path[k]->edge[0].dist;
-                    } else if (path[k]->edge[1].dest == next) {
-                        distance_travelled += path[k]->edge[1].dist;
-                    } else {
-                        // wtf, we should have no reverses
-                        assert(0);
-                    }
-                }
+                distance_travelled += distance(last_position, position);
             }
 
             last_position = position;
@@ -242,7 +253,7 @@ static inline void computeSpeeds(const int train_id,
         // in mm / ms
         float time_in_cs = time_taken / 9083.0;
         float speed = (1000 * distance_travelled) / time_in_cs;
-        speeds[i] = (unsigned int) speed;
+        speeds[i] = (int) speed;
 
         struct String s;
         sinit(&s);
@@ -255,7 +266,17 @@ static inline void computeSpeeds(const int train_id,
 }
 
 
-#define STOPPING_DISTANCE_COEFFICIENT   (149)
+// FIXME: consider using the floating point values?
+#define FORWARD_STOPPING_COEFFICIENT        (149)
+#define BACKWARD_STOPPING_COEFFICIENT       (176)
+
+// FIXME: this is the negation of the average of the computed deceleration
+// constant... this is probably a very bad approximation!
+#define FORWARD_ACCELERATION_COEFFICIENT    (15)
+#define BACKWARD_ACCELERATION_COEFFICIENT   (13)
+
+// if (abs(computed_speed - expected_speed) < threshold) acceleration = 0
+#define SPEED_THRESHOLD                     (100)
 void engineer(int trainID){
     logAssoc("en");
     {
@@ -297,27 +318,32 @@ void engineer(int trainID){
     struct TrackNode *path[50];
 
     // speeds in um / cs
-    unsigned int ideal_speed[15];
+    int ideal_speed[15];
     memset16(ideal_speed, 0, sizeof(ideal_speed));
-    computeSpeeds(trainID, ideal_speed, path, 8, 14);
+    computeSpeeds(trainID, ideal_speed, 8, 14);
+
+    // computeSpeeds leaves the train running at speed 14
+    int target_speed = ideal_speed[14];
+    int computed_speed = ideal_speed[14];
+    int acceleration = 0;
 
     // Go forth and hit a sensor.
     struct TrackNode *position;
     int posTime;
-    int speed = 5500;
-    int stoppingDistance = 1000;
     bool needPosUpdate;
     bool needExpect;
     {
-        setSpeed(trainID, 0);
         // Wait for a sensor message update.
         int tid;
         struct EngineerMessage msg;
+
         int len = Receive(&tid, (char *)&msg, sizeof(struct EngineerMessage));
         assert(len == sizeof(struct EngineerMessage));
         assert(msg.messageType == SENSOR);
+
         int ret = Reply(tid, 0, 0);
         assert(ret == 0);
+
         position = find(msg.content.sensor.sensor, msg.content.sensor.number);
         time = posTime = Time();
         needPosUpdate = true;
@@ -331,6 +357,7 @@ void engineer(int trainID){
     int set = 0;
     int toSet = 0;
     int target = 0;
+
     while (!quitting || !courierQuit || !timerQuit) {
         if(target && set <= toSet && courierReady){
             do {
@@ -357,8 +384,27 @@ void engineer(int trainID){
                 }
                 courierReady = false;
             }
-        } else if(needPosUpdate && courierReady){
-            controllerUpdatePosition(courier, trainID, position, speed*(time-posTime));
+        } else if(needPosUpdate && courierReady) {
+            int sign = (target_speed < computed_speed) ? -1 : 1;
+            int diffspeed = (target_speed - computed_speed) * sign;
+
+            if (diffspeed < SPEED_THRESHOLD) {
+                acceleration = 0;
+            } else {
+                // FIXME: train orientation
+                acceleration = sign * FORWARD_STOPPING_COEFFICIENT;
+            }
+
+            int diff = time - posTime;
+            // in um
+            int dist = computed_speed * diff + (acceleration * diff * diff) / 2;
+
+            controllerUpdatePosition(
+                courier,
+                trainID,
+                position,
+                dist / 1000
+            );
             needPosUpdate = false;
             courierReady = false;
         } else if(needExpect && courierReady) {
@@ -431,16 +477,25 @@ void engineer(int trainID){
                 }
 
                 switch (msg.messageType) {
-                    case SENSOR:
-                        position = find(msg.content.sensor.sensor, msg.content.sensor.number);
-                        posTime = time = Time();
-                        if(target){
+                    case SENSOR: {
+                        time = Time();
+                        struct TrackNode *new_position =
+                            find(msg.content.sensor.sensor, msg.content.sensor.number);
+                        int dist = distance(position, new_position);
+
+                        computed_speed = (dist * 1000) / time;
+
+                        posTime = time;
+                        position = new_position;
+
+                        if (target) {
                             while(path[current] != position) ++current;
                         }
                         needPosUpdate = true;
                         needExpect = true;
 
                         break;
+                    }
 
                     case GOTO: {
                         int len = planPath(nodes, position, msg.content.destination.dest, path);
@@ -474,7 +529,8 @@ void engineer(int trainID){
                 }
                 
                 if (target) {
-                    toSet = alongPath(path+current, stoppingDistance+speed*(time-posTime), target);
+                    // FIXME: train orientation
+                    toSet = alongPath(path+current, computed_speed * FORWARD_STOPPING_COEFFICIENT, target);
                     {
                         struct String s;
                         sinit(&s);
