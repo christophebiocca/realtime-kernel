@@ -40,7 +40,48 @@ Straight: D11 -> C16: 407 mm
 Slight Curve: C6 -> B15: 485 mm
 Deep Curve: C9 -> B15: 380 mm
 
+### Speed 8 ###
+
+#### Backward: Straight ####
+
+(
+    1095683 +
+    1095606 +
+    1095580 +
+    1100525 +
+    1095375 +
+    1096861
+) / 6 = 1096605 ticks
+
+Total: 3371.1144851610197 um / cs
+
+### Speed 10 ###
+
+#### Backward: Straight ####
+
+(
+    911107 +
+    913257 +
+    805252
+) / 3 = 876538.6666666666 ticks
+
+Total: 4217.476239876849 um / cs
+
+### Speed 12 ###
+
+#### Backward: Straight ####
+
+(
+    728067 +
+    727854 +
+    727117
+) / 3 = 727679.3333333334 ticks
+
+Total: 5080.233601064205 um / cs
+
 ### Speed 14 ###
+
+Average: 5614.757413379372 um / cs
 
 #### Forward: Straight ####
 
@@ -119,3 +160,4 @@ Total: 5551.329816224445 um / cs
 ) / 6 = 604507.3333333334 ticks
 
 Total: 5709.674324325813 um / cs
+
