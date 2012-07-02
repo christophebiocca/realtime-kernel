@@ -10,8 +10,8 @@
 #define SENSOR_ROW        15
 #define SENSOR_COL        18
 #define LOG_ROW           17
-#define SCROLL_BOTTOM     32
-#define CONSOLE_ROW       35
+#define SCROLL_BOTTOM     50
+#define CONSOLE_ROW       52
 
 void vtInit(void);
 
