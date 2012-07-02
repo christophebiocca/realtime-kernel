@@ -148,9 +148,9 @@ static inline void setSpeed(int trainID, int speed){
     tioPrint(&s);
 }
 
-static inline int alongPath(struct TrackNode **path, int dist, int len){
+static inline int alongPath(struct TrackNode **path, int dist, int last){
     int i = 0;
-    while(dist > 0 && i < len){
+    while(dist > 0 && i < last){
         struct TrackNode *next = path[i+1];
         if(path[i]->edge[0].dest == next){
             dist -= path[i]->edge[0].dist;
