@@ -373,10 +373,11 @@ void controllerUpdatePosition(int couriertid, int train_id, struct TrackNode *no
     msg.updatePosition.node = node;
     msg.updatePosition.mm = mm;
 
-    Reply(
+    int ret = Reply(
         couriertid,
         (char *) &msg, sizeof(struct ControllerMessage)
     );
+    assert(ret == 0);
 }
 
 void controllerSetExpectation(int couriertid, int train_id, int sensor, int number) {
@@ -387,10 +388,11 @@ void controllerSetExpectation(int couriertid, int train_id, int sensor, int numb
     msg.setExpectation.sensor = sensor;
     msg.setExpectation.number = number;
 
-    Reply(
+    int ret = Reply(
         couriertid,
         (char *) &msg, sizeof(struct ControllerMessage)
     );
+    assert(ret == 0);
 }
 
 void controllerSendTrain(int train_id, struct TrackNode *node, int mm) {
@@ -429,10 +431,11 @@ void controllerTurnoutCurve(int couriertid, int address) {
     msg.turnoutRequest.orientation = CURVE;
     msg.turnoutRequest.address = address;
 
-    Reply(
+    int ret = Reply(
         couriertid,
         (char *) &msg, sizeof(struct ControllerMessage)
     );
+    assert(ret == 0);
 }
 
 void controllerTurnoutStraight(int couriertid, int address) {
@@ -442,10 +445,11 @@ void controllerTurnoutStraight(int couriertid, int address) {
     msg.turnoutRequest.orientation = STRAIGHT;
     msg.turnoutRequest.address = address;
 
-    Reply(
+    int ret = Reply(
         couriertid,
         (char *) &msg, sizeof(struct ControllerMessage)
     );
+    assert(ret == 0);
 }
 
 void controllerQuit(void) {
