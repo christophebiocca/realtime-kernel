@@ -475,6 +475,18 @@ bool parse(struct Parser *parser, char c){
                 break;
             }
 
+            case E_train: {
+                if(parser->data.prepareTrain.trainID > 80 ||
+                    parser->data.prepareTrain.trainID < 0){
+                } else {
+                    sputstr(&s, "Going to start engineer ");
+                    sputuint(&s, parser->data.prepareTrain.trainID,10);
+                    sputstr(&s, "\r\n");
+                    controllerPrepareTrain(parser->data.prepareTrain.trainID);
+                }
+                break;
+            }
+
             default: {
                 logC("Your syntax is invalid");
                 break;

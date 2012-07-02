@@ -8,6 +8,8 @@
 #include <stdbool.h>
 #include <user/heap.h>
 #include <user/track_data.h>
+#include <user/controller.h>
+#include <user/log.h>
 #include <lib.h>
 
 struct PathNode {
@@ -108,11 +110,147 @@ int planPath(struct TrackNode *list, struct TrackNode *start, struct TrackNode *
     return solutionCount;
 }
 
-void engineer(int trainID){
-    (void) trainID;
+struct EngineerMessage {
+    enum {
+        GOTO,
+        SENSOR
+    } messageType;
+    union {
+        struct {
+            struct TrackNode *dest;
+            int mm;
+        } destination;
+        struct {
+            int sensor;
+            int number;
+        } sensor;
+    } content;
+    int dummy;
+};
+
+static inline struct TrackNode *find(int sensor, int number){
+    char lookup[4];
+    lookup[2] = lookup[3] = 0;
+    lookup[0] = 'A' + sensor;
+    number += 1;
+    if(number >= 10){
+        lookup[1] = '0' + number / 10;
+        lookup[2] = '0' + number % 10;
+    } else {
+        lookup[1] = '0' + number;
+    }
+    return lookupTrackNode(hashtbl, lookup);
 }
 
+#define UPDATE_INTERVAL 10
 
+void engineer(int trainID){
+    logAssoc("en");
+    // Figure out our position: Move 'forward' until we trip a sensor.
+    {
+        struct String s;
+        sinit(&s);
+        sputc(&s,14);
+        sputc(&s,trainID);
+        tioPrint(&s);
+    }
+    int sensor, number;
+    {
+        struct EngineerMessage mesg;
+        int tid;
+        {
+            struct String s;
+            sinit(&s);
+            sputstr(&s, "Waiting for trigger.\r\n");
+            mioPrint(&s);
+        }
+        Receive(&tid, (char *)&mesg, sizeof(struct EngineerMessage));
+        assert(mesg.messageType == SENSOR);
+        Reply(tid,0,0);
+        {
+            struct String s;
+            sinit(&s);
+            sputstr(&s, "Got a sensor notification.\r\n");
+            mioPrint(&s);
+        }
+        sensor = mesg.content.sensor.sensor;
+        number = mesg.content.sensor.number;
+    }
+    int waiter = CreateArgs(TASK_PRIORITY, clockWaiter, 1, MyTid());
+    int time = Time();
+    int lastUpdate = time;
+    const int speed = 5500;
+    const int stoppingDistance = 1000;
+    struct TrackNode *position = find(sensor, number);
+    struct TrackNode *atDistance = position;
+    struct TrackNode *target = 0;
+    struct TrackNode *path[50];
+    (void) path;
+    bool waiting = true;
+    bool find_sensor = true;
+    while(true){
+        struct EngineerMessage mesg;
+        int tid;
+        if(waiting){
+            Receive(&tid, (char *) &mesg, sizeof(struct EngineerMessage));
+        }
+        if(tid == waiter){
+            time = *((int*)&mesg);
+            waiting = false;
+            logC("Time");
+        } else if(mesg.messageType == GOTO){
+        } else {
+            assert(mesg.messageType == SENSOR);
+            time = lastUpdate = Time();
+            sensor = mesg.content.sensor.sensor;
+            number = mesg.content.sensor.number;
+            position = find(sensor, number);
+            find_sensor = true;
+            logC("Sensor update");
+        }
+        int dist = speed*(time - lastUpdate);
+        controllerUpdatePosition(trainID, position, dist);
+        struct TrackNode *sweep = position;
+        bool update = false;
+        dist += stoppingDistance;
+        while(dist > 0){
+            int dir = 0;
+            if(update){
+                if(sweep->type == NODE_BRANCH){
+                    if(target){
+                    } else {
+                        logC("Changing turnout");
+                        controllerTurnoutCurve(sweep->num);
+                        dir = 1;
+                    }
+                }
+                atDistance = sweep;
+            } else {
+                if(sweep == atDistance){
+                    update = true;
+                }
+                if(sweep->type == NODE_BRANCH){
+                    if(target){
+                    } else {
+                        dir = 1;
+                    }
+                }
+            }
+            if(find_sensor && sweep != position && sweep->type == NODE_SENSOR){
+                logC("Expect");
+                controllerSetExpectation(trainID, sweep->num/16, sweep->num%16);
+                find_sensor = false;
+            }
+
+            dist -= sweep->edge[dir].dist;
+            sweep = sweep->edge[dir].dest;
+        }
+        if(!waiting){
+            int to = time + 10;
+            Reply(waiter, (char *) &to, sizeof(int));
+        }
+    }
+}
 
 int engineerCreate(int trainID){
     return CreateArgs(TASK_PRIORITY, engineer, 1, trainID);
@@ -170,15 +308,25 @@ void planRoute(char *src, char *dest){
 
 // FIXME: stubs
 void engineerSend(int engineer_tid, struct TrackNode *dest, int mm) {
-    (void) engineer_tid;
-    (void) dest;
-    (void) mm;
+    struct EngineerMessage msg = {
+        .messageType = GOTO,
+        .content.destination = {
+            .dest = dest,
+            .mm = mm
+        }
+    };
+    Send(engineer_tid, (char *)&msg, sizeof(struct EngineerMessage), 0, 0);
 }
 
 void engineerSensorTriggered(int engineer_tid, int sensor, int number) {
-    (void) engineer_tid;
-    (void) sensor;
-    (void) number;
+    struct EngineerMessage msg = {
+        .messageType = SENSOR,
+        .content.sensor = {
+            .sensor = sensor,
+            .number = number
+        }
+    };
+    Send(engineer_tid, (char *)&msg, sizeof(struct EngineerMessage), 0, 0);
 }
 
 void engineerQuit(int engineer_tid) {
