@@ -134,135 +134,130 @@ static inline struct TrackNode *find(int sensor, int number){
 
 #define UPDATE_INTERVAL 10
 
+static inline void setSpeed(int trainID, int speed){
+    assert(0 <= trainID && trainID <= 80);
+    assert(0 <= speed && speed <= 14);
+    struct String s;
+    sinit(&s);
+    sputc(&s, speed);
+    sputc(&s, trainID);
+    tioPrint(&s);
+}
+
 void engineer(int trainID){
     logAssoc("en");
-    // Figure out our position: Move 'forward' until we trip a sensor.
     {
         struct String s;
         sinit(&s);
-        sputc(&s,14);
-        sputc(&s,trainID);
-        tioPrint(&s);
+        sputuint(&s, MyTid(), 10);
+        logS(&s);
     }
-    int sensor, number;
-    {
-        struct EngineerMessage mesg;
-        int tid;
-        logC("Waiting for trigger.");
-        Receive(&tid, (char *)&mesg, sizeof(struct EngineerMessage));
-        assert(mesg.messageType == SENSOR);
-        Reply(tid,0,0);
-        logC("Got a sensor notification.");
-        sensor = mesg.content.sensor.sensor;
-        number = mesg.content.sensor.number;
-    }
-    int myTid = MyTid();
-    int waiter = CreateArgs(TASK_PRIORITY, clockWaiter, 1, myTid);
-    int courier = controllerCourier(myTid);
-    int time = Time();
-    int lastUpdate = time;
-    const int speed = 5500;
-    const int stoppingDistance = 1000;
-    struct TrackNode *position = find(sensor, number);
-    struct TrackNode *atDistance = position;
-    struct TrackNode *target = 0;
-    struct TrackNode *path[50];
-    int pathlen;
-    int pathpos;
-    bool waiting = true;
-    bool find_sensor = true;
-    bool courierReady = false;
-    while(true){
-        struct EngineerMessage mesg;
-        int tid;
-        Receive(&tid, (char *) &mesg, sizeof(struct EngineerMessage));
-        if(tid == waiter){
-            time = *((int*)&mesg);
-            waiting = false;
-            logC("Time");
-        } else if(tid == courier) {
-            courierReady = true;
-        } else if(mesg.messageType == GOTO){
-            Reply(tid,0,0);
-            target = mesg.content.destination.dest;
-            pathlen = planPath(nodes, atDistance, target, path);
-            pathpos = 0;
-            struct String s;
-            sinit(&s);
-            sputstr(&s, "Path plan: ");
-            sputuint(&s, pathlen, 10);
-            logS(&s);
-        } else {
-            assert(mesg.messageType == SENSOR);
-            Reply(tid,0,0);
-            time = lastUpdate = Time();
-            sensor = mesg.content.sensor.sensor;
-            number = mesg.content.sensor.number;
-            position = find(sensor, number);
-            if(target){
-                while(position != path[pathpos]){
-                    ++pathpos;
-                }
-            }
-            find_sensor = true;
-            logC("Sensor update");
-        }
-        int dist = speed*(time - lastUpdate);
-        if(courierReady){
-            controllerUpdatePosition(courier, trainID, position, dist);
-        }
-        struct TrackNode *sweep = position;
-        int sweeppos = pathpos;
-        bool update = false;
-        dist += stoppingDistance;
-        while(courierReady && dist > 0){
-            int dir;
-            if(target){
-                struct TrackNode *next = path[sweeppos+1];
-                if(path[sweeppos]->edge[0].dest == next){
-                    dir = 0;
-                } else {
-                    dir = 1;
-                }
-            } else {
-                dir = 1;
-            }
-            if(update){
-                if(sweep->type == NODE_BRANCH){
-                    logC("Changing turnout");
-                    if(dir == 0){
-                        controllerTurnoutStraight(courier, sweep->num);
-                    } else {
-                        controllerTurnoutCurve(courier, sweep->num);
-                    }
-                    logC("Changed turnout");
-                }
-                atDistance = sweep;
-            } else {
-                if(sweep == atDistance){
-                    update = true;
-                }
-            }
-            if(courierReady && find_sensor && sweep != position && sweep->type == NODE_SENSOR){
-                logC("Expect");
-                controllerSetExpectation(courier, trainID, sweep->num/16, sweep->num%16);
-                find_sensor = false;
-            }
 
-            dist -= sweep->edge[dir].dist;
-            sweep = sweep->edge[dir].dest;
-            sweeppos += 1;
-        }
-        if(!waiting){
-            int to = time + 150;
-            Reply(waiter, (char *) &to, sizeof(int));
-            waiting = true;
+    /* SET UP */
+
+    // Spawn our helpers and claim them.
+    bool timerReady = false;
+    int timer;
+    int time;
+    {
+        timer = CreateArgs(TASK_PRIORITY, clockWaiter, 1, MyTid());
+        assert(timer > 0);
+        int tid;
+        int len = Receive(&tid, (char *)&time, sizeof(int));
+        assert(tid == timer);
+        assert(len == sizeof(int));
+        assert(time >= 0);
+        timerReady = true;
+    }
+
+    bool courierReady = false;
+    int courier;
+    {
+        courier = controllerCourier(MyTid());
+        assert(courier > 0);
+        int tid;
+        int len = Receive(&tid, 0, 0);
+        assert(tid == courier);
+        assert(len == 0);
+        courierReady = true;
+    }
+
+    // Go forth and hit a sensor.
+    struct TrackNode *position;
+    int posTime;
+    int speed = 5500;
+    bool needPosUpdate;
+    bool needExpect;
+    {
+        setSpeed(trainID, 14);
+        // Wait for a sensor message update.
+        int tid;
+        struct EngineerMessage msg;
+        int len = Receive(&tid, (char *)&msg, sizeof(struct EngineerMessage));
+        assert(len == sizeof(struct EngineerMessage));
+        assert(msg.messageType == SENSOR);
+        int ret = Reply(tid, 0, 0);
+        assert(ret == 0);
+        position = find(msg.content.sensor.sensor, msg.content.sensor.number);
+        time = posTime = Time();
+        needPosUpdate = true;
+        needExpect = true;
+    }
+    while(true){
+        if(needPosUpdate && courierReady){
+            logC(position->name);
+            controllerUpdatePosition(courier, trainID, position, speed*(time-posTime));
+            needPosUpdate = false;
+            courierReady = false;
+        } else if(needExpect && courierReady) {
+            struct TrackNode *n = position;
+            do {
+                if(n->type == NODE_BRANCH){
+                    n = n->edge[1].dest;
+                } else {
+                    n = n->edge[0].dest;
+                }
+            } while(n->type != NODE_SENSOR);
+            controllerSetExpectation(courier, trainID, n->num / 16, n->num % 16);
+            courierReady = false;
+            needExpect = false;
+        } else if(!needPosUpdate && timerReady){
+            int nextTimer = time + 25;
+            int ret = Reply(timer, (char *)&nextTimer, sizeof(int));
+            assert(ret == 0);
+            timerReady = false;
+        } else {
+            int tid;
+            struct EngineerMessage msg;
+            int len = Receive(&tid, (char *)&msg, sizeof(msg));
+            if(tid == courier){
+                assert(len == 0);
+                courierReady = true;
+            } else if(tid == timer){
+                assert(len == sizeof(int));
+                timerReady = true;
+                time = *((int*)&msg);
+                needPosUpdate = true;
+            } else {
+                assert(len == sizeof(struct EngineerMessage));
+                assert(msg.messageType == SENSOR);
+                {
+                    int ret = Reply(tid, 0, 0);
+                    assert(ret == 0);
+                }
+                position = find(msg.content.sensor.sensor, msg.content.sensor.number);
+                posTime = time = Time();
+                needPosUpdate = true;
+                needExpect = true;
+            }
         }
     }
 }
 
 int engineerCreate(int trainID){
-    return CreateArgs(TASK_PRIORITY+2, engineer, 1, trainID);
+    int ret = CreateArgs(TASK_PRIORITY+2, engineer, 1, trainID);
+    assert(ret > 0);
+    return ret;
 }
 
 void planRoute(char *src, char *dest){
@@ -335,7 +330,8 @@ void engineerSensorTriggered(int engineer_tid, int sensor, int number) {
             .number = number
         }
     };
-    Send(engineer_tid, (char *)&msg, sizeof(struct EngineerMessage), 0, 0);
+    int len = Send(engineer_tid, (char *)&msg, sizeof(struct EngineerMessage), 0, 0);
+    assert(len == 0);
 }
 
 void engineerQuit(int engineer_tid) {
