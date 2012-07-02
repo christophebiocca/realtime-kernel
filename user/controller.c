@@ -138,12 +138,6 @@ static void controllerServer(void) {
             case UPDATE_POSITION: {
                 int train_id = request.updatePosition.train_id;
 
-                struct String s;
-                sinit(&s);
-                sputstr(&s, "update position ");
-                sputint(&s, train_id, 10);
-                logS(&s);
-
                 VALIDATE_TRAIN_ID(train_id);
 
                 int engineer_tid = train_status[train_id].engineer_tid;
@@ -180,10 +174,12 @@ static void controllerServer(void) {
                 train_status[train_id].mm = request.updatePosition.mm;
 
                 // FIXME: multiple trains?
+                struct String s;
                 sinit(&s);
                 sputstr(&s, CURSOR_SAVE);
                 sputstr(&s, CURSOR_HIDE);
                 vtPos(&s, TRAIN_ROW, 1);
+                sputstr(&s, CLEAR_LINE);
 
                 sputstr(&s, "Train: ");
                 sputstr(&s, request.updatePosition.node->name);
