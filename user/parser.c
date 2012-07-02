@@ -48,6 +48,10 @@ union ParserData {
         char src[5];
         char dest[5];
     } routeFind;
+
+    struct TrainPrep {
+        int trainID;
+    } prepareTrain;
 };
 
 struct Parser {
@@ -88,6 +92,9 @@ struct Parser {
         P_src,
         P_secondSpace,
         P_dest,
+        E_E,
+        E_firstSpace,
+        E_train,
         Q_Q
     } state;
     union ParserData data;
@@ -142,6 +149,9 @@ bool parse(struct Parser *parser, char c){
                         break;
                     case 'p':
                         parser->state = P_P;
+                        break;
+                    case 'e':
+                        parser->state = E_E;
                         break;
                     default:
                         parser->state = ErrorState;
@@ -363,6 +373,22 @@ bool parse(struct Parser *parser, char c){
                     }
                 }
                 break;
+            case E_E:
+                parser->data.prepareTrain.trainID = 0;
+                EXPECT_EXACT(' ', E_train);
+                break;
+            case E_firstSpace:
+                if(appendDecDigit(c, &parser->data.prepareTrain.trainID)){
+                    parser->state = E_train;
+                } else {
+                    parser->state = ErrorState;
+                }
+                break;
+            case E_train:
+                if(!appendDecDigit(c, &parser->data.prepareTrain.trainID)){
+                    parser->state = ErrorState;
+                }
+                break;
             case Q_Q:
                 parser->state = ErrorState;
                 break;
@@ -482,7 +508,7 @@ bool parse(struct Parser *parser, char c){
                     sputstr(&s, "Going to start engineer ");
                     sputuint(&s, parser->data.prepareTrain.trainID,10);
                     sputstr(&s, "\r\n");
-                    controllerPrepareTrain(parser->data.prepareTrain.trainID);
+                    controllerPrepareTrain(parser->data.prepareTrain.trainID);    
                 }
                 break;
             }
