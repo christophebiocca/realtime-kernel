@@ -64,6 +64,8 @@ struct Parser {
     enum State {
         ErrorState,
         Empty,
+        A_A,
+        B_B,
         TR_T,
         TR_R,
         TR_firstSpace,
@@ -140,6 +142,12 @@ bool parse(struct Parser *parser, char c){
         switch(parser->state){
             case Empty: // Figure out which command we're looking at.
                 switch(c){
+                    case 'a':
+                        parser->state = A_A;
+                        break;
+                    case 'b':
+                        parser->state = B_B;
+                        break;
                     case 'q':
                         parser->state = Q_Q;
                         break;
@@ -457,6 +465,20 @@ bool parse(struct Parser *parser, char c){
             case Q_Q:
                 {
                     ret = false;
+                }
+                break;
+
+            case A_A:
+                {
+                    logC("Setting up track A.");
+                    initTrackA(nodes, hashtbl);
+                }
+                break;
+
+            case B_B:
+                {
+                    logC("Setting up track B.");
+                    initTrackB(nodes, hashtbl);
                 }
                 break;
 

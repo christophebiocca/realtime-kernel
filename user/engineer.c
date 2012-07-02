@@ -231,30 +231,28 @@ void engineer(int trainID){
     int toSet = 0;
     int target = 0;
     while (!quitting || !courierQuit || !timerQuit) {
-        {
-            struct String s;
-            sinit(&s);
-            sputstr(&s, "c:");
-            sputuint(&s, current, 10);
-            sputstr(&s, "s:");
-            sputuint(&s, set, 10);
-            sputstr(&s, "tS:");
-            sputuint(&s, toSet, 10);
-            sputstr(&s, "t:");
-            sputuint(&s, target, 10);
-            logS(&s);
-        }
-        if(target && set < toSet && courierReady){
+        if(target && set <= toSet && courierReady){
             do {
                 set++;
-            } while (path[set]->type != NODE_BRANCH && set != toSet);
-            if(set != toSet){
+            } while (path[set]->type != NODE_BRANCH && set <= toSet);
+            if(set <= toSet){
                 if(path[set]->edge[0].dest == path[set+1]){
+                    logC("Straight");
                     controllerTurnoutStraight(courier, path[set]->num);
                 } else if(path[set]->edge[1].dest == path[set+1]) {
+                    logC("Curve");
                     controllerTurnoutCurve(courier, path[set]->num);
                 } else {
-                    assert(path[set]->reverse = path[set+1]);
+                    logC("Reverse");
+                    {
+                        struct String s;
+                        sinit(&s);
+                        sputstr(&s, path[set]->name);
+                        sputstr(&s, " -> ");
+                        sputstr(&s, path[set+1]->name);
+                        logS(&s);
+                    }
+                    assert(path[set]->reverse == path[set+1]);
                 }
                 courierReady = false;
             }
@@ -335,6 +333,9 @@ void engineer(int trainID){
                     case SENSOR:
                         position = find(msg.content.sensor.sensor, msg.content.sensor.number);
                         posTime = time = Time();
+                        if(target){
+                            while(path[current] != position) ++current;
+                        }
                         needPosUpdate = true;
                         needExpect = true;
 
@@ -344,6 +345,19 @@ void engineer(int trainID){
                         int len = planPath(nodes, position, msg.content.destination.dest, path);
                         set = current = 0;
                         target = (len - 1);
+                        {
+                            struct String s;
+                            sinit(&s);
+                            for(int i = 0; i < len; i++){
+                                sputstr(&s, path[i]->name);
+                                sputc(&s, ' ');
+                                if(!((i+1) % 10)){
+                                    logS(&s);
+                                    sinit(&s);
+                                }
+                            }
+                            logS(&s);
+                        }
                         break;
                     }
 
@@ -359,7 +373,20 @@ void engineer(int trainID){
                 }
                 
                 if (target) {
-                    toSet = alongPath(path+current, stoppingDistance, target);
+                    toSet = alongPath(path+current, stoppingDistance+speed*(time-posTime), target);
+                    {
+                        struct String s;
+                        sinit(&s);
+                        sputstr(&s, "c:");
+                        sputstr(&s, path[current]->name);
+                        sputstr(&s, "s:");
+                        sputstr(&s, path[set]->name);
+                        sputstr(&s, "ts:");
+                        sputstr(&s, path[toSet]->name);
+                        sputstr(&s, "t:");
+                        sputstr(&s, path[target]->name);
+                        logS(&s);
+                    }
                 }
             }
         }
