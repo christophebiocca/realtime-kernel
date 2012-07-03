@@ -483,30 +483,9 @@ void engineer(int trainID){
         if(target && (target == toSet) && target_speed){
             int fulldist = distance(position, path[target]);
 
-            {
-                struct String s;
-                sinit(&s);
-                sputstr(&s, "fulldist: ");
-                sputint(&s, fulldist, 10);
-                logS(&s);
-            }
-
             if (fulldist >= 0 && (dist + stop) >= fulldist) {
                 target_speed = 0;
                 setSpeed(trainID, 0);
-                {
-                    struct String s;
-                    sinit(&s);
-                    sputstr(&s, "Stop cs:");
-                    sputuint(&s, current_speed, 10);
-                    sputstr(&s, " tot:");
-                    sputuint(&s, (dist + stop)/1000, 10);
-                    sputstr(&s, " @:");
-                    sputstr(&s, position->name);
-                    sputstr(&s, "+");
-                    sputuint(&s, dist, 10);
-                    logS(&s);
-                }
             }
         } else if(target && set < toSet && courierReady){
             do {
@@ -634,12 +613,14 @@ void engineer(int trainID){
                     timerReady = true;
                     time = *((int*)&msg);
 
-                    int diff = time - last_time;
+                    if (!(target_speed == 0 && acceleration == 0)) {
+                        int diff = time - last_time;
 
-                    current_speed += acceleration * diff;
-                    acceleration = computeAcceleration(target_speed, current_speed);
+                        current_speed += acceleration * diff;
+                        acceleration = computeAcceleration(target_speed, current_speed);
 
-                    dist += current_speed * diff + (acceleration * diff * diff) / 2;
+                        dist += current_speed * diff + (acceleration * diff * diff) / 2;
+                    }
                     last_time = time;
 
                     needPosUpdate = true;
