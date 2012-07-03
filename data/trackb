@@ -600,11 +600,13 @@ edge A11 MR1:
 edge A12 A16:
   distance 774 mm
 edge A13 MR4:
-  distance 215 mm
+# distance 215 mm
+  distance 205 mm
 edge A14 EX4:
   distance 320 mm
 edge A16 MR4:
-  distance 260 mm
+# distance 260 mm
+  distance 253 mm
 edge B1 D14:
   distance 398 mm
 edge B2 MR16:
