@@ -50,7 +50,7 @@ int createTask(
     int argc,
     int *argv
 );
-#define DEFAULT_STACK_SIZE 0x400
+#define DEFAULT_STACK_SIZE 0x800
 
 /* Remove the last scheduled task from the queues */
 void exitCurrentTask(void);

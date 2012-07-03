@@ -150,6 +150,18 @@ static inline void setSpeed(int trainID, int speed){
 
 static inline int alongPath(struct TrackNode **path, int dist, int last){
     int i = 0;
+    {
+        struct String s;
+        sinit(&s);
+        sputstr(&s, path[i]->name);
+        sputc(&s, '+');
+        sputuint(&s, dist, 10);
+        sputstr(&s, " max ");
+        sputuint(&s, last, 10);
+        sputc(&s, ':');
+        sputstr(&s, path[last]->name);
+        logS(&s);
+    }
     while(dist > 0 && i < last){
         struct TrackNode *next = path[i+1];
         if(path[i]->edge[0].dest == next){
@@ -160,6 +172,15 @@ static inline int alongPath(struct TrackNode **path, int dist, int last){
             assert(path[i]->reverse == next);
         }
         ++i;
+    }
+    {
+        struct String s;
+        sinit(&s);
+        sputstr(&s, "= ");
+        sputstr(&s, path[i]->name);
+        sputc(&s, ' ');
+        sputint(&s, dist, 10);
+        logS(&s);
     }
     return i;
 }
@@ -320,7 +341,9 @@ void engineer(int trainID){
     // speeds in um / cs
     int ideal_speed[15];
     memset16(ideal_speed, 0, sizeof(ideal_speed));
-    computeSpeeds(trainID, ideal_speed, 8, 14);
+    //computeSpeeds(trainID, ideal_speed, 8, 14);
+    ideal_speed[14] = 5480;
+    setSpeed(trainID,14);
 
     // computeSpeeds leaves the train running at speed 14
     int target_speed = ideal_speed[14];
@@ -416,19 +439,39 @@ void engineer(int trainID){
         if(target && (target == toSet) && target_speed){
             target_speed = 0;
             setSpeed(trainID, 0);
-        } else if(target && set <= toSet && courierReady){
+            {
+                int stop = (orientation == FORWARD)
+                    ? FORWARD_STOPPING_COEFFICIENT
+                    : BACKWARD_STOPPING_COEFFICIENT;
+                struct String s;
+                sinit(&s);
+                sputstr(&s, "Stop cs:");
+                sputuint(&s, computed_speed, 10);
+                sputstr(&s, " tot:");
+                sputuint(&s, (dist + computed_speed * stop)/1000, 10);
+                sputstr(&s, " @:");
+                sputstr(&s, position->name);
+                sputstr(&s, "+");
+                sputuint(&s, dist, 10);
+                logS(&s);
+            }
+        } else if(target && set < toSet && courierReady){
             do {
                 set++;
-            } while (path[set]->type != NODE_BRANCH && set <= toSet);
-            if(set <= toSet){
+            } while (path[set]->type != NODE_BRANCH && set < toSet);
+            if(set < toSet){
+                struct String s;
+                sinit(&s);
+                sputstr(&s, "Set ");
+                sputstr(&s, path[set]->name);
                 if(path[set]->edge[0].dest == path[set+1]){
-                    logC("Straight");
+                    sputstr(&s, " Straight");
                     controllerTurnoutStraight(courier, path[set]->num);
                 } else if(path[set]->edge[1].dest == path[set+1]) {
-                    logC("Curve");
+                    sputstr(&s, " Curve");
                     controllerTurnoutCurve(courier, path[set]->num);
                 } else {
-                    logC("Reverse");
+                    sputstr(&s, " Reverse");
                     {
                         struct String s;
                         sinit(&s);
@@ -438,6 +481,20 @@ void engineer(int trainID){
                         logS(&s);
                     }
                     assert(path[set]->reverse == path[set+1]);
+                }
+                logS(&s);
+                {
+                    struct String s;
+                    sinit(&s);
+                    sputstr(&s,"c:");
+                    sputstr(&s, path[current]->name);
+                    sputstr(&s," t:");
+                    sputstr(&s,path[target]->name);
+                    sputstr(&s," s:");
+                    sputstr(&s,path[set]->name);
+                    sputstr(&s," ts:");
+                    sputstr(&s,path[toSet]->name);
+                    logS(&s);
                 }
                 courierReady = false;
             }
@@ -594,17 +651,18 @@ void engineer(int trainID){
                         : BACKWARD_STOPPING_COEFFICIENT;
 
                     toSet = current + alongPath(path+current, (dist + computed_speed * stop)/1000, target-current);
+
                     {
                         struct String s;
                         sinit(&s);
-                        sputstr(&s, "c:");
+                        sputstr(&s,"ToSet set, c:");
                         sputstr(&s, path[current]->name);
-                        sputstr(&s, "s:");
-                        sputstr(&s, path[set]->name);
-                        sputstr(&s, "ts:");
-                        sputstr(&s, path[toSet]->name);
-                        sputstr(&s, "t:");
-                        sputstr(&s, path[target]->name);
+                        sputstr(&s," t:");
+                        sputstr(&s,path[target]->name);
+                        sputstr(&s," s:");
+                        sputstr(&s,path[set]->name);
+                        sputstr(&s," ts:");
+                        sputstr(&s,path[toSet]->name);
                         logS(&s);
                     }
                 }
