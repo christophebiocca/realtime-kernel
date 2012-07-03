@@ -327,6 +327,11 @@ void engineer(int trainID){
     int computed_speed = ideal_speed[14];
     int acceleration = 0;
 
+    enum {
+        FORWARD,
+        BACKWARD
+    } orientation;
+
     // Go forth and hit a sensor.
     struct TrackNode *position;
     int posTime;
@@ -348,6 +353,54 @@ void engineer(int trainID){
         time = posTime = Time();
         needPosUpdate = true;
         needExpect = true;
+
+        int flag = (msg.content.sensor.sensor << 4) | msg.content.sensor.number;
+        switch (flag) {
+            case 0x02:  // A03
+            case 0x2a:  // C11
+            case 0x4f:  // E16
+            case 0x40:  // E01
+            case 0x20:  // C01
+            case 0x13:  // B04
+            case 0x28:  // C09
+            case 0x1e:  // B15
+            case 0x1d:  // B14
+            case 0x3f:  // D16
+            case 0x4d:  // E14
+            case 0x48:  // E09
+            case 0x34:  // D05
+            case 0x45:  // E06
+            case 0x42:  // E03
+            case 0x30:  // D01
+                orientation = FORWARD;
+                logC("Pickup at front");
+                break;
+
+            case 0x1f:  // B16
+            case 0x29:  // C10
+            case 0x12:  // B03
+            case 0x21:  // C02
+            case 0x41:  // E02
+            case 0x4e:  // E15
+            case 0x3b:  // C12
+            case 0x03:  // A04
+            case 0x31:  // D02
+            case 0x43:  // E04
+            case 0x44:  // E05
+            case 0x35:  // D06
+            case 0x49:  // E10
+            case 0x4c:  // E13
+            case 0x3e:  // D15
+            case 0x1c:  // B13
+                orientation = BACKWARD;
+                logC("Pickup at back");
+                break;
+
+            default:
+                logC("Don't know orientation, assuming front");
+                orientation = FORWARD;
+                break;
+        }
     }
 
     bool quitting = false;
