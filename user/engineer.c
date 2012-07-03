@@ -52,13 +52,13 @@ int planPath(struct TrackNode *list, struct TrackNode *start, struct TrackNode *
         nodes[start->idx].from = 0;
     }
     // Start Node, reverse direction
-    {
-        nodes[start->reverse->idx].cost = 0;
-        nodes[start->reverse->idx].total = heuristic(start->reverse, goal);
-        nodes[start->reverse->idx].from = &nodes[start->idx];
-    }
+    // {
+    //     nodes[start->reverse->idx].cost = 0;
+    //     nodes[start->reverse->idx].total = heuristic(start->reverse, goal);
+    //     nodes[start->reverse->idx].from = &nodes[start->idx];
+    // }
     PathHeapPush(&heap, &nodes[start->idx]);
-    PathHeapPush(&heap, &nodes[start->reverse->idx]);
+    // PathHeapPush(&heap, &nodes[start->reverse->idx]);
     struct PathNode *goalNode = &nodes[goal->idx];
     while(heap.count && heap.heap[1]->total <= goalNode->cost){
         struct PathNode *next = PathHeapPop(&heap);
