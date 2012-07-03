@@ -413,7 +413,10 @@ void engineer(int trainID){
     int dist = 0;
 
     while (!quitting || !courierQuit || !timerQuit) {
-        if(target && set <= toSet && courierReady){
+        if(target && (target == toSet) && target_speed){
+            target_speed = 0;
+            setSpeed(trainID, 0);
+        } else if(target && set <= toSet && courierReady){
             do {
                 set++;
             } while (path[set]->type != NODE_BRANCH && set <= toSet);
