@@ -148,6 +148,22 @@ static inline void setSpeed(int trainID, int speed){
     tioPrint(&s);
 }
 
+// TODO: stop assuming the track is entirely curved.
+static inline struct TrackNode *alongTrack(struct TrackNode *start, int dist, int stopmask, int *retdist){
+    while(dist > 0 && !(start->type & stopmask)){
+        int dir = 0;
+        if(start->type == NODE_BRANCH){
+            dir = 1;
+        }
+        dist -= start->edge[dir].dist;
+        start = start->edge[dir].dest;
+    }
+    if(retdist){
+        *retdist = dist;
+    }
+    return start;
+}
+
 static inline int alongPath(struct TrackNode **path, int dist, int last){
     int i = 0;
     {
@@ -534,14 +550,7 @@ void engineer(int trainID){
                 } while (path[i]->type != NODE_SENSOR);
                 n = path[i];
             } else {
-                n = position;
-                do {
-                    if(n->type == NODE_BRANCH){
-                        n = n->edge[1].dest;
-                    } else {
-                        n = n->edge[0].dest;
-                    }
-                } while(n->type != NODE_SENSOR);
+                n = alongTrack(alongTrack(position, 1, 0, 0), 0x7FFFFFFF, NODE_SENSOR, 0);
             }
             {
                 struct String s;
