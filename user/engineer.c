@@ -65,7 +65,7 @@ int planPath(struct TrackNode *list, struct TrackNode *start, struct TrackNode *
         struct TrackNode *seq[3];
         int seqCost[3];
         int seqCount = 0;
-        if(next->node->type == NODE_MERGE || next->node->reverse == goal){
+        if(/*next->node->type == NODE_MERGE || */next->node->reverse == goal){
             seq[seqCount] = next->node->reverse;
             seqCost[seqCount++] = 0;
         }
