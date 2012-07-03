@@ -164,7 +164,7 @@ static inline struct TrackNode *alongTrack(struct TrackNode *start, int dist, in
     return start;
 }
 
-static inline int alongPath(struct TrackNode **path, int dist, int last){
+static inline int alongPath(struct TrackNode **path, int dist, int last, int *retdist){
     int i = 0;
     {
         struct String s;
@@ -210,6 +210,9 @@ static inline int alongPath(struct TrackNode **path, int dist, int last){
         sputc(&s, ' ');
         sputint(&s, dist, 10);
         logS(&s);
+    }
+    if(retdist){
+        *retdist = dist;
     }
     return i;
 }
@@ -687,7 +690,7 @@ void engineer(int trainID){
                         ? FORWARD_STOPPING_COEFFICIENT
                         : BACKWARD_STOPPING_COEFFICIENT;
 
-                    toSet = current + alongPath(path+current, (dist + computed_speed * stop)/1000, target-current);
+                    toSet = current + alongPath(path+current, (dist + computed_speed * stop)/1000, target-current, 0);
 
                     {
                         struct String s;
