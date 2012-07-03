@@ -459,7 +459,7 @@ void engineer(int trainID){
             do {
                 set++;
             } while (path[set]->type != NODE_BRANCH && set < toSet);
-            if(set < toSet){
+            if(set <= toSet && path[set]->type == NODE_BRANCH){
                 struct String s;
                 sinit(&s);
                 sputstr(&s, "Set ");
