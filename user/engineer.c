@@ -511,16 +511,16 @@ void engineer(int trainID){
         } else if(target && set < toSet && courierReady){
             do {
                 set++;
-            } while (path[set]->type != NODE_BRANCH && set < toSet);
+            } while ((path[set]->type & ~(NODE_BRANCH | NODE_MERGE)) && set < toSet);
             if(set <= toSet && path[set]->type == NODE_BRANCH){
                 struct String s;
                 sinit(&s);
                 sputstr(&s, "Set ");
                 sputstr(&s, path[set]->name);
-                if(path[set]->edge[0].dest == path[set+1]){
+                if(path[set]->type == NODE_BRANCH && path[set]->edge[0].dest == path[set+1]){
                     sputstr(&s, " Straight");
                     controllerTurnoutStraight(courier, path[set]->num);
-                } else if(path[set]->edge[1].dest == path[set+1]) {
+                } else if(path[set]->type == NODE_BRANCH && path[set]->edge[1].dest == path[set+1]) {
                     sputstr(&s, " Curve");
                     controllerTurnoutCurve(courier, path[set]->num);
                 } else {
@@ -536,20 +536,45 @@ void engineer(int trainID){
                     assert(path[set]->reverse == path[set+1]);
                 }
                 logS(&s);
-                {
-                    struct String s;
-                    sinit(&s);
-                    sputstr(&s,"c:");
-                    sputstr(&s, path[current]->name);
-                    sputstr(&s," t:");
-                    sputstr(&s,path[target]->name);
-                    sputstr(&s," s:");
-                    sputstr(&s,path[set]->name);
-                    sputstr(&s," ts:");
-                    sputstr(&s,path[toSet]->name);
-                    logS(&s);
-                }
                 courierReady = false;
+            } else if(set <= toSet && set > 0 && path[set]->type == NODE_MERGE){
+                struct String s;
+                sinit(&s);
+                sputstr(&s, "Set ");
+                sputstr(&s, path[set]->name);
+                if(path[set]->reverse->edge[0].dest->reverse == path[set-1]){
+                    sputstr(&s, " Straight");
+                    controllerTurnoutStraight(courier, path[set]->num);
+                } else if(path[set]->reverse->edge[1].dest->reverse == path[set-1]) {
+                    sputstr(&s, " Curve");
+                    controllerTurnoutCurve(courier, path[set]->num);
+                } else {
+                    sputstr(&s, " Reverse");
+                    {
+                        struct String s;
+                        sinit(&s);
+                        sputstr(&s, path[set]->name);
+                        sputstr(&s, " -> ");
+                        sputstr(&s, path[set+1]->name);
+                        logS(&s);
+                    }
+                    assert(path[set]->reverse == path[set+1]);
+                }
+                logS(&s);
+                courierReady = false;
+            }
+            {
+                struct String s;
+                sinit(&s);
+                sputstr(&s,"c:");
+                sputstr(&s, path[current]->name);
+                sputstr(&s," t:");
+                sputstr(&s,path[target]->name);
+                sputstr(&s," s:");
+                sputstr(&s,path[set]->name);
+                sputstr(&s," ts:");
+                sputstr(&s,path[toSet]->name);
+                logS(&s);
             }
         } else if(needPosUpdate && courierReady) {
             controllerUpdatePosition(
