@@ -220,7 +220,7 @@ static inline int alongPath(struct TrackNode **path, int dist, int last, int *re
 // computes the length of a path in mm
 static inline int distance(struct TrackNode *from, struct TrackNode *to) {
     // only allow for really small path's
-    struct TrackNode *path[5];
+    struct TrackNode *path[10];
     // subtract 1 because we access the next element in the loop
     int len = planPath(nodes, from, to, path) - 1;
 
@@ -318,18 +318,23 @@ static inline void computeSpeeds(const int train_id,
     }
 }
 
+#define ACCELERATION_COEFFICIENT            (0.0034)
 
-// FIXME: consider using the floating point values?
-#define FORWARD_STOPPING_COEFFICIENT        (149)
-#define BACKWARD_STOPPING_COEFFICIENT       (176)
-
-// FIXME: this is the negation of the average of the computed deceleration
-// constant... this is probably a very bad approximation!
-#define FORWARD_ACCELERATION_COEFFICIENT    (15)
-#define BACKWARD_ACCELERATION_COEFFICIENT   (13)
-
-// if (abs(computed_speed - expected_speed) < threshold) acceleration = 0
+// if (abs(current_speed - expected_speed) < threshold) acceleration = 0
 #define SPEED_THRESHOLD                     (100)
+
+static inline int computeAcceleration(int target_speed, int current_speed) {
+    int sign = (target_speed < current_speed) ? -1 : 1;
+    int diffspeed = (target_speed - current_speed) * sign;
+
+    if (diffspeed < SPEED_THRESHOLD) {
+        return 0;
+    }
+
+    float acl = current_speed * ACCELERATION_COEFFICIENT;
+    return (int) (sign * acl);
+}
+
 void engineer(int trainID){
     logAssoc("en");
     {
@@ -379,7 +384,7 @@ void engineer(int trainID){
 
     // computeSpeeds leaves the train running at speed 14
     int target_speed = ideal_speed[14];
-    int computed_speed = ideal_speed[14];
+    int current_speed = ideal_speed[14];
     int acceleration = 0;
 
     enum {
@@ -466,26 +471,42 @@ void engineer(int trainID){
     int toSet = 0;
     int target = 0;
     int dist = 0;
+    int last_time = 0;
 
     while (!quitting || !courierQuit || !timerQuit) {
+        int stop;
+        {
+            float s = current_speed / (2 * ACCELERATION_COEFFICIENT);
+            stop = (int) s;
+        }
+
         if(target && (target == toSet) && target_speed){
-            target_speed = 0;
-            setSpeed(trainID, 0);
+            int fulldist = distance(position, path[target]);
+
             {
-                int stop = (orientation == FORWARD)
-                    ? FORWARD_STOPPING_COEFFICIENT
-                    : BACKWARD_STOPPING_COEFFICIENT;
                 struct String s;
                 sinit(&s);
-                sputstr(&s, "Stop cs:");
-                sputuint(&s, computed_speed, 10);
-                sputstr(&s, " tot:");
-                sputuint(&s, (dist + computed_speed * stop)/1000, 10);
-                sputstr(&s, " @:");
-                sputstr(&s, position->name);
-                sputstr(&s, "+");
-                sputuint(&s, dist, 10);
+                sputstr(&s, "fulldist: ");
+                sputint(&s, fulldist, 10);
                 logS(&s);
+            }
+
+            if (fulldist >= 0 && (dist + stop) >= fulldist) {
+                target_speed = 0;
+                setSpeed(trainID, 0);
+                {
+                    struct String s;
+                    sinit(&s);
+                    sputstr(&s, "Stop cs:");
+                    sputuint(&s, current_speed, 10);
+                    sputstr(&s, " tot:");
+                    sputuint(&s, (dist + stop)/1000, 10);
+                    sputstr(&s, " @:");
+                    sputstr(&s, position->name);
+                    sputstr(&s, "+");
+                    sputuint(&s, dist, 10);
+                    logS(&s);
+                }
             }
         } else if(target && set < toSet && courierReady){
             do {
@@ -531,23 +552,6 @@ void engineer(int trainID){
                 courierReady = false;
             }
         } else if(needPosUpdate && courierReady) {
-            int sign = (target_speed < computed_speed) ? -1 : 1;
-            int diffspeed = (target_speed - computed_speed) * sign;
-
-            if (diffspeed < SPEED_THRESHOLD) {
-                acceleration = 0;
-            } else {
-                int coeff = (orientation == FORWARD)
-                    ? FORWARD_ACCELERATION_COEFFICIENT
-                    : BACKWARD_ACCELERATION_COEFFICIENT;
-
-                acceleration = sign * coeff;
-            }
-
-            int diff = time - posTime;
-            // in um
-            dist = computed_speed * diff + (acceleration * diff * diff) / 2;
-
             controllerUpdatePosition(
                 courier,
                 trainID,
@@ -604,6 +608,15 @@ void engineer(int trainID){
                 if (!quitting) {
                     timerReady = true;
                     time = *((int*)&msg);
+
+                    int diff = time - last_time;
+
+                    current_speed += acceleration * diff;
+                    acceleration = computeAcceleration(target_speed, current_speed);
+
+                    dist += current_speed * diff + (acceleration * diff * diff) / 2;
+                    last_time = time;
+
                     needPosUpdate = true;
                 } else {
                     int next = -1;
@@ -625,10 +638,13 @@ void engineer(int trainID){
                             find(msg.content.sensor.sensor, msg.content.sensor.number);
                         int travelleddist = distance(position, new_position);
 
-                        computed_speed = (travelleddist  * 1000) / (time - posTime);
+                        current_speed = (travelleddist  * 1000) / (time - posTime);
+                        acceleration = computeAcceleration(target_speed, current_speed);
 
                         posTime = time;
+                        last_time = time;
                         position = new_position;
+                        dist = 0;
 
                         if (target) {
                             while(path[current] != position) ++current;
@@ -643,11 +659,8 @@ void engineer(int trainID){
                         // First we need to continue on our current path.
                         int i = 0;
                         {
-                            int stop = (orientation == FORWARD)
-                                ? FORWARD_STOPPING_COEFFICIENT
-                                : BACKWARD_STOPPING_COEFFICIENT;
                             path[0] = position;
-                            int dist = (dist + computed_speed * stop)/1000;
+                            int dist = (dist + stop)/1000;
                             while(dist > 0){
                                 int diff;
                                 path[i+1] = alongTrack(path[i], 1, 0, &diff);
@@ -686,11 +699,7 @@ void engineer(int trainID){
                 }
                 
                 if (target) {
-                    int stop = (orientation == FORWARD)
-                        ? FORWARD_STOPPING_COEFFICIENT
-                        : BACKWARD_STOPPING_COEFFICIENT;
-
-                    toSet = current + alongPath(path+current, (dist + computed_speed * stop)/1000, target-current, 0);
+                    toSet = current + alongPath(path+current, (dist + stop)/1000, target-current, 0);
 
                     {
                         struct String s;
