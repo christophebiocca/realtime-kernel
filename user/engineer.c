@@ -185,7 +185,20 @@ static inline int alongPath(struct TrackNode **path, int dist, int last){
         } else if(path[i]->edge[1].dest == next){
             dist -= path[i]->edge[1].dist;
         } else {
-            assert(path[i]->reverse == next);
+            if(!(path[i]->reverse == next)){
+                {
+                    struct String s;
+                    sinit(&s);
+                    sputstr(&s, path[i]->name);
+                    sputstr(&s, ".re = ");
+                    sputstr(&s, path[i]->reverse->name);
+                    sputstr(&s, " != ");
+                    sputstr(&s, next->name);
+                    logS(&s);
+                    for(int i = 0; i < 10000; ++i);
+                }
+                assert(path[i]->reverse == next);
+            }
         }
         ++i;
     }
@@ -624,16 +637,31 @@ void engineer(int trainID){
                     }
 
                     case GOTO: {
-                        int len = planPath(nodes, position, msg.content.destination.dest, path);
+                        // First we need to continue on our current path.
+                        int i = 0;
+                        {
+                            int stop = (orientation == FORWARD)
+                                ? FORWARD_STOPPING_COEFFICIENT
+                                : BACKWARD_STOPPING_COEFFICIENT;
+                            path[0] = position;
+                            int dist = (dist + computed_speed * stop)/1000;
+                            while(dist > 0){
+                                int diff;
+                                path[i+1] = alongTrack(path[i], 1, 0, &diff);
+                                dist += (diff-1);
+                                i++;
+                            }
+                        }
                         set = current = 0;
-                        target = (len - 1);
+                        int len = planPath(nodes, path[i-1], msg.content.destination.dest, &path[i-1]);
+                        target = i + (len - 2);
                         {
                             struct String s;
                             sinit(&s);
                             for(int i = 0; i < len; i++){
                                 sputstr(&s, path[i]->name);
                                 sputc(&s, ' ');
-                                if(!((i+1) % 10)){
+                                if(!((i+1) % 8)){
                                     logS(&s);
                                     sinit(&s);
                                 }
