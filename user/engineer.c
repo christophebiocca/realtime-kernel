@@ -481,6 +481,8 @@ void engineer(int trainID){
     int dist = 0;
     int last_time = 0;
 
+    int error = 0;
+
     target_speed = 0;
     setSpeed(trainID, 0);
 
@@ -534,7 +536,8 @@ void engineer(int trainID){
                 courier,
                 trainID,
                 position,
-                dist / 1000
+                dist / 1000,
+                error
             );
             needPosUpdate = false;
             courierReady = false;
@@ -618,6 +621,7 @@ void engineer(int trainID){
                         struct TrackNode *new_position =
                             find(msg.content.sensor.sensor, msg.content.sensor.number);
                         int travelleddist = distance(position, new_position);
+                        error = dist / 1000 - travelleddist;
 
                         current_speed = (travelleddist  * 1000) / (time - posTime);
                         acceleration = computeAcceleration(target_speed, current_speed);

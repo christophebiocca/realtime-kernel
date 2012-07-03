@@ -44,6 +44,9 @@ struct ControllerMessage {
             int train_id;
             struct TrackNode *node;
             int mm;
+
+            int error;
+            char padding[12];
         } updatePosition;
 
         struct SetExpectationMessage {
@@ -185,7 +188,8 @@ static void controllerServer(void) {
                 sputstr(&s, request.updatePosition.node->name);
                 sputc(&s, ' ');
                 sputint(&s, request.updatePosition.mm, 10);
-                sputstr(&s, "mm");
+                sputstr(&s, "mm - E: ");
+                sputint(&s, request.updatePosition.error, 10);
 
                 sputstr(&s, CURSOR_SHOW);
                 sputstr(&s, CURSOR_RESTORE);
@@ -332,7 +336,7 @@ static void controllerServer(void) {
 
 static int g_controller_server_tid;
 void controllerInit(void) {
-    static_assert(sizeof(struct ControllerMessage) == 16);
+    static_assert(sizeof(struct ControllerMessage) % 16 == 0);
     g_controller_server_tid = Create(TASK_SERVER_PRIORITY, controllerServer);
     assert(g_controller_server_tid >= 0);
 }
@@ -350,13 +354,15 @@ void controllerPrepareTrain(int train_id) {
     );
 }
 
-void controllerUpdatePosition(int couriertid, int train_id, struct TrackNode *node, int mm) {
+void controllerUpdatePosition(int couriertid, int train_id,
+        struct TrackNode *node, int mm, int error) {
     struct ControllerMessage msg;
 
     msg.type = UPDATE_POSITION;
     msg.updatePosition.train_id = train_id;
     msg.updatePosition.node = node;
     msg.updatePosition.mm = mm;
+    msg.updatePosition.error = error;
 
     int ret = Reply(
         couriertid,

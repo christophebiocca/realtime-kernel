@@ -10,7 +10,8 @@ void controllerQuit(void);
 void controllerPrepareTrain(int train_id);
 
 // meant to be called only by the respective engineer
-void controllerUpdatePosition(int couriertid, int train_id, struct TrackNode *node, int mm);
+void controllerUpdatePosition(int couriertid, int train_id,
+    struct TrackNode *node, int mm, int error);
 
 // tells the controller to send the next sensor update to a specific engineer
 void controllerSetExpectation(int couriertid, int train_id, int sensor, int number);
