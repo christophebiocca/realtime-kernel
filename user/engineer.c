@@ -387,7 +387,7 @@ void engineer(int trainID){
     memset16(ideal_speed, 0, sizeof(ideal_speed));
     //computeSpeeds(trainID, ideal_speed, 8, 14);
     ideal_speed[14] = 5480;
-    setSpeed(trainID,14);
+    setSpeed(trainID, 14);
 
     // computeSpeeds leaves the train running at speed 14
     int target_speed = ideal_speed[14];
@@ -502,21 +502,23 @@ void engineer(int trainID){
             if(set <= toSet && path[set]->type == NODE_BRANCH){
                 if(path[set]->type == NODE_BRANCH && path[set]->edge[0].dest == path[set+1]){
                     controllerTurnoutStraight(courier, path[set]->num);
+                    courierReady = false;
                 } else if(path[set]->type == NODE_BRANCH && path[set]->edge[1].dest == path[set+1]) {
                     controllerTurnoutCurve(courier, path[set]->num);
+                    courierReady = false;
                 } else {
                     assert(path[set]->reverse == path[set+1]);
                 }
-                courierReady = false;
             } else if(set <= toSet && set > 0 && path[set]->type == NODE_MERGE){
                 if(path[set]->reverse->edge[0].dest->reverse == path[set-1]){
                     controllerTurnoutStraight(courier, path[set]->num);
+                    courierReady = false;
                 } else if(path[set]->reverse->edge[1].dest->reverse == path[set-1]) {
                     controllerTurnoutCurve(courier, path[set]->num);
+                    courierReady = false;
                 } else {
                     assert(path[set]->reverse == path[set+1]);
                 }
-                courierReady = false;
             }
             {
                 struct String s;
@@ -684,7 +686,7 @@ void engineer(int trainID){
                 }
                 
                 if (target) {
-                    toSet = current + alongPath(path+current, 3*(dist + stop)/1000, target-current, 0);
+                    toSet = current + alongPath(path+current, (dist + stop)/1000, target-current, 0);
 
                     {
                         struct String s;
@@ -708,7 +710,7 @@ void engineer(int trainID){
 }
 
 int engineerCreate(int trainID){
-    int ret = CreateArgs(TASK_PRIORITY+2, engineer, 1, trainID);
+    int ret = CreateArgs(TASK_PRIORITY, engineer, 1, trainID);
     assert(ret > 0);
     return ret;
 }
