@@ -335,6 +335,11 @@ static inline int computeAcceleration(int target_speed, int current_speed) {
     return (int) (sign * acl);
 }
 
+static inline int computeStop(int current_speed) {
+    float s = current_speed / (2 * ACCELERATION_COEFFICIENT);
+    return (int) s;
+}
+
 void engineer(int trainID){
     logAssoc("en");
     {
@@ -385,6 +390,7 @@ void engineer(int trainID){
     // computeSpeeds leaves the train running at speed 14
     int target_speed = ideal_speed[14];
     int current_speed = ideal_speed[14];
+    int stop = computeStop(current_speed);
     int acceleration = 0;
 
     enum {
@@ -474,11 +480,6 @@ void engineer(int trainID){
     int last_time = 0;
 
     while (!quitting || !courierQuit || !timerQuit) {
-        int stop;
-        {
-            float s = current_speed / (2 * ACCELERATION_COEFFICIENT);
-            stop = (int) s;
-        }
 
         if(target && (target == toSet) && target_speed){
             int fulldist = distance(position, path[target]);
@@ -618,6 +619,7 @@ void engineer(int trainID){
 
                         current_speed += acceleration * diff;
                         acceleration = computeAcceleration(target_speed, current_speed);
+                        stop = computeStop(current_speed);
 
                         dist += current_speed * diff + (acceleration * diff * diff) / 2;
                     }
@@ -646,6 +648,7 @@ void engineer(int trainID){
 
                         current_speed = (travelleddist  * 1000) / (time - posTime);
                         acceleration = computeAcceleration(target_speed, current_speed);
+                        stop = computeStop(current_speed);
 
                         posTime = time;
                         last_time = time;
