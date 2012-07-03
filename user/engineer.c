@@ -221,7 +221,7 @@ static inline int alongPath(struct TrackNode **path, int dist, int last, int *re
 // computes the length of a path in mm
 static inline int distance(struct TrackNode *from, struct TrackNode *to) {
     // only allow for really small path's
-    struct TrackNode *path[10];
+    struct TrackNode *path[5];
     // subtract 1 because we access the next element in the loop
     int len = planPath(nodes, from, to, path) - 1;
 
@@ -319,7 +319,7 @@ static inline void computeSpeeds(const int train_id,
     }
 }
 
-#define ACCELERATION_COEFFICIENT            (0.0034)
+#define ACCELERATION_COEFFICIENT            (0.002)
 
 // if (abs(current_speed - expected_speed) < threshold) acceleration = 0
 #define SPEED_THRESHOLD                     (100)
@@ -485,6 +485,9 @@ void engineer(int trainID){
     struct TrackNode *reversalNode;
     int reversalDist;
 
+    target_speed = 0;
+    setSpeed(trainID, 0);
+
     while (!quitting || !courierQuit || !timerQuit) {
 
         if(reversing && reversalDist > 0 && courierReady){
@@ -530,7 +533,7 @@ void engineer(int trainID){
         } else if(target && (target == toSet) && target_speed){
             int fulldist = distance(position, path[target]);
 
-            if (fulldist >= 0 && (dist + stop) >= fulldist) {
+            if (((dist + stop) / 1000) >= fulldist) {
                 target_speed = 0;
                 setSpeed(trainID, 0);
             }
@@ -707,6 +710,10 @@ void engineer(int trainID){
                             }
                             logS(&s);
                         }
+
+                        target_speed = 14;
+                        setSpeed(trainID, 14);
+
                         break;
                     }
 
