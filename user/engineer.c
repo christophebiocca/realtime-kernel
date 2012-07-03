@@ -548,7 +548,7 @@ void engineer(int trainID){
                 int i = current;
                 do {
                     ++i;
-                } while (path[i]->type != NODE_SENSOR);
+                } while (path[i]->type != NODE_SENSOR && i < target);
                 n = path[i];
             } else {
                 n = alongTrack(alongTrack(position, 1, 0, 0), 0x7FFFFFFF, NODE_SENSOR, 0);
@@ -643,20 +643,10 @@ void engineer(int trainID){
 
                     case GOTO: {
                         // First we need to continue on our current path.
-                        int i = 0;
-                        {
-                            path[0] = position;
-                            int fdist = (dist + stop)/1000;
-                            while(fdist > 0){
-                                int diff;
-                                path[i+1] = alongTrack(path[i], 1, 0, &diff);
-                                fdist += (diff-1);
-                                i++;
-                            }
-                        }
+                        path[0] = position;
                         set = current = 0;
-                        int len = planPath(nodes, path[i-1], msg.content.destination.dest, &path[i-1]);
-                        target = i + (len - 2);
+                        int len = planPath(nodes, path[0], msg.content.destination.dest, path);
+                        target = len - 1;
                         {
                             struct String s;
                             sinit(&s);
@@ -669,6 +659,11 @@ void engineer(int trainID){
                                 }
                             }
                             logS(&s);
+                        }
+
+                        if(path[0]->reverse == path[1]){
+                            setSpeed(trainID, 15);
+                            current = 1;
                         }
 
                         target_speed = 14;
@@ -689,7 +684,7 @@ void engineer(int trainID){
                 }
                 
                 if (target) {
-                    toSet = current + alongPath(path+current, (dist + stop)/1000, target-current, 0);
+                    toSet = current + alongPath(path+current, 3*(dist + stop)/1000, target-current, 0);
 
                     {
                         struct String s;
