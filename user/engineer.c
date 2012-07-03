@@ -52,20 +52,20 @@ int planPath(struct TrackNode *list, struct TrackNode *start, struct TrackNode *
         nodes[start->idx].from = 0;
     }
     // Start Node, reverse direction
-    // {
-    //     nodes[start->reverse->idx].cost = 0;
-    //     nodes[start->reverse->idx].total = heuristic(start->reverse, goal);
-    //     nodes[start->reverse->idx].from = &nodes[start->idx];
-    // }
+    {
+        nodes[start->reverse->idx].cost = 0;
+        nodes[start->reverse->idx].total = heuristic(start->reverse, goal);
+        nodes[start->reverse->idx].from = &nodes[start->idx];
+    }
     PathHeapPush(&heap, &nodes[start->idx]);
-    //PathHeapPush(&heap, &nodes[start->reverse->idx]);
+    PathHeapPush(&heap, &nodes[start->reverse->idx]);
     struct PathNode *goalNode = &nodes[goal->idx];
     while(heap.count && heap.heap[1]->total <= goalNode->cost){
         struct PathNode *next = PathHeapPop(&heap);
         struct TrackNode *seq[3];
         int seqCost[3];
         int seqCount = 0;
-        if(/*next->node->type == NODE_BRANCH || next->node->type == NODE_MERGE || */next->node->reverse == goal){
+        if(next->node->type == NODE_MERGE || next->node->reverse == goal){
             seq[seqCount] = next->node->reverse;
             seqCost[seqCount++] = 0;
         }
@@ -139,8 +139,9 @@ static inline struct TrackNode *find(int sensor, int number){
 #define UPDATE_INTERVAL 10
 
 static inline void setSpeed(int trainID, int speed){
+    logC("SetSpeed");
     assert(0 <= trainID && trainID <= 80);
-    assert(0 <= speed && speed <= 14);
+    assert(0 <= speed && speed <= 15);
     struct String s;
     sinit(&s);
     sputc(&s, speed);
@@ -479,9 +480,54 @@ void engineer(int trainID){
     int dist = 0;
     int last_time = 0;
 
+    bool update_reverses = true;
+    bool reversing = false;
+    struct TrackNode *reversalNode;
+    int reversalDist;
+
     while (!quitting || !courierQuit || !timerQuit) {
 
-        if(target && (target == toSet) && target_speed){
+        if(reversing && reversalDist > 0 && courierReady){
+            logC("Sweep past reverse");
+            int remainder;
+            struct TrackNode *nextNode = alongTrack(reversalNode, reversalDist, NODE_MERGE, &remainder);
+            if(nextNode->type == NODE_MERGE){
+                struct TrackNode *prev = alongTrack(reversalNode, reversalDist - remainder - 1, 0, 0);
+                if(nextNode->reverse->edge[0].dest->reverse == prev){
+                   controllerTurnoutStraight(courier, nextNode->num);
+                } else if(nextNode->reverse->edge[1].dest->reverse == prev){
+                   controllerTurnoutCurve(courier, nextNode->num);
+                } else {
+                    logC("WTF");
+                }
+            }
+            reversalNode = alongTrack(reversalNode, 1, 0, 0);
+            reversalDist = remainder;
+        } else if(reversing && target_speed == 0 && acceleration == 0){
+            target_speed = ideal_speed[14];
+            setSpeed(trainID,15);
+            setSpeed(trainID,14);
+            logC("Reversing");
+            reversing = false;
+        } else if(reversing && target_speed){
+            target_speed = 0;
+            setSpeed(trainID,0);
+            logC("Stopping to reverse");
+        } else if(!reversing && target && update_reverses){
+            int revdist = stop + dist - 400;
+            logC("Checking for reverses");
+            for(int i = current; i < target && revdist > 0; ++i){
+                if(path[i]->reverse == path[i+1]){
+                    logC("Gotta reverse");
+                    reversing = true;
+                    reversalNode = path[i];
+                    reversalDist = 500;
+                    break;
+                }
+                revdist -= distance(path[i], path[i+1]);
+            }
+            update_reverses = false;
+        } else if(target && (target == toSet) && target_speed){
             int fulldist = distance(position, path[target]);
 
             if (fulldist >= 0 && (dist + stop) >= fulldist) {
@@ -493,54 +539,22 @@ void engineer(int trainID){
                 set++;
             } while ((path[set]->type & ~(NODE_BRANCH | NODE_MERGE)) && set < toSet);
             if(set <= toSet && path[set]->type == NODE_BRANCH){
-                struct String s;
-                sinit(&s);
-                sputstr(&s, "Set ");
-                sputstr(&s, path[set]->name);
                 if(path[set]->type == NODE_BRANCH && path[set]->edge[0].dest == path[set+1]){
-                    sputstr(&s, " Straight");
                     controllerTurnoutStraight(courier, path[set]->num);
                 } else if(path[set]->type == NODE_BRANCH && path[set]->edge[1].dest == path[set+1]) {
-                    sputstr(&s, " Curve");
                     controllerTurnoutCurve(courier, path[set]->num);
                 } else {
-                    sputstr(&s, " Reverse");
-                    {
-                        struct String s;
-                        sinit(&s);
-                        sputstr(&s, path[set]->name);
-                        sputstr(&s, " -> ");
-                        sputstr(&s, path[set+1]->name);
-                        logS(&s);
-                    }
                     assert(path[set]->reverse == path[set+1]);
                 }
-                logS(&s);
                 courierReady = false;
             } else if(set <= toSet && set > 0 && path[set]->type == NODE_MERGE){
-                struct String s;
-                sinit(&s);
-                sputstr(&s, "Set ");
-                sputstr(&s, path[set]->name);
                 if(path[set]->reverse->edge[0].dest->reverse == path[set-1]){
-                    sputstr(&s, " Straight");
                     controllerTurnoutStraight(courier, path[set]->num);
                 } else if(path[set]->reverse->edge[1].dest->reverse == path[set-1]) {
-                    sputstr(&s, " Curve");
                     controllerTurnoutCurve(courier, path[set]->num);
                 } else {
-                    sputstr(&s, " Reverse");
-                    {
-                        struct String s;
-                        sinit(&s);
-                        sputstr(&s, path[set]->name);
-                        sputstr(&s, " -> ");
-                        sputstr(&s, path[set+1]->name);
-                        logS(&s);
-                    }
                     assert(path[set]->reverse == path[set+1]);
                 }
-                logS(&s);
                 courierReady = false;
             }
             {
@@ -669,11 +683,11 @@ void engineer(int trainID){
                         int i = 0;
                         {
                             path[0] = position;
-                            int dist = (dist + stop)/1000;
-                            while(dist > 0){
+                            int fdist = (dist + stop)/1000;
+                            while(fdist > 0){
                                 int diff;
                                 path[i+1] = alongTrack(path[i], 1, 0, &diff);
-                                dist += (diff-1);
+                                fdist += (diff-1);
                                 i++;
                             }
                         }
