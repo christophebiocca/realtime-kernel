@@ -221,9 +221,10 @@ static inline int alongPath(struct TrackNode **path, int dist, int last, int *re
 // computes the length of a path in mm
 static inline int distance(struct TrackNode *from, struct TrackNode *to) {
     // only allow for really small path's
-    struct TrackNode *path[5];
+    struct TrackNode *path[25];
     // subtract 1 because we access the next element in the loop
     int len = planPath(nodes, from, to, path) - 1;
+    assert(len <= 25);
 
     struct TrackNode *next;
     int dist = 0;
@@ -480,57 +481,12 @@ void engineer(int trainID){
     int dist = 0;
     int last_time = 0;
 
-    bool update_reverses = true;
-    bool reversing = false;
-    struct TrackNode *reversalNode;
-    int reversalDist;
-
     target_speed = 0;
     setSpeed(trainID, 0);
 
     while (!quitting || !courierQuit || !timerQuit) {
 
-        if(reversing && reversalDist > 0 && courierReady){
-            logC("Sweep past reverse");
-            int remainder;
-            struct TrackNode *nextNode = alongTrack(reversalNode, reversalDist, NODE_MERGE, &remainder);
-            if(nextNode->type == NODE_MERGE){
-                struct TrackNode *prev = alongTrack(reversalNode, reversalDist - remainder - 1, 0, 0);
-                if(nextNode->reverse->edge[0].dest->reverse == prev){
-                   controllerTurnoutStraight(courier, nextNode->num);
-                } else if(nextNode->reverse->edge[1].dest->reverse == prev){
-                   controllerTurnoutCurve(courier, nextNode->num);
-                } else {
-                    logC("WTF");
-                }
-            }
-            reversalNode = alongTrack(reversalNode, 1, 0, 0);
-            reversalDist = remainder;
-        } else if(reversing && target_speed == 0 && acceleration == 0){
-            target_speed = ideal_speed[14];
-            setSpeed(trainID,15);
-            setSpeed(trainID,14);
-            logC("Reversing");
-            reversing = false;
-        } else if(reversing && target_speed){
-            target_speed = 0;
-            setSpeed(trainID,0);
-            logC("Stopping to reverse");
-        } else if(!reversing && target && update_reverses){
-            int revdist = stop + dist - 400;
-            logC("Checking for reverses");
-            for(int i = current; i < target && revdist > 0; ++i){
-                if(path[i]->reverse == path[i+1]){
-                    logC("Gotta reverse");
-                    reversing = true;
-                    reversalNode = path[i];
-                    reversalDist = 500;
-                    break;
-                }
-                revdist -= distance(path[i], path[i+1]);
-            }
-            update_reverses = false;
-        } else if(target && (target == toSet) && target_speed){
+        if(target && (target == toSet) && target_speed){
             int fulldist = distance(position, path[target]);
 
             if (((dist + stop) / 1000) >= fulldist) {
