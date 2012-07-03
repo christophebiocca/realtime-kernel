@@ -410,6 +410,7 @@ void engineer(int trainID){
     int set = 0;
     int toSet = 0;
     int target = 0;
+    int dist = 0;
 
     while (!quitting || !courierQuit || !timerQuit) {
         if(target && set <= toSet && courierReady){
@@ -453,7 +454,7 @@ void engineer(int trainID){
 
             int diff = time - posTime;
             // in um
-            int dist = computed_speed * diff + (acceleration * diff * diff) / 2;
+            dist = computed_speed * diff + (acceleration * diff * diff) / 2;
 
             controllerUpdatePosition(
                 courier,
