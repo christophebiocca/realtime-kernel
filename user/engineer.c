@@ -320,7 +320,7 @@ static inline void computeSpeeds(const int train_id,
     }
 }
 
-#define ACCELERATION_COEFFICIENT            (0.002)
+#define ACCELERATION_COEFFICIENT            (0.0034)
 
 // if (abs(current_speed - expected_speed) < threshold) acceleration = 0
 #define SPEED_THRESHOLD                     (100)
