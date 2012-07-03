@@ -534,9 +534,9 @@ void engineer(int trainID){
                         time = Time();
                         struct TrackNode *new_position =
                             find(msg.content.sensor.sensor, msg.content.sensor.number);
-                        int dist = distance(position, new_position);
+                        int travelleddist = distance(position, new_position);
 
-                        computed_speed = (dist * 1000) / time;
+                        computed_speed = (travelleddist  * 1000) / (time - posTime);
 
                         posTime = time;
                         position = new_position;
