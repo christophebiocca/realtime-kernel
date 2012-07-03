@@ -590,7 +590,7 @@ void engineer(int trainID){
                         ? FORWARD_STOPPING_COEFFICIENT
                         : BACKWARD_STOPPING_COEFFICIENT;
 
-                    toSet = alongPath(path+current, computed_speed * stop, target-current);
+                    toSet = alongPath(path+current, (dist + computed_speed * stop)/1000, target-current);
                     {
                         struct String s;
                         sinit(&s);
