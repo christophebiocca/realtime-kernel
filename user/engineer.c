@@ -666,11 +666,11 @@ void engineer(int trainID){
                         int i = 0;
                         {
                             path[0] = position;
-                            int dist = (dist + stop)/1000;
-                            while(dist > 0){
+                            int fdist = (dist + stop)/1000;
+                            while(fdist > 0){
                                 int diff;
                                 path[i+1] = alongTrack(path[i], 1, 0, &diff);
-                                dist += (diff-1);
+                                fdist += (diff-1);
                                 i++;
                             }
                         }
