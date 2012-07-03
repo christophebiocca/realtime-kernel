@@ -392,7 +392,7 @@ void engineer(int trainID){
                 acceleration = 0;
             } else {
                 // FIXME: train orientation
-                acceleration = sign * FORWARD_STOPPING_COEFFICIENT;
+                acceleration = sign * FORWARD_ACCELERATION_COEFFICIENT;
             }
 
             int diff = time - posTime;
