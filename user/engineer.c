@@ -444,8 +444,11 @@ void engineer(int trainID){
             if (diffspeed < SPEED_THRESHOLD) {
                 acceleration = 0;
             } else {
-                // FIXME: train orientation
-                acceleration = sign * FORWARD_ACCELERATION_COEFFICIENT;
+                int coeff = (orientation == FORWARD)
+                    ? FORWARD_ACCELERATION_COEFFICIENT
+                    : BACKWARD_ACCELERATION_COEFFICIENT;
+
+                acceleration = sign * coeff;
             }
 
             int diff = time - posTime;
@@ -582,8 +585,11 @@ void engineer(int trainID){
                 }
                 
                 if (target) {
-                    // FIXME: train orientation
-                    toSet = alongPath(path+current, computed_speed * FORWARD_STOPPING_COEFFICIENT, target-current);
+                    int stop = (orientation == FORWARD)
+                        ? FORWARD_STOPPING_COEFFICIENT
+                        : BACKWARD_STOPPING_COEFFICIENT;
+
+                    toSet = alongPath(path+current, computed_speed * stop, target-current);
                     {
                         struct String s;
                         sinit(&s);
