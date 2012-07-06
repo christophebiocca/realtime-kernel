@@ -1,0 +1,646 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Kernel 4
+\end_layout
+
+\begin_layout Author
+Christophe Biocca (20322763), Ronuk Raval (20345750)
+\end_layout
+
+\begin_layout Part
+Files and Operation
+\end_layout
+
+\begin_layout Section
+Executable
+\end_layout
+
+\begin_layout Standard
+The executable is located at 
+\family typewriter
+/u/raraval/cs452/tc1/kernel.elf
+\family default
+ (checksum: 
+\family typewriter
+37367251e73bff09818d95cb2b1c27cf
+\family default
+).
+\end_layout
+
+\begin_layout Standard
+To remake the executable:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+cd /u/raraval/cs452/tc1/src
+\end_layout
+
+\begin_layout Plain Layout
+
+make prod
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Running the program
+\end_layout
+
+\begin_layout Enumerate
+The program can be started using the standard commands.
+\end_layout
+
+\begin_layout Enumerate
+It will take a second or two to boot up, as it needs to reset the track
+ to a known state.
+\end_layout
+
+\begin_layout Enumerate
+Once running, the clock can be found in the top right, the switch positions
+ in the center area, and the recently triggered sensors below.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+The most recently triggered sensor is on the left, less recent sensors on
+ the right.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+It also displays the train's known position in the top left.
+\end_layout
+
+\begin_layout Enumerate
+The command area is at the bottom of the screen.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+It accepts the 4 required commands.
+\end_layout
+
+\begin_layout Enumerate
+It is picky about syntax.
+ Trailing characters are an error, and so is more than one space as a separator.
+ Commands execute when the enter key is typed.
+\end_layout
+
+\begin_layout Enumerate
+To help diagnose typing errors, if the parser notices that invalid input
+ is being entered, it will highlight it in red, starting at the position
+ the command became invalid.
+ It validates ranges for numeric arguments.
+\end_layout
+
+\begin_layout Enumerate
+All numbers are in decimal, including switch addresses (Making the center
+ switches 153-156 inclusively).
+\end_layout
+
+\begin_layout Enumerate
+Syntax is case insensitive, all letters are lowercased coming in.
+\end_layout
+
+\begin_layout Enumerate
+Starting an engineer to manage a specific train is 
+\family typewriter
+e #train
+\family default
+.
+\end_layout
+
+\begin_layout Enumerate
+Once the engineer has acquired a location, routing it to a given spot is
+ 
+\family typewriter
+z #train landmark
+\family default
+.
+\end_layout
+
+\end_deeper
+\begin_layout Subsection
+Troubleshooting
+\end_layout
+
+\begin_layout Standard
+Hopefully this is unneeded, but if necessary, rebooting the train controller,
+ clearing the screen and resetting the arm controller before starting the
+ program again tends to work nicely.
+\end_layout
+
+\begin_layout Section
+Source Code
+\end_layout
+
+\begin_layout Standard
+The source code submitted for this assignment can be found under 
+\family typewriter
+/u/raraval/cs452/tc1-hack/src/
+\family default
+.
+ Here are the checksums for the files:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+0d7272fd2615423d956ebf7b375929d8  data/BEST_HASH
+\end_layout
+
+\begin_layout Plain Layout
+
+8cddcb69f0e363bd99b6fe0111bfb777  data/parse_track.py
+\end_layout
+
+\begin_layout Plain Layout
+
+5bb243ee62e2deb57bf62c08fce67f34  data/tracka
+\end_layout
+
+\begin_layout Plain Layout
+
+2d891f7029131c84b1c0f62031fd2620  data/trackb
+\end_layout
+
+\begin_layout Plain Layout
+
+943217198c8f49c0ba9fea5d40f6baf8  doc/CALIBRATION
+\end_layout
+
+\begin_layout Plain Layout
+
+5fb080eae0d5af66c80b275837d829c6  doc/k1.lyx
+\end_layout
+
+\begin_layout Plain Layout
+
+af526ee1c1869d021c620b322b9f7e25  doc/k2.lyx
+\end_layout
+
+\begin_layout Plain Layout
+
+691be4bc843ac1b54e2e701a98b4fd81  doc/k4.lyx
+\end_layout
+
+\begin_layout Plain Layout
+
+d761266f3eb599d0dfc6dd88d52619c9  doc/WORKFLOW
+\end_layout
+
+\begin_layout Plain Layout
+
+3fb369afd0a490365655a5bfa157adf8  include/bwio.h
+\end_layout
+
+\begin_layout Plain Layout
+
+c13942a5833307674dba2f254809595d  include/cpsr.h
+\end_layout
+
+\begin_layout Plain Layout
+
+8dc1fd3b92abd3da0e1d806ebf28d685  include/debug.h
+\end_layout
+
+\begin_layout Plain Layout
+
+91ee8f0b6de1f3e23857502e3732c852  include/kernel/interrupts.h
+\end_layout
+
+\begin_layout Plain Layout
+
+f48ea9097d647cf0e299eea0cb838117  include/kernel/ipc.h
+\end_layout
+
+\begin_layout Plain Layout
+
+ce109b2914a8d46caaf09fc71a5aedfd  include/kernel/task.h
+\end_layout
+
+\begin_layout Plain Layout
+
+2abdf733846988a172af7f34e2051152  include/kernel/trampoline.h
+\end_layout
+
+\begin_layout Plain Layout
+
+aeb47082076d178c1784cc5dcd786a2b  include/lib.h
+\end_layout
+
+\begin_layout Plain Layout
+
+7ccf926195225fcab016186c8c5185fe  include/stdbool.h
+\end_layout
+
+\begin_layout Plain Layout
+
+ab50e9674e5eb7aa23b97d35028320fa  include/ts7200.h
+\end_layout
+
+\begin_layout Plain Layout
+
+b11121fa5217f977a0441d8721f0520d  include/user/clock_drawer.h
+\end_layout
+
+\begin_layout Plain Layout
+
+1a026162a95f84eb28bfae5e8c50c429  include/user/clock.h
+\end_layout
+
+\begin_layout Plain Layout
+
+ed89e6fd638946a86f67ef036afe8c6a  include/user/controller.h
+\end_layout
+
+\begin_layout Plain Layout
+
+dbdf4d53d41168a98bd51fd9ea4997f3  include/user/courier.h
+\end_layout
+
+\begin_layout Plain Layout
+
+2ba3665ae4a80a6404895b01f46d3ecb  include/user/engineer.h
+\end_layout
+
+\begin_layout Plain Layout
+
+e9a7384b7de24bf6eca953fb6555e0c0  include/user/heap.h
+\end_layout
+
+\begin_layout Plain Layout
+
+c43f99b170424b893e6769414cca0292  include/user/init.h
+\end_layout
+
+\begin_layout Plain Layout
+
+caf77700473316bef55fe272ecbcfc32  include/user/log.h
+\end_layout
+
+\begin_layout Plain Layout
+
+af578ce26dc1a2dd92828b10bfe1175e  include/user/mio.h
+\end_layout
+
+\begin_layout Plain Layout
+
+1f083cc3eb8d2b6cc7fe0467b7bd871b  include/user/nameserver.h
+\end_layout
+
+\begin_layout Plain Layout
+
+1133e3d3b68d8ddfc68f48b6de2a0112  include/user/parser.h
+\end_layout
+
+\begin_layout Plain Layout
+
+afa8bc3c2c7bca28c674cc233d324274  include/user/priorities.h
+\end_layout
+
+\begin_layout Plain Layout
+
+bb609987cab4660878ce90b66a324c23  include/user/sensor.h
+\end_layout
+
+\begin_layout Plain Layout
+
+ee296db2934aa57550a07af53aedcb24  include/user/string.h
+\end_layout
+
+\begin_layout Plain Layout
+
+403814223eb206dec10dd4796c930b42  include/user/syscall.h
+\end_layout
+
+\begin_layout Plain Layout
+
+6948a47691ec5fe21fe91d8026a00fa3  include/user/tio.h
+\end_layout
+
+\begin_layout Plain Layout
+
+345e5e6c851120a8665e869e1c9f2c93  include/user/train.h
+\end_layout
+
+\begin_layout Plain Layout
+
+6331b4b9cf91e5c59c8a60e115208e19  include/user/turnout.h
+\end_layout
+
+\begin_layout Plain Layout
+
+1a60ab5109ea814a27f5dc82a6a279ce  include/user/vt100.h
+\end_layout
+
+\begin_layout Plain Layout
+
+25757ddee6d82a16be926075e04b4972  kernel/bwio.c
+\end_layout
+
+\begin_layout Plain Layout
+
+3880bd8c7594d3b0b5f11e55a7c0f41d  kernel/interrupts.c
+\end_layout
+
+\begin_layout Plain Layout
+
+3ebd6f0e170452eda4094e49b2bc7507  kernel/ipc.c
+\end_layout
+
+\begin_layout Plain Layout
+
+3580a21485464ceabdaa7b4d5080000d  kernel/kernel.c
+\end_layout
+
+\begin_layout Plain Layout
+
+b6927156163cab78bc599a7cc1e76949  kernel/lib.c
+\end_layout
+
+\begin_layout Plain Layout
+
+a94ac54389fb87bb103ddddfd42be070  kernel/task.c
+\end_layout
+
+\begin_layout Plain Layout
+
+3b6ae84ef61911a6e73aa9ea533ef23a  kernel/task_internal.h
+\end_layout
+
+\begin_layout Plain Layout
+
+ba2bbda6474d8eb0c742de1778c353d1  kernel/trampoline.c
+\end_layout
+
+\begin_layout Plain Layout
+
+85a06c179e618d41cfa86f5a51346f43  linker.ld
+\end_layout
+
+\begin_layout Plain Layout
+
+20d94701927d78392a3987be9b042c85  Makefile
+\end_layout
+
+\begin_layout Plain Layout
+
+436afe7fc14408ee2f8be159b83c4ac1  README.md
+\end_layout
+
+\begin_layout Plain Layout
+
+ee9847d34ef3f14582e58f2bbdb3c2da  user/clock.c
+\end_layout
+
+\begin_layout Plain Layout
+
+ae9d089d2f5260d6f2ecaea987e19b67  user/clock_drawer.c
+\end_layout
+
+\begin_layout Plain Layout
+
+121f73fc523ee919b8ffbd7d8176b7df  user/controller.c
+\end_layout
+
+\begin_layout Plain Layout
+
+5db228d5d3288c110d866f049d6f6f94  user/courier.c
+\end_layout
+
+\begin_layout Plain Layout
+
+d5bfcec5fe2e6011155aa30777afa5fb  user/engineer.c
+\end_layout
+
+\begin_layout Plain Layout
+
+9f99e27f00af4430290379225f5b9011  user/init.c
+\end_layout
+
+\begin_layout Plain Layout
+
+63e1057f133f97319ac52a7724e60737  user/log.c
+\end_layout
+
+\begin_layout Plain Layout
+
+0854eb251e10d148e4c2152a318cc8ca  user/mio.c
+\end_layout
+
+\begin_layout Plain Layout
+
+1056255ba9ee68987414d82da357f47e  user/nameserver.c
+\end_layout
+
+\begin_layout Plain Layout
+
+c8fd504a1593d16c3a02622d4ffc0e1f  user/parser.c
+\end_layout
+
+\begin_layout Plain Layout
+
+cfab8e4eb6c05b272ccdceb5322b1b18  user/sensor.c
+\end_layout
+
+\begin_layout Plain Layout
+
+33da1c0024215d6c4469d6050e90b91a  user/syscall.c
+\end_layout
+
+\begin_layout Plain Layout
+
+38fd6c64ea43456d3773c3257b60dfd3  user/tio.c
+\end_layout
+
+\begin_layout Plain Layout
+
+4dde6879ea45ce3d503714b45d0f2114  user/train.c
+\end_layout
+
+\begin_layout Plain Layout
+
+ca4b3cb6130d36090140489de65939f5  user/turnout.c
+\end_layout
+
+\begin_layout Plain Layout
+
+eea47287ff66b4bc33eb8d2da57c93ca  user/vt100.c
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Part
+Track/Train Control
+\end_layout
+
+\begin_layout Section
+Train Controller
+\end_layout
+
+\begin_layout Standard
+The train controller manages three pieces of data:
+\end_layout
+
+\begin_layout Enumerate
+A circular buffer of trains trying to find their position.
+\end_layout
+
+\begin_layout Enumerate
+An array with engineer task id and last recorded position for each train.
+\end_layout
+
+\begin_layout Enumerate
+A two-dimensional array mapping sensor and sensor number to engineer task
+ id, (keeping track of engineer expectations).
+\end_layout
+
+\begin_layout Standard
+It essentially runs in an event loop, receiving engineer requests (through
+ their respective couriers) to set sensor expectations and switching turn-outs,
+ 
+\end_layout
+
+\begin_layout Standard
+sending messages to them based on new sensor readings.
+ It also updates the screen as needed.
+\end_layout
+
+\begin_layout Section
+Train Engineer
+\end_layout
+
+\begin_layout Standard
+The engineer first spawns 2 helper processes:
+\end_layout
+
+\begin_layout Itemize
+A timeout worker, which waits until a given time, then replies to the engineer,
+ ad nauseam.
+\end_layout
+
+\begin_layout Itemize
+A courier, used in messaging the train controller.
+\end_layout
+
+\begin_layout Standard
+Then it drives until it hits a sensor.
+ This sets its starting position.
+ When it receives a sensor update, or a timeout, it recalculates its current
+ position.
+ It also sets expectations as to which sensor will next be hit, and when.
+ As it moves it keeps a model of its current acceleration and speed, periodicall
+y corrected by the sensor updates coming in from the train controller.
+\end_layout
+
+\begin_layout Subsection
+Pathing
+\end_layout
+
+\begin_layout Standard
+When sent an instruction to navigate to another position, the engineer first
+ calculate an optimal path using Djikstra's algorithm (technically A* with
+ a heuristic of 0), using a closed list to avoid revisiting the same nodes
+ over and over.
+ After planning a path, the engineer starts moving forward.
+ As it does it continuously sets the switches that are at most its stopping
+ distance along its path.
+ The stopping distance is derived from the current calculated speed.
+ Finally when it notes that the final position is exactly the stopping distance
+ ahead of it, it starts decelerating.
+\end_layout
+
+\begin_layout Part
+Flaws
+\end_layout
+
+\begin_layout Standard
+We a have a bug in setting sensor expectations.
+ It leads to the engineer registering for the wrong sensor, which can break
+ pathfinding if the engineer expects a response on the given sensor.
+ Also we do not reverse when pathing.
+\end_layout
+
+\end_body
+\end_document
