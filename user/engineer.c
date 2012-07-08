@@ -152,6 +152,26 @@ static inline void notifyExpectation(struct Train *train){
     }
 }
 
+static inline void calculateStop(struct Train *train){
+    if(train->track.pathing){
+        int dist = distance(train->track.turnouts,
+            &train->track.position,
+            &train->track.goal);
+        if(dist <= train->kinematics.stop/1000){
+            {
+                struct String s;
+                sinit(&s);
+                sputstr(&s, "Dist: ");
+                sputint(&s, dist, 10);
+                sputstr(&s, " Stop: ");
+                sputint(&s, train->kinematics.stop, 10);
+                logS(&s);
+            }
+            setSpeed(train,0);
+        }
+    }
+}
+
 static inline void updateTurnouts(struct Train *train){
     struct Position end;
     struct TrackNode *path[50];
@@ -202,7 +222,7 @@ static inline void updatePosition(struct Train *train, struct Position *pos){
     }
     updateExpectation(train);
     updateTurnouts(train);
-    //calculateStop(train);
+    calculateStop(train);
 }
 
 static inline void sensorUpdate(struct Train *train, int sensor, int number){
