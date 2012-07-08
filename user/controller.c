@@ -300,11 +300,11 @@ static void controllerServer(void) {
                 switch (request.turnoutRequest.orientation) {
                     case CURVE:
                         sputstr(&s, " curve");
-                        turnoutCurve(request.turnoutRequest.address);
+                        turnoutCurve(request.turnoutRequest.address, 0);
                         break;
                     case STRAIGHT:
                         sputstr(&s, " straight");
-                        turnoutStraight(request.turnoutRequest.address);
+                        turnoutStraight(request.turnoutRequest.address, 0);
                         break;
                     default:
                         assert(0);

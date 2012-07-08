@@ -4,8 +4,6 @@
 #include <stdbool.h>
 #include <user/track_data.h>
 
-void planRoute(char *start, char *end);
-
 extern volatile int engineerID;
 int engineerCreate(int trainID);
 void engineerQuit(int engineer_tid);
