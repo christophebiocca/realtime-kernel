@@ -222,8 +222,22 @@ static inline void sensorUpdate(struct Train *train, int sensor, int number){
 static inline void timerPositionUpdate(struct Train *train, int time){
     tick(&train->kinematics, time);
     struct Position pos;
-    alongTrack(train->track.turnouts, &train->track.position,
-        train->kinematics.distance/1000, &pos, 0, false);
+    struct TrackNode *path[50];
+    int len = alongTrack(train->track.turnouts, &train->track.position,
+        train->kinematics.distance/1000, &pos, path, false);
+    assert(len <= 50);
+    // Always skip the start point.
+    for(int i = 1; i < len; ++i){
+        if(path[i]->type == NODE_SENSOR){
+            // We can't possibly have reached here yet. We're still before this point.
+            pos.node = path[i-1];
+            pos.offset = 0;
+            // For lack of anything better.
+            pos.offset = train->kinematics.distance/1000 -
+                distance(train->track.turnouts, &train->track.position, &pos);
+            break;
+        }
+    }
     updatePosition(train, &pos);
     train->kinematics.distance = 0;
     train->timing.positionUpdate = time + UPDATE_INTERVAL;
