@@ -188,12 +188,14 @@ static inline void updatePosition(struct Train *train, struct Position *pos){
     train->track.position.offset = pos->offset;
     train->messaging.notifyPosition = true;
     if(train->track.pathing){
-        while(*(train->track.pathCurrent) != pos->node){
+        while(*(train->track.pathCurrent) != pos->node &&
+            *(train->track.pathCurrent) != train->track.goal.node){
             train->track.pathCurrent++;
         }
     }
     updateExpectation(train);
     updateTurnouts(train);
+    //calculateStop(train);
 }
 
 static inline void sensorUpdate(struct Train *train, int sensor, int number){

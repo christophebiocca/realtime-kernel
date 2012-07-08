@@ -103,7 +103,7 @@ int alongTrack(TurnoutTable turnouts, struct Position *start,
     struct TrackNode *last_pos;
 
     int i = 0;
-    while(dist > 0){
+    while(dist > 0 && pos->type != NODE_EXIT){
         last_dist = dist;
         last_pos = pos;
         /*{
@@ -127,7 +127,7 @@ int alongTrack(TurnoutTable turnouts, struct Position *start,
     if(path){
         path[i++] = pos;
     }
-    if(beyond){
+    if(dist > 0 || beyond){
         end->node = pos;
         end->offset = dist;
     } else {
