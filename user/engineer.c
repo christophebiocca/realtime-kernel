@@ -137,6 +137,13 @@ static inline void updateExpectation(struct Train *train){
 
 static inline void notifyExpectation(struct Train *train){
     if(train->messaging.notifyExpectation && train->messaging.courierReady){
+        {
+            struct String s;
+            sinit(&s);
+            sputstr(&s, "Expect:");
+            sputstr(&s, train->track.expectedSensor->name);
+            logS(&s);
+        }
         controllerSetExpectation(train->messaging.courier,
             train->id, train->track.expectedSensor->num / 16,
             train->track.expectedSensor->num % 16);
