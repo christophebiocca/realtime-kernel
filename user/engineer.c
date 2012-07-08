@@ -187,7 +187,7 @@ static inline void updatePosition(struct Train *train, struct Position *pos){
     train->track.position.node = pos->node;
     train->track.position.offset = pos->offset;
     train->messaging.notifyPosition = true;
-    if(pathing){
+    if(train->track.pathing){
         while(*(train->track.pathCurrent) != pos->node){
             train->track.pathCurrent++;
         }
