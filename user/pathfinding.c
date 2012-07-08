@@ -145,6 +145,10 @@ int distance(TurnoutTable turnouts, struct Position *from, struct Position *to) 
 
     int i = 0;
     while(pos != to->node){
+        if(pos->type == NODE_EXIT){
+            // Can't get there.
+            return 0x7FFFFFFF;
+        }
         int dir = 0;
         if(pos->type == NODE_BRANCH){
             dir = isTurnoutCurved(turnouts, pos->num);
