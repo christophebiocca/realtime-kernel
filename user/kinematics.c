@@ -2,6 +2,10 @@
 #include <debug.h>
 #include <user/log.h>
 
+#define FORWARD_STOPPING_COEFFICIENT        (0.0034)
+#define BACKWARD_STOPPING_COEFFICIENT       (0.0028)
+
+// FIXME: This is probably incorrect...
 #define ACCELERATION_COEFFICIENT            (0.0034)
 
 // if (abs(current_speed - expected_speed) < threshold) acceleration = 0
@@ -20,7 +24,11 @@ static inline void computeAcceleration(struct Kinematics *k) {
 }
 
 static inline void computeStop(struct Kinematics *k) {
-    float s = k->current_speed / (2 * ACCELERATION_COEFFICIENT);
+    float coeff = (k->orientation == FORWARD)
+        ? FORWARD_STOPPING_COEFFICIENT
+        : BACKWARD_STOPPING_COEFFICIENT;
+
+    float s = k->current_speed / (2 * coeff);
     k->stop = (int) s;
 }
 
