@@ -2,7 +2,6 @@
 
 #include <user/parser.h>
 #include <user/string.h>
-#include <user/train.h>
 #include <user/mio.h>
 #include <user/tio.h>
 #include <user/priorities.h>
@@ -18,32 +17,10 @@
 #include <user/pathfinding.h>
 
 union ParserData {
-    struct TrainSpeedParse {
-        int trainNumber;
-        int trainSpeed;
-    } trainSpeed;
-
     struct SwitchThrowParse {
         int switchNumber;
         bool curved;
     } switchThrow;
-
-    struct TrainReverseParse {
-        int trainNumber;
-    } trainReverse;
-
-    struct SensorInterruptParse {
-        int trainNumber;
-        int sensor;
-        int sensorNumber;
-    } sensorInterrupt;
-
-    struct SensorTimerParse {
-        int sensor1;
-        int sensor1Number;
-        int sensor2;
-        int sensor2Number;
-    } sensorTimer;
 
     struct RouteFindParse {
         char src[5];
@@ -67,35 +44,12 @@ struct Parser {
         Empty,
         A_A,
         B_B,
-        TR_T,
-        TR_R,
-        TR_firstSpace,
-        TR_trainNumber,
-        TR_secondSpace,
-        TR_trainSpeed,
-        RV_R,
-        RV_V,
-        RV_space,
-        RV_trainNumber,
         SW_S,
         SW_W,
         SW_firstSpace,
         SW_switchNumber,
         SW_secondSpace,
         SW_S_Or_C,
-        I_I,
-        I_firstSpace,
-        I_trainNumber,
-        I_secondSpace,
-        I_sensorAlpha,
-        I_sensorNumber,
-        D_D,
-        D_firstSpace,
-        D_firstSensorAlpha,
-        D_firstSensorNumber,
-        D_secondSpace,
-        D_secondSensorAlpha,
-        D_secondSensorNumber,
         P_P,
         P_firstSpace,
         P_src,
@@ -152,20 +106,8 @@ bool parse(struct Parser *parser, char c){
                     case 'q':
                         parser->state = Q_Q;
                         break;
-                    case 't':
-                        parser->state = TR_T;
-                        break;
-                    case 'r':
-                        parser->state = RV_R;
-                        break;
                     case 's':
                         parser->state = SW_S;
-                        break;
-                    case 'd':
-                        parser->state = D_D;
-                        break;
-                    case 'i':
-                        parser->state = I_I;
                         break;
                     case 'p':
                         parser->state = P_P;
@@ -182,87 +124,114 @@ bool parse(struct Parser *parser, char c){
                 }
                 break;
 
-            case D_D:
-                EXPECT_EXACT(' ', D_firstSpace);
+            case E_E:
+                parser->data.prepareTrain.trainID = 0;
+                EXPECT_EXACT(' ', E_train);
                 break;
 
-            case D_firstSpace:
-                parser->data.sensorTimer.sensor1 = c;
-                parser->state = D_firstSensorAlpha;
-                break;
-
-            case D_firstSensorAlpha:
-                parser->data.sensorTimer.sensor1Number = 0;
-                if (appendDecDigit(c, &parser->data.sensorTimer.sensor1Number)) {
-                    parser->state = D_firstSensorNumber;
+            case E_firstSpace:
+                if(appendDecDigit(c, &parser->data.prepareTrain.trainID)){
+                    parser->state = E_train;
                 } else {
                     parser->state = ErrorState;
                 }
                 break;
 
-            case D_firstSensorNumber:
-                if (!appendDecDigit(c, &parser->data.sensorTimer.sensor1Number)) {
-                    EXPECT_EXACT(' ', D_secondSpace);
+            case E_train:
+                if(!appendDecDigit(c, &parser->data.prepareTrain.trainID)){
+                    parser->state = ErrorState;
                 }
                 break;
 
-            case D_secondSpace:
-                parser->data.sensorTimer.sensor2 = c;
-                parser->state = D_secondSensorAlpha;
+            case P_P:
+                for(int i = 0; i < 5; ++i){
+                    parser->data.routeFind.src[i] = 0;
+                    parser->data.routeFind.dest[i] = 0;
+                }
+                EXPECT_EXACT(' ', P_firstSpace);
                 break;
 
-            case D_secondSensorAlpha:
-                parser->data.sensorTimer.sensor2Number = 0;
-                if (appendDecDigit(c, &parser->data.sensorTimer.sensor2Number)) {
-                    parser->state = D_secondSensorNumber;
+            case P_firstSpace:
+                parser->data.routeFind.src[0] = c;
+                parser->state = P_src;
+                break;
+
+            case P_src:
+                if(c == ' '){
+                    parser->state = P_secondSpace;
+                } else {
+                    int i;
+                    for(i = 1; i < 5 && parser->data.routeFind.src[i]; ++i);
+                    if(i < 5){
+                        parser->data.routeFind.src[i] = c;
+                    } else {
+                        parser->state = ErrorState;
+                    }
+                }
+                break;
+
+            case P_secondSpace:
+                parser->data.routeFind.dest[0] = c;
+                parser->state = P_dest;
+                break;
+
+            case P_dest:
+                {
+                    int i;
+                    for(i = 1; i < 5 && parser->data.routeFind.dest[i]; ++i);
+                    if(i < 5){
+                        parser->data.routeFind.dest[i] = c;
+                    } else {
+                        parser->state = ErrorState;
+                    }
+                }
+                break;
+
+            case SW_S:
+                EXPECT_EXACT('w', SW_W);
+                break;
+
+            case SW_W:
+                EXPECT_EXACT(' ', SW_firstSpace);
+                break;
+
+            case SW_firstSpace:
+                parser->data.switchThrow.switchNumber = 0;
+                if(appendDecDigit(c, &parser->data.switchThrow.switchNumber)){
+                    parser->state = SW_switchNumber;
                 } else {
                     parser->state = ErrorState;
                 }
                 break;
 
-            case D_secondSensorNumber:
-                if (!appendDecDigit(c, &parser->data.sensorTimer.sensor2Number)) {
-                    parser->state = ErrorState;
+            case SW_switchNumber:
+                if(!appendDecDigit(c, &parser->data.switchThrow.switchNumber)){
+                    if(c == ' '){
+                        parser->state = SW_secondSpace;
+                    } else {
+                        parser->state = ErrorState;
+                    }
                 }
                 break;
 
-            case I_I:
-                EXPECT_EXACT(' ', I_firstSpace);
-                break;
-
-            case I_firstSpace:
-                parser->data.sensorInterrupt.trainNumber = 0;
-                if (appendDecDigit(c, &parser->data.sensorInterrupt.trainNumber)) {
-                    parser->state = I_trainNumber;
-                } else {
-                    parser->state = ErrorState;
+            case SW_secondSpace:
+                switch(c){
+                    case 'c':
+                        parser->data.switchThrow.curved = true;
+                        parser->state = SW_S_Or_C;
+                        break;
+                    case 's':
+                        parser->data.switchThrow.curved = false;
+                        parser->state = SW_S_Or_C;
+                        break;
+                    default:
+                        parser->state = ErrorState;
+                        break;
                 }
                 break;
 
-            case I_trainNumber:
-                if (!appendDecDigit(c, &parser->data.sensorInterrupt.trainNumber)) {
-                    EXPECT_EXACT(' ', I_secondSpace);
-                }
-                break;
-
-            case I_secondSpace:
-                parser->data.sensorInterrupt.sensor = c;
-                parser->state = I_sensorAlpha;
-                break;
-
-            case I_sensorAlpha:
-                parser->data.sensorInterrupt.sensorNumber = 0;
-                if (appendDecDigit(c, &parser->data.sensorInterrupt.sensorNumber)) {
-                    parser->state = I_sensorNumber;
-                } else {
-                    parser->state = ErrorState;
-                }
-                break;
-
-            case I_sensorNumber:
-                if (!appendDecDigit(c, &parser->data.sensorInterrupt.sensorNumber)) {
-                    parser->state = ErrorState;
-                }
+            case SW_S_Or_C:
+                parser->state = ErrorState;
                 break;
 
             case Z_Z:
@@ -301,156 +270,13 @@ bool parse(struct Parser *parser, char c){
                     (0x61 <= c && c <= 0x7A) ? c & ~0x20 : c;
                 break;
 
-            case TR_T:
-                EXPECT_EXACT('r', TR_R);
-                break;
-            case TR_R:
-                EXPECT_EXACT(' ', TR_firstSpace);
-                break;
-            case TR_firstSpace:
-                parser->data.trainSpeed.trainNumber = 0;
-                if(appendDecDigit(c, &parser->data.trainSpeed.trainNumber)){
-                    parser->state = TR_trainNumber;
-                } else {
-                    parser->state = ErrorState;
-                }
-                break;
-            case TR_trainNumber:
-                if(!appendDecDigit(c, &parser->data.trainSpeed.trainNumber)){
-                    EXPECT_EXACT(' ', TR_secondSpace);
-                }
-                break;
-            case TR_secondSpace:
-                parser->data.trainSpeed.trainSpeed = 0;
-                if(appendDecDigit(c, &parser->data.trainSpeed.trainSpeed)){
-                    parser->state = TR_trainSpeed;
-                } else {
-                    parser->state = ErrorState;
-                }
-                break;
-            case TR_trainSpeed:
-                if(!appendDecDigit(c, &parser->data.trainSpeed.trainSpeed)){
-                    parser->state = ErrorState;
-                }
-                break;
-            case RV_R:
-                EXPECT_EXACT('v', RV_V);
-                break;
-            case RV_V:
-                EXPECT_EXACT(' ', RV_space);
-                break;
-            case RV_space:
-                parser->data.trainReverse.trainNumber = 0;
-                if(appendDecDigit(c, &parser->data.trainReverse.trainNumber)){
-                    parser->state = RV_trainNumber;
-                } else {
-                    parser->state = ErrorState;
-                }
-                break;
-            case RV_trainNumber:
-                if(!appendDecDigit(c, &parser->data.trainReverse.trainNumber)){
-                    parser->state = ErrorState;
-                }
-                break;
-            case SW_S:
-                EXPECT_EXACT('w', SW_W);
-                break;
-            case SW_W:
-                EXPECT_EXACT(' ', SW_firstSpace);
-                break;
-            case SW_firstSpace:
-                parser->data.switchThrow.switchNumber = 0;
-                if(appendDecDigit(c, &parser->data.switchThrow.switchNumber)){
-                    parser->state = SW_switchNumber;
-                } else {
-                    parser->state = ErrorState;
-                }
-                break;
-            case SW_switchNumber:
-                if(!appendDecDigit(c, &parser->data.switchThrow.switchNumber)){
-                    if(c == ' '){
-                        parser->state = SW_secondSpace;
-                    } else {
-                        parser->state = ErrorState;
-                    }
-                }
-                break;
-            case SW_secondSpace:
-                switch(c){
-                    case 'c':
-                        parser->data.switchThrow.curved = true;
-                        parser->state = SW_S_Or_C;
-                        break;
-                    case 's':
-                        parser->data.switchThrow.curved = false;
-                        parser->state = SW_S_Or_C;
-                        break;
-                    default:
-                        parser->state = ErrorState;
-                        break;
-                }
-                break;
-            case SW_S_Or_C:
-                parser->state = ErrorState;
-                break;
-            case P_P:
-                for(int i = 0; i < 5; ++i){
-                    parser->data.routeFind.src[i] = 0;
-                    parser->data.routeFind.dest[i] = 0;
-                }
-                EXPECT_EXACT(' ', P_firstSpace);
-                break;
-            case P_firstSpace:
-                parser->data.routeFind.src[0] = c;
-                parser->state = P_src;
-                break;
-            case P_src:
-                if(c == ' '){
-                    parser->state = P_secondSpace;
-                } else {
-                    int i;
-                    for(i = 1; i < 5 && parser->data.routeFind.src[i]; ++i);
-                    if(i < 5){
-                        parser->data.routeFind.src[i] = c;
-                    } else {
-                        parser->state = ErrorState;
-                    }
-                }
-                break;
-            case P_secondSpace:
-                parser->data.routeFind.dest[0] = c;
-                parser->state = P_dest;
-                break;
-            case P_dest:
-                {
-                    int i;
-                    for(i = 1; i < 5 && parser->data.routeFind.dest[i]; ++i);
-                    if(i < 5){
-                        parser->data.routeFind.dest[i] = c;
-                    } else {
-                        parser->state = ErrorState;
-                    }
-                }
-                break;
-            case E_E:
-                parser->data.prepareTrain.trainID = 0;
-                EXPECT_EXACT(' ', E_train);
-                break;
-            case E_firstSpace:
-                if(appendDecDigit(c, &parser->data.prepareTrain.trainID)){
-                    parser->state = E_train;
-                } else {
-                    parser->state = ErrorState;
-                }
-                break;
-            case E_train:
-                if(!appendDecDigit(c, &parser->data.prepareTrain.trainID)){
-                    parser->state = ErrorState;
-                }
-                break;
+            // single character commands
+            case A_A:
+            case B_B:
             case Q_Q:
                 parser->state = ErrorState;
                 break;
+
             default:
                 break;
         }
@@ -483,31 +309,6 @@ bool parse(struct Parser *parser, char c){
                 }
                 break;
 
-            case TR_trainSpeed:
-                {
-                    int trainSpeed = parser->data.trainSpeed.trainSpeed;
-                    int trainNumber = parser->data.trainSpeed.trainNumber;
-                    if(0 > trainNumber || trainNumber > 80){
-                        logC("Invalid train number, should be in [0, 80]");
-                    } else if(0 > trainSpeed || trainSpeed > 14){
-                        logC("Invalid train speed, should be in [0, 14]");
-                    } else {
-                        setSpeed(trainNumber,trainSpeed);
-                    }
-                }
-                break;
-
-            case RV_trainNumber:
-                {
-                    int trainNumber = parser->data.trainReverse.trainNumber;
-                    if(0 > trainNumber || trainNumber > 80){
-                        logC("Invalid train number, should be in [0, 80]");
-                    } else {
-                        reverse(trainNumber);
-                    }
-                }
-                break;
-
             case SW_S_Or_C:
                 {
                     int switchNumber = parser->data.switchThrow.switchNumber;
@@ -523,51 +324,6 @@ bool parse(struct Parser *parser, char c){
                     }
                 }
                 break;
-
-            case I_sensorNumber: {
-                int trainNumber = parser->data.sensorInterrupt.trainNumber;
-                int sensor = parser->data.sensorInterrupt.sensor;
-                int sensorNumber = parser->data.sensorInterrupt.sensorNumber;
-
-                if (trainNumber < 0 || trainNumber > 80) {
-                    logC("Invalid train number, should be in [0, 80]");
-                    break;
-                }
-
-                if (sensor < 'a' || sensor > 'e') {
-                    logC("Invalid sensor, should be in [A, E]");
-                    break;
-                }
-
-                if (sensorNumber < 1 || sensorNumber > 16) {
-                    logC("Invalid sensor number, should be in [1, 16]");
-                    break;
-                }
-
-                sensorInterrupt(trainNumber, sensor, sensorNumber);
-                break;
-            }
-
-            case D_secondSensorNumber: {
-                int sensor1 = parser->data.sensorTimer.sensor1;
-                int sensor1Number = parser->data.sensorTimer.sensor1Number;
-                int sensor2 = parser->data.sensorTimer.sensor2;
-                int sensor2Number = parser->data.sensorTimer.sensor2Number;
-
-                if (sensor1 < 'a' || sensor2 < 'a' || sensor1 > 'e' || sensor2 > 'e') {
-                    logC("Invalid sensor, should be in [A, E]");
-                    break;
-                }
-
-                if (sensor1Number < 1 || sensor2Number < 1
-                        || sensor1Number > 16 || sensor2Number > 16) {
-                    logC("Invalid sensor number, should be in [1, 16]");
-                    break;
-                }
-
-                sensorTimer(sensor1, sensor1Number, sensor2, sensor2Number);
-                break;
-            }
 
             case P_dest: {
                 planRoute(parser->data.routeFind.src, parser->data.routeFind.dest);
@@ -611,11 +367,14 @@ bool parse(struct Parser *parser, char c){
                 break;
             }
         }
+
         if(ret){
             sputstr(&s, "> ");
         }
+
         parser->state = Empty;
     } // Ignore non printing characters.
+
     mioPrint(&s);
     return ret;
 }
@@ -641,7 +400,6 @@ void commandParser(void){
     sputstr(&s, "Graceful shutdown in progress\r\n");
     mioPrint(&s);
     controllerQuit();
-    shutdownTrains();
     sensorQuit();
     clockDrawerQuit();
     Delay(150);

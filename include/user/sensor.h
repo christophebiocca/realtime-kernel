@@ -16,9 +16,6 @@ typedef char Sensor;
 void sensorInit(void);
 void sensorQuit(void);
 
-void sensorInterrupt(int train_number, int sensor, int sensor_number);
-void sensorTimer(int sensor1, int sensor1_num, int sensor2, int sensor2_num);
-
 static inline struct TrackNode *nodeForSensor(Sensor sensor){
     char lookup[4];
     lookup[2] = lookup[3] = 0;

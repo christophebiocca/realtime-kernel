@@ -10,8 +10,6 @@
 #include <user/tio.h>
 #include <user/vt100.h>
 
-#include <user/train.h>
-
 /* 0 <= sensor < NUM_SENSORS
  *  * 0 <= bit < 16 */
 #define SENSOR_POS(s, sensor, bit) vtPos(s, SENSOR_ROW + sensor, bit * 4 + 1)
@@ -66,19 +64,6 @@ static void updateSensorDisplay(struct RecentSensor *recent_sensors, int recent_
     mioPrint(&s);
 }
 
-static struct {
-    int train_number;
-    int byte;
-    int bit;
-} g_current_sensor_interrupt;
-
-static struct {
-    int sensor1_byte;
-    int sensor1_bit;
-    int sensor2_byte;
-    int sensor2_bit;
-} g_current_sensor_timer;
-
 static void sensorTask(void) {
     struct RecentSensor recent_sensors[NUM_RECENT_SENSORS];
     int recent_i;
@@ -126,32 +111,6 @@ static void sensorTask(void) {
                     recent_sensors[recent_i].byte = last_byte;
                     recent_sensors[recent_i].bit = bit;
 
-                    if (last_byte == g_current_sensor_interrupt.byte
-                            && bit == g_current_sensor_interrupt.bit) {
-                        setSpeed(g_current_sensor_interrupt.train_number, 0);
-                    }
-
-                    if (last_byte == g_current_sensor_timer.sensor1_byte
-                            && bit == g_current_sensor_timer.sensor1_bit) {
-                        *(TIMER4_CRTL) = TIMER4_ENABLE;
-                    }
-
-                    if (last_byte == g_current_sensor_timer.sensor2_byte
-                            && bit == g_current_sensor_timer.sensor2_bit) {
-                        unsigned int ticks = *(TIMER4_VAL);
-                        *(TIMER4_CRTL) = 0;
-                        struct String s;
-
-                        sinit(&s);
-                        sputstr(&s, CURSOR_SAVE);
-                        vtPos(&s, TIMER_ROW, 1);
-                        sputstr(&s, "Ticks: ");
-                        sputuint(&s, ticks, 10);
-                        sputstr(&s, "        ");
-                        sputstr(&s, CURSOR_RESTORE);
-                        mioPrint(&s);
-                    }
-
                     /* becase modulo of a negative number can be negative >_> */
                     if (--recent_i < 0) {
                         recent_i += NUM_RECENT_SENSORS;
@@ -167,6 +126,7 @@ static void sensorTask(void) {
                     if (last_byte % 2) {
                         offset += 8;
                     }
+
                     controllerSensorTriggered(SENSOR_ENCODE(box, offset));
                 }
             }
@@ -185,10 +145,6 @@ static void sensorTask(void) {
 void sensorInit(void) {
     g_sensor_quit = false;
     Create(TASK_PRIORITY, sensorTask);
-
-    g_current_sensor_interrupt.byte = -1;
-    g_current_sensor_timer.sensor1_byte = -1;
-    g_current_sensor_timer.sensor2_byte = -1;
 }
 
 void sensorQuit(void) {
@@ -205,26 +161,3 @@ static inline void sensorToByteBit(int sensor, int number, int *byte, int *bit) 
     *bit = 9 - number;
 }
 
-void sensorInterrupt(int train_number, int sensor, int sensor_number) {
-    g_current_sensor_interrupt.train_number = train_number;
-
-    sensorToByteBit(
-        sensor, sensor_number,
-        &g_current_sensor_interrupt.byte,
-        &g_current_sensor_interrupt.bit
-    );
-}
-
-void sensorTimer(int sensor1, int sensor1_num, int sensor2, int sensor2_num) {
-    sensorToByteBit(
-        sensor1, sensor1_num,
-        &g_current_sensor_timer.sensor1_byte,
-        &g_current_sensor_timer.sensor1_bit
-    );
-
-    sensorToByteBit(
-        sensor2, sensor2_num,
-        &g_current_sensor_timer.sensor2_byte,
-        &g_current_sensor_timer.sensor2_bit
-    );
-}

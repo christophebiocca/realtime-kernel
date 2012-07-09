@@ -18,7 +18,6 @@
 #include <user/log.h>
 #include <user/parser.h>
 #include <user/sensor.h>
-#include <user/train.h>
 #include <user/turnout.h>
 #include <user/track_data.h>
 
@@ -32,7 +31,6 @@ static void trainTask(void) {
     vtInit();
     turnoutInit();
     sensorInit();
-    trainInit();
     parserInit();
     clockInitTask();
     clockDrawerInit();
