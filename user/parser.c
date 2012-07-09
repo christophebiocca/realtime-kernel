@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <lib.h>
 
 #include <user/parser.h>
 #include <user/string.h>
@@ -36,6 +37,16 @@ union ParserData {
         char dest[5];
         int dest_index;
     } sendTrain;
+
+    struct Reservation {
+        enum {
+            RESERVE,
+            RELEASE
+        } op;
+
+        char src[5];
+        char dest[5];
+    } reservation;
 };
 
 struct Parser {
@@ -44,6 +55,15 @@ struct Parser {
         Empty,
         A_A,
         B_B,
+        E_E,
+        E_firstSpace,
+        E_train,
+        L_L,
+        R_R,
+        LR_firstSpace,
+        LR_src,
+        LR_secondSpace,
+        LR_dest,
         SW_S,
         SW_W,
         SW_firstSpace,
@@ -60,9 +80,6 @@ struct Parser {
         Z_trainNumber,
         Z_secondSpace,
         Z_dest,
-        E_E,
-        E_firstSpace,
-        E_train,
         Q_Q
     } state;
     union ParserData data;
@@ -103,17 +120,23 @@ bool parse(struct Parser *parser, char c){
                     case 'b':
                         parser->state = B_B;
                         break;
+                    case 'e':
+                        parser->state = E_E;
+                        break;
+                    case 'l':
+                        parser->state = L_L;
+                        break;
+                    case 'r':
+                        parser->state = R_R;
+                        break;
+                    case 'p':
+                        parser->state = P_P;
+                        break;
                     case 'q':
                         parser->state = Q_Q;
                         break;
                     case 's':
                         parser->state = SW_S;
-                        break;
-                    case 'p':
-                        parser->state = P_P;
-                        break;
-                    case 'e':
-                        parser->state = E_E;
                         break;
                     case 'z':
                         parser->state = Z_Z;
@@ -142,6 +165,72 @@ bool parse(struct Parser *parser, char c){
                     parser->state = ErrorState;
                 }
                 break;
+
+            case L_L:
+                for(int i = 0; i < 5; ++i){
+                    parser->data.reservation.src[i] = 0;
+                    parser->data.reservation.dest[i] = 0;
+                }
+
+                parser->data.reservation.op = RELEASE;
+                EXPECT_EXACT(' ', LR_firstSpace);
+                break;
+
+            case R_R:
+                for(int i = 0; i < 5; ++i){
+                    parser->data.reservation.src[i] = 0;
+                    parser->data.reservation.dest[i] = 0;
+                }
+
+                parser->data.reservation.op = RESERVE;
+                EXPECT_EXACT(' ', LR_firstSpace);
+                break;
+
+            case LR_firstSpace:
+                parser->data.reservation.src[0] =
+                    (0x61 <= c && c <= 0x7A) ? c & ~0x20 : c;
+                parser->state = LR_src;
+                break;
+
+            case LR_src:
+                if(c == ' '){
+                    parser->state = LR_secondSpace;
+                } else {
+                    int i;
+
+                    for (i = 1; i < 5 && parser->data.reservation.src[i]; ++i)
+                        ;
+
+                    if (i < 5) {
+                        parser->data.reservation.src[i] =
+                            (0x61 <= c && c <= 0x7A) ? c & ~0x20 : c;
+                    } else {
+                        parser->state = ErrorState;
+                    }
+                }
+                break;
+
+            case LR_secondSpace:
+                parser->data.reservation.dest[0] =
+                    (0x61 <= c && c <= 0x7A) ? c & ~0x20 : c;
+                parser->state = LR_dest;
+                break;
+
+            case LR_dest: {
+                int i;
+
+                for(i = 1; i < 5 && parser->data.reservation.dest[i]; ++i)
+                    ;
+
+                if (i < 5) {
+                    parser->data.reservation.dest[i] =
+                        (0x61 <= c && c <= 0x7A) ? c & ~0x20 : c;
+                } else {
+                    parser->state = ErrorState;
+                }
+
+                break;
+            }
 
             case P_P:
                 for(int i = 0; i < 5; ++i){
@@ -309,6 +398,68 @@ bool parse(struct Parser *parser, char c){
                 }
                 break;
 
+            case E_train: {
+                if(parser->data.prepareTrain.trainID > 80 ||
+                    parser->data.prepareTrain.trainID < 0){
+                } else {
+                    sputstr(&s, "Going to start engineer ");
+                    sputuint(&s, parser->data.prepareTrain.trainID,10);
+                    sputstr(&s, "\r\n");
+                    controllerPrepareTrain(parser->data.prepareTrain.trainID);    
+                }
+                break;
+            }
+
+            case LR_dest: {
+                struct TrackNode *src = lookupTrackNode(
+                    hashtbl,
+                    parser->data.reservation.src
+                );
+                struct TrackNode *dest = lookupTrackNode(
+                    hashtbl,
+                    parser->data.reservation.dest
+                );
+
+                struct String s;
+                sinit(&s);
+
+                if (src == NULLPTR) {
+                    sputstr(&s, "Invalid source: ");
+                    sputstr(&s, parser->data.reservation.src);
+                    logS(&s);
+                    break;
+                }
+
+                if (dest == NULLPTR) {
+                    sputstr(&s, "Invalid destination: ");
+                    sputstr(&s, parser->data.reservation.dest);
+                    logS(&s);
+                    break;
+                }
+
+                struct TrackEdge *edge = NULLPTR;
+
+                if (src->edge[0].dest == dest) {
+                    edge = &src->edge[0];
+                } else if (src->type == NODE_BRANCH && src->edge[1].dest == dest) {
+                    edge = &src->edge[1];
+                }
+
+                if (edge == NULLPTR) {
+                    logC("cannot find edge");
+                    break;
+                }
+
+                if (parser->data.reservation.op == RESERVE) {
+                    controllerReserve(81, edge);
+                } else {
+                    controllerRelease(81, edge);
+                }
+
+                break;
+            }
+
+
             case SW_S_Or_C:
                 {
                     int switchNumber = parser->data.switchThrow.switchNumber;
@@ -327,18 +478,6 @@ bool parse(struct Parser *parser, char c){
 
             case P_dest: {
                 planRoute(parser->data.routeFind.src, parser->data.routeFind.dest);
-                break;
-            }
-
-            case E_train: {
-                if(parser->data.prepareTrain.trainID > 80 ||
-                    parser->data.prepareTrain.trainID < 0){
-                } else {
-                    sputstr(&s, "Going to start engineer ");
-                    sputuint(&s, parser->data.prepareTrain.trainID,10);
-                    sputstr(&s, "\r\n");
-                    controllerPrepareTrain(parser->data.prepareTrain.trainID);    
-                }
                 break;
             }
 

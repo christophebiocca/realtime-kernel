@@ -25,7 +25,7 @@ int heuristic(struct TrackNode *here, struct TrackNode *goal){
 
 // Travelling over a piece of reserved track is equivalent to 10 meters
 #define RESERVED_COST(id, edge)                                             \
-    (((edge).reserved == id && (edge).reserved >= 0) ? 0 : 10000)
+    (((edge).reserved == id || (edge).reserved < 0) ? 0 : 10000)
 
 int planPath(struct TrackNode *list, int train_id,
         struct TrackNode *start, struct TrackNode *goal,
@@ -50,13 +50,13 @@ int planPath(struct TrackNode *list, int train_id,
     }
 
     // Start Node, reverse direction
-    // {
-    //     nodes[start->reverse->idx].cost = 0;
-    //     nodes[start->reverse->idx].total = heuristic(start->reverse, goal);
-    //     nodes[start->reverse->idx].from = &nodes[start->idx];
-    // }
+    {
+        nodes[start->reverse->idx].cost = 0;
+        nodes[start->reverse->idx].total = heuristic(start->reverse, goal);
+        nodes[start->reverse->idx].from = &nodes[start->idx];
+    }
     PathHeapPush(&heap, &nodes[start->idx]);
-    // PathHeapPush(&heap, &nodes[start->reverse->idx]);
+    PathHeapPush(&heap, &nodes[start->reverse->idx]);
 
     struct PathNode *goalNode = &nodes[goal->idx];
 
@@ -206,11 +206,11 @@ char c = src[i];
     {
         struct String s;
         sinit(&s);
+        sputstr(&s, "Plan ");
         sputstr(&s,srcName);
         sputstr(&s," to ");
         sputstr(&s,destName);
-        sputstr(&s,"\r\n");
-        mioPrint(&s);
+        logS(&s);
     }
 
     struct TrackNode *srcNode = lookupTrackNode(hashtbl, srcName);
@@ -221,18 +221,12 @@ char c = src[i];
 
     struct TrackNode *route[50];
     // use an invalid train id for planning purposes
-    int count = planPath(nodes, 81, srcNode, destNode, route);
+    int count = planPath(nodes, 82, srcNode, destNode, route);
     for(int i = 0; i < count; ++i){
         struct String s;
         sinit(&s);
+        sputstr(&s, "-> ");
         sputstr(&s,route[i]->name);
-        sputstr(&s,", ");
-        mioPrint(&s);
-    }
-    {
-        struct String s;
-        sinit(&s);
-        sputstr(&s,"\r\n");
-        mioPrint(&s);
+        logS(&s);
     }
 }
