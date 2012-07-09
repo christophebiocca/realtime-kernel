@@ -241,6 +241,36 @@ static inline void findNextStop(struct Train *train){
     }
 }
 
+static inline void handleReversals(struct Train *train){
+    if(train->kinematics.target_speed == 0){
+        bool a = (*(train->track.pathCurrent) == train->track.next_stop.node);
+        bool b = train->track.next_stop.node != train->track.goal.node;
+        bool c = train->kinematics.acceleration == 0;
+        if(a){
+            logC("A");
+        }
+        if(b){
+            logC("B");
+        }
+        if(!c){
+            struct String s;
+            sinit(&s);
+            sputstr(&s, "Acc:");
+            sputint(&s, train->kinematics.acceleration, 10);
+            logS(&s);
+        }
+        if(a && b && c){
+            // We need to turn the train around.
+            reverse(train);
+            setSpeed(train, 14);
+            train->track.pathCurrent++;
+            train->track.position.node = *(train->track.pathCurrent);
+            train->track.position.offset = 0;
+            findNextStop(train);
+        }
+    }
+}
+
 static inline void updatePosition(struct Train *train, struct Position *pos){
     train->track.position.node = pos->node;
     train->track.position.offset = pos->offset;
@@ -254,6 +284,7 @@ static inline void updatePosition(struct Train *train, struct Position *pos){
     updateExpectation(train);
     updateTurnouts(train);
     calculateStop(train);
+    handleReversals(train);
 }
 
 static inline void sensorUpdate(struct Train *train, Sensor sensor){
