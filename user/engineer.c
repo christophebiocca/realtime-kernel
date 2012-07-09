@@ -233,10 +233,12 @@ static inline void updateTurnouts(struct Train *train){
 static inline void findNextStop(struct Train *train){
     struct TrackNode **next = nextReverse(train->track.pathCurrent, train->track.goal.node);
     train->track.next_stop.node = *next;
-    if(*next == train->track.goal.node || *(next+1) == train->track.goal.node){
-        train->track.next_stop.offset = 0;
+    if(*next == train->track.goal.node){
+        train->track.next_stop.offset = train->track.next_stop.offset;
+    } else if(*(next+1) == train->track.goal.node){
+        train->track.next_stop.offset = -train->track.next_stop.offset;
     } else {
-        train->track.next_stop.offset = 300;
+        train->track.next_stop.offset = 0;
     }
     {
         struct String s;
