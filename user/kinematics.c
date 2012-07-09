@@ -54,3 +54,19 @@ void tick(struct Kinematics *k, int time){
     // Deviation due to acceleration
     k->distance += (k->acceleration * (dt * dt))/2;
 }
+
+int distForTime(struct Kinematics *k, int time) {
+    int dt = time - k->time;
+    assert(dt >= 0);
+
+    int d = k->current_speed * dt + (k->acceleration * dt * dt) / 2;
+    return k->distance + d;
+}
+
+// This is hard since it requires solving kinematics equations with a sqrt
+// For now, return 1 second for everything
+// FIXME: stub
+int timeForDist(struct Kinematics *k, int distance) {
+    (void) distance;
+    return k->time + 100;
+}
