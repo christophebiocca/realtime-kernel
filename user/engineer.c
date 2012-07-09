@@ -220,6 +220,23 @@ static inline void updateTurnouts(struct Train *train){
     }
 }
 
+static inline void findNextStop(struct Train *train){
+    struct TrackNode **next = nextReverse(train->track.pathCurrent, train->track.goal.node);
+    train->track.next_stop.node = *next;
+    if(*next == train->track.goal.node || *(next+1) == train->track.goal.node){
+        train->track.next_stop.offset = 0;
+    } else {
+        train->track.next_stop.offset = 300;
+    }
+    {
+        struct String s;
+        sinit(&s);
+        sputstr(&s, "Next Stop: ");
+        sputstr(&s, train->track.next_stop.node->name);
+        logS(&s);
+    }
+}
+
 static inline void updatePosition(struct Train *train, struct Position *pos){
     train->track.position.node = pos->node;
     train->track.position.offset = pos->offset;
@@ -309,23 +326,6 @@ static inline void scheduleTimer(struct Train *train){
     } else if(train->timing.nextFire > closestEvent){
         // TODO: Need to nuke our timer, set it up correctly.
         logC("Badtimer");
-    }
-}
-
-static inline void findNextStop(struct Train *train){
-    struct TrackNode **next = nextReverse(train->track.pathCurrent, train->track.goal.node);
-    train->track.next_stop.node = *next;
-    if(*next == train->track.goal.node || *(next+1) == train->track.goal.node){
-        train->track.next_stop.offset = 0;
-    } else {
-        train->track.next_stop.offset = 300;
-    }
-    {
-        struct String s;
-        sinit(&s);
-        sputstr(&s, "Next Stop: ");
-        sputstr(&s, train->track.next_stop.node->name);
-        logS(&s);
     }
 }
 
