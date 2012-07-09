@@ -92,6 +92,9 @@ static void controllerServer(void) {
 
     for (int i = 0; i < MAX_TRAINS; ++i) {
         train_status[i].engineer_tid = -1;
+        train_status[i].primary = SENSOR_INVALID;
+        train_status[i].secondary = SENSOR_INVALID;
+        train_status[i].alternative = SENSOR_INVALID;
     }
 
     static_assert(sizeof(expectations) % 16 == 0);
