@@ -206,16 +206,18 @@ static inline void updateTurnouts(struct Train *train){
             }
         } else if((*sweep)->type == NODE_BRANCH && train->track.pathing){
             // Find the first time we hit this branch
-            for(; *t != *sweep; ++t);
+            for(; *t != *sweep && *t != train->track.next_stop.node; ++t);
 
-            // How should it be set?
-            // Make the branch match expectations
-            if((*sweep)->edge[DIR_STRAIGHT].dest == t[1] &&
-                isTurnoutCurved(train->track.turnouts, (*sweep)->num)){
-                turnoutStraight((*sweep)->num, &train->track.turnouts);
-            } else if((*sweep)->edge[DIR_CURVED].dest == t[1] &&
-                isTurnoutStraight(train->track.turnouts, (*sweep)->num)){
-                turnoutCurve((*sweep)->num, &train->track.turnouts);
+            if(*t == *sweep){
+                // How should it be set?
+                // Make the branch match expectations
+                if((*sweep)->edge[DIR_STRAIGHT].dest == t[1] &&
+                    isTurnoutCurved(train->track.turnouts, (*sweep)->num)){
+                    turnoutStraight((*sweep)->num, &train->track.turnouts);
+                } else if((*sweep)->edge[DIR_CURVED].dest == t[1] &&
+                    isTurnoutStraight(train->track.turnouts, (*sweep)->num)){
+                    turnoutCurve((*sweep)->num, &train->track.turnouts);
+                }
             }
         }
         sweep++;
