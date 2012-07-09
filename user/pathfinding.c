@@ -230,3 +230,11 @@ char c = src[i];
         logS(&s);
     }
 }
+
+struct TrackNode **nextReverse(struct TrackNode **path, struct TrackNode *end){
+    while(*path != end &&
+        (*path)->reverse != *(path+1)){
+        ++path;
+    }
+    return path;
+}
