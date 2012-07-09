@@ -16,6 +16,8 @@ struct Kinematics {
     } orientation;
 };
 
+void computeAcceleration(struct Kinematics *k);
+
 // Calculate the changes that have occurred in the given time period.
 // Updates the kinematics internal distance.
 void tick(struct Kinematics *k, int newtime);

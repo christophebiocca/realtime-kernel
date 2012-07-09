@@ -11,7 +11,7 @@
 // if (abs(current_speed - expected_speed) < threshold) acceleration = 0
 #define SPEED_THRESHOLD                     (250)
 
-static inline void computeAcceleration(struct Kinematics *k) {
+void computeAcceleration(struct Kinematics *k) {
     int sign = (k->target_speed < k->current_speed) ? -1 : 1;
     int diffspeed = (k->target_speed - k->current_speed) * sign;
 
@@ -33,8 +33,12 @@ static inline void computeStop(struct Kinematics *k) {
 }
 
 void tick(struct Kinematics *k, int time){
-    // target speed may have changed
-    computeAcceleration(k);
+    int sign = (k->target_speed < k->current_speed) ? -1 : 1;
+    int diffspeed = (k->target_speed - k->current_speed) * sign;
+
+    if (diffspeed < SPEED_THRESHOLD) {
+        k->acceleration = 0;
+    }
 
     // Measure time delta
     int dt = time - k->time;

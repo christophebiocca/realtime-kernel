@@ -101,6 +101,7 @@ static inline void setSpeed(struct Train *train, int speed){
     assert(0 <= train->id && train->id <= 80);
     assert(0 <= speed && speed <= 14);
     train->kinematics.target_speed = train->kinematics.ideal_speed[speed];
+    computeAcceleration(&train->kinematics);
     {
         struct String s;
         sinit(&s);
