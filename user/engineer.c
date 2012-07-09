@@ -177,6 +177,12 @@ static inline void calculateStop(struct Train *train){
                 sputint(&s, dist, 10);
                 sputstr(&s, " Stop: ");
                 sputint(&s, train->kinematics.stop, 10);
+                sputstr(&s, " Pos:");
+                sputstr(&s, train->track.position.node->name);
+                sputc(&s, '@');
+                sputint(&s, train->track.position.offset, 10);
+                sputstr(&s, " cs:");
+                sputint(&s, train->kinematics.current_speed,10);
                 logS(&s);
             }
             setSpeed(train,0);
