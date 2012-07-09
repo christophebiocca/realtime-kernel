@@ -172,7 +172,7 @@ class node:
           self.num = int(line[1])
         except (AssertionError, ValueError):
           state.error("expected 'sensor(_dead) <SENSOR_NUM>'")
-      elif line[0] in ['branch', 'merge']:
+      elif line[0] in ['branch', 'branch_curved', 'branch_straight', 'merge']:
         # branch/merge <SWITCH_NUM>
         if self.nodetype != None:
           state.error("duplicate node type")
@@ -209,7 +209,7 @@ class node:
       state.error("missing node type")
     if self.reverse == None:
       state.error("missing property 'reverse <NODE>'")
-    if self.nodetype in ['sensor', 'enter', 'merge']:
+    if self.nodetype in ['sensor', 'enter', 'merge', 'branch_curved', 'branch_straight']:
       try:
         assert self.ahead    != None
         assert self.straight == None
@@ -240,7 +240,7 @@ class node:
             (self.name, dest.name), e.y)
         self.__dict__[dir+"_edge"] = e
         count += 1
-    if count == 0:
+    if count == 0 and self.nodetype not in ('branch_curved', 'branch_straight'):
       state.error("there is no edge from '%s' to '%s' in the node data"\
         % (self.name, dest.name), e.y)
     elif count > 1:
@@ -431,9 +431,11 @@ enum NodeType {
   NODE_SENSOR = 1<<1,
   NODE_SENSOR_DEAD = 1<<2,
   NODE_BRANCH = 1<<3,
-  NODE_MERGE = 1<<4,
-  NODE_ENTER = 1<<5,
-  NODE_EXIT = 1<<6
+  NODE_BRANCH_STRAIGHT = 1<<4,
+  NODE_BRANCH_CURVED = 1<<5,
+  NODE_MERGE = 1<<6,
+  NODE_ENTER = 1<<7,
+  NODE_EXIT = 1<<8
 };
 
 #define DIR_AHEAD 0
