@@ -12,8 +12,6 @@ void engineerQuit(int engineer_tid);
 void engineerSend(int engineer_tid, struct TrackNode *dest, int mm);
 
 // tell an engineer that a sensor they expected was triggered
-// 0 <= sensor <= 4
-// 0 <= number <= 15
-void engineerSensorTriggered(int engineer_tid, int sensor, int number);
+void engineerSensorTriggered(int engineer_tid, Sensor sensor);
 
 #endif

@@ -26,13 +26,13 @@ struct EngineerMessage {
         NUM_MESSAGE_TYPES
     } messageType;
     union {
+        char padding_DO_NOT_USE[12];
+
         struct Position destination;
         struct {
-            int sensor;
-            int number;
-        } sensor;
+            Sensor sensor;
+        } sensorTriggered;
     } content;
-    int dummy;
 };
 
 struct Messaging {
@@ -144,9 +144,17 @@ static inline void notifyExpectation(struct Train *train){
             sputstr(&s, train->track.expectedSensor->name);
             logS(&s);
         }
-        controllerSetExpectation(train->messaging.courier,
-            train->id, train->track.expectedSensor->num / 16,
-            train->track.expectedSensor->num % 16);
+        controllerSetExpectation(
+            train->messaging.courier,
+            train->id,
+            SENSOR_ENCODE(
+                train->track.expectedSensor->num / 16,
+                train->track.expectedSensor->num % 16
+            ),
+            // FIXME: set secondary and alternate expectations
+            SENSOR_INVALID,
+            SENSOR_INVALID
+        );
         courierUsed(train);
         train->messaging.notifyExpectation = false;
     }
@@ -225,9 +233,9 @@ static inline void updatePosition(struct Train *train, struct Position *pos){
     calculateStop(train);
 }
 
-static inline void sensorUpdate(struct Train *train, int sensor, int number){
+static inline void sensorUpdate(struct Train *train, Sensor sensor){
     struct Position pos;
-    pos.node = nodeForSensor(sensor, number);
+    pos.node = nodeForSensor(sensor);
     pos.offset = 0;
 
     int now = Time();
@@ -379,10 +387,9 @@ void engineer(int trainID){
         train.track.turnouts = (1<<23)-1;
 
         // Set the track position
-        sensorUpdate(&train, msg.content.sensor.sensor, msg.content.sensor.number);
+        sensorUpdate(&train, msg.content.sensorTriggered.sensor);
 
-        int flag = (msg.content.sensor.sensor << 4) | msg.content.sensor.number;
-        switch (flag) {
+        switch (msg.content.sensorTriggered.sensor) {
             case 0x02:  // A03
             case 0x2a:  // C11
             case 0x4f:  // E16
@@ -432,7 +439,7 @@ void engineer(int trainID){
 
     setSpeed(&train, 14);
 
-    while(true){
+    while(true) {
         // Act on the outside world.
         notifyPosition(&train);
         notifyExpectation(&train);
@@ -455,7 +462,7 @@ void engineer(int trainID){
             Reply(tid, 0, 0);
             switch(mesg.messageType){
                 case SENSOR: {
-                    sensorUpdate(&train, mesg.content.sensor.sensor, mesg.content.sensor.number);
+                    sensorUpdate(&train, mesg.content.sensorTriggered.sensor);
                     break;
                 }
                 case GOTO: {
@@ -492,13 +499,10 @@ void engineerSend(int engineer_tid, struct TrackNode *dest, int mm) {
     Send(engineer_tid, (char *)&msg, sizeof(struct EngineerMessage), 0, 0);
 }
 
-void engineerSensorTriggered(int engineer_tid, int sensor, int number) {
+void engineerSensorTriggered(int engineer_tid, Sensor sensor) {
     struct EngineerMessage msg = {
         .messageType = SENSOR,
-        .content.sensor = {
-            .sensor = sensor,
-            .number = number
-        }
+        .content.sensorTriggered.sensor = sensor,
     };
     int len = Send(engineer_tid, (char *)&msg, sizeof(struct EngineerMessage), 0, 0);
     assert(len == 0);
