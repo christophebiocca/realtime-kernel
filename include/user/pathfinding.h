@@ -20,6 +20,9 @@ int planPath(struct TrackNode *list, struct TrackNode *start,
 int alongTrack(TurnoutTable turnouts, struct Position *start,
     int dist, struct Position *end, struct TrackNode **path, bool beyond);
 
+// Returns the first node involved in a reverse, or the end if there isn't one.
+struct TrackNode **nextReverse(struct TrackNode **path, struct TrackNode *end);
+
 int distance(TurnoutTable turnouts, struct Position *from, struct Position *to);
 
 #endif
