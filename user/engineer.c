@@ -56,6 +56,7 @@ struct TrackControl {
     // Our understanding of the track/position.
     TurnoutTable turnouts;
     struct Position position;
+    int last_error;
     struct TrackNode *expectedSensor;
 
     // Only applicable when pathing.
@@ -238,6 +239,18 @@ static inline void sensorUpdate(struct Train *train, Sensor sensor){
     pos.node = nodeForSensor(sensor);
     pos.offset = 0;
 
+    struct Position oldpos;
+    oldpos.node = train->track.position.node;
+    oldpos.offset = 0;
+
+    if (oldpos.node != NULLPTR) {
+        int realdist = distance(train->track.turnouts, &oldpos, &pos);
+        int sign = (train->track.position.offset > realdist) ? 1 : -1;
+        int error = (train->track.position.offset - realdist) * sign;
+
+        train->track.last_error = error;
+    }
+
     int now = Time();
     tick(&train->kinematics, now);
     train->kinematics.distance = 0;
@@ -273,8 +286,13 @@ static inline void timerPositionUpdate(struct Train *train, int time){
 
 static inline void notifyPosition(struct Train *train){
     if(train->messaging.notifyPosition && train->messaging.courierReady){
-        controllerUpdatePosition(train->messaging.courier,
-            train->id, train->track.position.node, train->track.position.offset, 0);
+        controllerUpdatePosition(
+            train->messaging.courier,
+            train->id,
+            train->track.position.node,
+            train->track.position.offset,
+            train->track.last_error
+        );
         courierUsed(train);
         train->messaging.notifyPosition = false;
     }
@@ -385,6 +403,8 @@ void engineer(int trainID){
 
         // TODO: Get the actual turnout state from someone.
         train.track.turnouts = (1<<23)-1;
+        train.track.last_error = 0;
+        train.track.position.node = NULLPTR;
 
         // Set the track position
         sensorUpdate(&train, msg.content.sensorTriggered.sensor);
