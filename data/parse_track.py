@@ -447,8 +447,8 @@ struct TrackNode;
 struct TrackEdge {
   struct TrackEdge *reverse;
   struct TrackNode *src, *dest;
-  int dist;             /* in millimetres */
-  int reserved;         /* train id of whoever owns this track, -1 otherwise */
+  int dist;              /* in millimetres */
+  volatile int reserved; /* train id of whoever owns this track, -1 otherwise */
 };
 
 struct TrackNode {
