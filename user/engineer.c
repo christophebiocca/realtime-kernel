@@ -61,6 +61,7 @@ struct TrackControl {
 
     // Only applicable when pathing.
     bool pathing;
+    struct Position next_stop;
     struct Position goal;
     struct TrackNode *path[50];
     struct TrackNode **pathCurrent;
@@ -165,7 +166,7 @@ static inline void calculateStop(struct Train *train){
     if(train->track.pathing){
         int dist = distance(train->track.turnouts,
             &train->track.position,
-            &train->track.goal);
+            &train->track.next_stop);
         if(dist <= train->kinematics.stop/1000){
             {
                 struct String s;
@@ -225,7 +226,7 @@ static inline void updatePosition(struct Train *train, struct Position *pos){
     train->messaging.notifyPosition = true;
     if(train->track.pathing){
         while(*(train->track.pathCurrent) != pos->node &&
-            *(train->track.pathCurrent) != train->track.goal.node){
+            *(train->track.pathCurrent) != train->track.next_stop.node){
             train->track.pathCurrent++;
         }
     }
@@ -311,6 +312,23 @@ static inline void scheduleTimer(struct Train *train){
     }
 }
 
+static inline void findNextStop(struct Train *train){
+    struct TrackNode **next = nextReverse(train->track.pathCurrent, train->track.goal.node);
+    train->track.next_stop.node = *next;
+    if(*next == train->track.goal.node || *(next+1) == train->track.goal.node){
+        train->track.next_stop.offset = 0;
+    } else {
+        train->track.next_stop.offset = 300;
+    }
+    {
+        struct String s;
+        sinit(&s);
+        sputstr(&s, "Next Stop: ");
+        sputstr(&s, train->track.next_stop.node->name);
+        logS(&s);
+    }
+}
+
 static inline void trainNavigate(struct Train *train, struct Position *dest){
     // Starting point is here + stopping distance.
     struct Position pathStart;
@@ -324,6 +342,7 @@ static inline void trainNavigate(struct Train *train, struct Position *dest){
     train->track.pathCurrent = train->track.path;
     train->track.goal.node = dest->node;
     train->track.goal.offset = dest->offset;
+    findNextStop(train);
 
     for(struct TrackNode **i = train->track.pathCurrent;; i++){
         logC((*i)->name);
