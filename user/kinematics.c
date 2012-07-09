@@ -52,11 +52,13 @@ void tick(struct Kinematics *k, int time){
     // Changed current_speed -> recompute stop distance.
     computeStop(k);
 
-    // Distance travelled because of the old speed
-    k->distance += (oldspeed * dt);
-    
-    // Deviation due to acceleration
-    k->distance += (k->acceleration * (dt * dt))/2;
+    if (k->acceleration != 0 || k->target_speed != 0) {
+        // Distance travelled because of the old speed
+        k->distance += (oldspeed * dt);
+
+        // Deviation due to acceleration
+        k->distance += (k->acceleration * (dt * dt))/2;
+    }
 }
 
 int distForTime(struct Kinematics *k, int time) {
