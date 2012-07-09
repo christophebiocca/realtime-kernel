@@ -163,7 +163,7 @@ static inline void notifyExpectation(struct Train *train){
 }
 
 static inline void calculateStop(struct Train *train){
-    if(train->track.pathing){
+    if(train->track.pathing && train->kinematics.target_speed != 0){
         int dist = distance(train->track.turnouts,
             &train->track.position,
             &train->track.next_stop);
