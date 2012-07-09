@@ -46,15 +46,15 @@ void turnoutInit(void) {
     mioPrint(&s);
 
     for (int i = 1; i <= 18; ++i) {
-        turnoutCurve(i);
+        turnoutCurve(i,0);
     }
 
     for (int i = 153; i <= 156; ++i) {
-        turnoutCurve(i);
+        turnoutCurve(i,0);
     }
 }
 
-static void turnoutCmd(char address, char cmd, char *colour, char rep) {
+static void turnoutCmd(char address, char cmd, char *colour, char rep, TurnoutTable *tbl) {
     int i = 0, row = 0, col = 0;
 
     if (address >= 1 && address <= 18) {
@@ -67,6 +67,15 @@ static void turnoutCmd(char address, char cmd, char *colour, char rep) {
         col = 9 * (address - 153) + 8;
     } else {
         assert(0);
+    }
+
+    if(tbl){
+        int mask = 1 << i;
+        if(rep == 'C'){
+            *tbl |= mask;
+        } else {
+            *tbl &= ~mask;
+        }
     }
 
     struct String s;
@@ -86,10 +95,10 @@ static void turnoutCmd(char address, char cmd, char *colour, char rep) {
     mioPrint(&s);
 }
 
-void turnoutCurve(int address) {
-    turnoutCmd(address, CURVE, YELLOW, 'C');
+void turnoutCurve(int address, TurnoutTable *tbl) {
+    turnoutCmd(address, CURVE, YELLOW, 'C', tbl);
 }
 
-void turnoutStraight(int address) {
-    turnoutCmd(address, STRAIGHT, GREEN, 'S');
+void turnoutStraight(int address, TurnoutTable *tbl) {
+    turnoutCmd(address, STRAIGHT, GREEN, 'S', tbl);
 }

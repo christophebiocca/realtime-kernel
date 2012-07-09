@@ -15,6 +15,7 @@
 #include <user/engineer.h>
 #include <user/controller.h>
 #include <user/log.h>
+#include <user/pathfinding.h>
 
 union ParserData {
     struct TrainSpeedParse {
@@ -515,9 +516,9 @@ bool parse(struct Parser *parser, char c){
                         logC("Invalid switch number, should be in [1-18],[153-156]");
                     } else {
                         if(parser->data.switchThrow.curved){
-                            turnoutCurve(parser->data.switchThrow.switchNumber);
+                            turnoutCurve(parser->data.switchThrow.switchNumber, 0);
                         } else {
-                            turnoutStraight(parser->data.switchThrow.switchNumber);
+                            turnoutStraight(parser->data.switchThrow.switchNumber, 0);
                         }
                     }
                 }
