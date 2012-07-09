@@ -9,7 +9,7 @@
 #define ACCELERATION_COEFFICIENT            (0.0034)
 
 // if (abs(current_speed - expected_speed) < threshold) acceleration = 0
-#define SPEED_THRESHOLD                     (100)
+#define SPEED_THRESHOLD                     (250)
 
 static inline void computeAcceleration(struct Kinematics *k) {
     int sign = (k->target_speed < k->current_speed) ? -1 : 1;
@@ -19,7 +19,7 @@ static inline void computeAcceleration(struct Kinematics *k) {
         k->acceleration = 0;
     } else {
         float acl = diffspeed * ACCELERATION_COEFFICIENT;
-        k->acceleration = (int) acl;
+        k->acceleration = (int) acl * sign;
     }
 }
 
