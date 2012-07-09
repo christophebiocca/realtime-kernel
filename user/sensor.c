@@ -162,12 +162,12 @@ static void sensorTask(void) {
                     updateSensorDisplay(recent_sensors, recent_i);
 
                     // update the controller
-                    int sensor = last_byte / 2;
-                    int number = 8 - bit;
+                    int box = last_byte / 2;
+                    int offset = 8 - bit;
                     if (last_byte % 2) {
-                        number += 8;
+                        offset += 8;
                     }
-                    controllerSensorTriggered(sensor, number);
+                    controllerSensorTriggered(SENSOR_ENCODE(box, offset));
                 }
             }
 

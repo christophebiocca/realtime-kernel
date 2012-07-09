@@ -13,12 +13,8 @@
 #include <user/courier.h>
 
 #define MAX_TRAINS          80
-#define MAX_SENSORS         5
-#define MAX_SENSOR_NUMBER   16
 
 #define VALIDATE_TRAIN_ID(id)       assert((id) >= 0 && (id) < MAX_TRAINS)
-#define VALIDATE_SENSOR(id)         assert((id) >= 0 && (id) < MAX_SENSORS)
-#define VALIDATE_SENSOR_NUMBER(n)   assert((n) >= 0 && (n) < MAX_SENSOR_NUMBER)
 
 enum {
     PREPARE_TRAIN,
@@ -26,7 +22,6 @@ enum {
     SET_EXPECTATION,
     SEND_TRAIN,
     SENSOR_TRIGGERED,
-    TURNOUT_REQUEST,
     QUIT
 };
 
@@ -36,6 +31,9 @@ struct ControllerMessage {
     int type;
 
     union {
+        // makes the size of this struct a multiple of 4 words
+        char padding_DO_NOT_USE[28];
+
         struct PrepareTrainMessage {
             int train_id;
         } prepareTrain;
@@ -46,13 +44,13 @@ struct ControllerMessage {
             int mm;
 
             int error;
-            char padding[12];
         } updatePosition;
 
         struct SetExpectationMessage {
             int train_id;
-            int sensor;
-            int number;
+            Sensor primary;
+            Sensor secondary;
+            Sensor alternative;
         } setExpectation;
 
         struct SendTrainMessage {
@@ -62,18 +60,8 @@ struct ControllerMessage {
         } sendTrain;
 
         struct SensorTriggeredMessage {
-            int sensor;
-            int number;
+            Sensor sensor;
         } sensorTriggered;
-
-        struct TurnoutRequest {
-            enum {
-                CURVE,
-                STRAIGHT
-            } orientation;
-
-            int address;
-        } turnoutRequest;
     };
 };
 
@@ -84,11 +72,19 @@ static void controllerServer(void) {
         int engineer_tid;
         struct TrackNode *node;
         int mm;
+
+        Sensor primary;
+        Sensor secondary;
+        Sensor alternative;
     } train_status[MAX_TRAINS];
-    int expectations[MAX_SENSORS][MAX_SENSOR_NUMBER];
+
+    int expectations[SENSOR_BOX_MAX][SENSOR_OFFSET_MAX];
 
     for (int i = 0; i < MAX_TRAINS; ++i) {
         train_status[i].engineer_tid = -1;
+        train_status[i].primary = SENSOR_INVALID;
+        train_status[i].secondary = SENSOR_INVALID;
+        train_status[i].alternative = SENSOR_INVALID;
     }
 
     static_assert(sizeof(expectations) % 16 == 0);
@@ -199,15 +195,43 @@ static void controllerServer(void) {
             }
 
             case SET_EXPECTATION: {
-                VALIDATE_TRAIN_ID(request.setExpectation.train_id);
-                VALIDATE_SENSOR(request.setExpectation.sensor);
-                VALIDATE_SENSOR_NUMBER(request.setExpectation.number);
+                int train_id = request.setExpectation.train_id;
+                VALIDATE_TRAIN_ID(train_id);
 
-                int *fill = &expectations[request.setExpectation.sensor]
-                    [request.setExpectation.number];
+                // FIXME: Copy-paste *choke*
+                Sensor sensor = request.setExpectation.primary;
+                if (sensor != SENSOR_INVALID) {
+                    int *fill = &expectations[SENSOR_DECODE_BOX(sensor)]
+                        [SENSOR_DECODE_OFFSET(sensor)];
 
-                assert(*fill == -1);
-                *fill = request.setExpectation.train_id;
+                    assert(*fill == -1);
+                    *fill = request.setExpectation.train_id;
+                }
+
+                sensor = request.setExpectation.secondary;
+                if (sensor != SENSOR_INVALID) {
+                    int *fill = &expectations[SENSOR_DECODE_BOX(sensor)]
+                        [SENSOR_DECODE_OFFSET(sensor)];
+
+                    assert(*fill == -1);
+                    *fill = request.setExpectation.train_id;
+                }
+
+                sensor = request.setExpectation.alternative;
+                if (sensor != SENSOR_INVALID) {
+                    int *fill = &expectations[SENSOR_DECODE_BOX(sensor)]
+                        [SENSOR_DECODE_OFFSET(sensor)];
+
+                    assert(*fill == -1);
+                    *fill = request.setExpectation.train_id;
+                }
+
+                train_status[train_id].primary =
+                    request.setExpectation.primary;
+                train_status[train_id].secondary =
+                    request.setExpectation.secondary;
+                train_status[train_id].alternative =
+                    request.setExpectation.alternative;
 
                 break;
             }
@@ -245,22 +269,44 @@ static void controllerServer(void) {
             }
 
             case SENSOR_TRIGGERED: {
-                VALIDATE_SENSOR(request.sensorTriggered.sensor);
-                VALIDATE_SENSOR_NUMBER(request.sensorTriggered.number);
-
-                int train_id = expectations[request.sensorTriggered.sensor]
-                    [request.sensorTriggered.number];
+                int box = SENSOR_DECODE_BOX(request.sensorTriggered.sensor);
+                int offset = SENSOR_DECODE_OFFSET(
+                    request.sensorTriggered.sensor
+                );
+                int train_id = expectations[box][offset];
 
                 if (train_id >= 0 && train_id < MAX_TRAINS) {
                     engineerSensorTriggered(
                         train_status[train_id].engineer_tid,
-                        request.sensorTriggered.sensor,
-                        request.sensorTriggered.number
+                        request.sensorTriggered.sensor
                     );
 
-                    // clear the expectation
-                    expectations[request.sensorTriggered.sensor]
-                        [request.sensorTriggered.number] = -1;
+                    // clear all expectations
+                    // FIXME: moar copy-pasta
+                    Sensor sensor = train_status[train_id].primary;
+                    if (sensor != SENSOR_INVALID) {
+                        expectations[SENSOR_DECODE_BOX(sensor)]
+                            [SENSOR_DECODE_OFFSET(sensor)] = -1;
+                    }
+
+                    sensor = train_status[train_id].secondary;
+                    if (sensor != SENSOR_INVALID) {
+                        expectations[SENSOR_DECODE_BOX(sensor)]
+                            [SENSOR_DECODE_OFFSET(sensor)] = -1;
+                    }
+
+                    sensor = train_status[train_id].alternative;
+                    if (sensor != SENSOR_INVALID) {
+                        expectations[SENSOR_DECODE_BOX(sensor)]
+                            [SENSOR_DECODE_OFFSET(sensor)] = -1;
+                    }
+
+                    train_status[train_id].primary = SENSOR_INVALID;
+                    train_status[train_id].secondary = SENSOR_INVALID;
+                    train_status[train_id].alternative = SENSOR_INVALID;
+
+                    // FIXME: do track modifications based on which expectation
+                    // was triggered
                 } else {
                     // no one expected this sensor
                     // send it to everyone awaiting
@@ -271,9 +317,9 @@ static void controllerServer(void) {
                         struct String s;
                         sinit(&s);
                         sputstr(&s, "unexpected sensor: ");
-                        sputint(&s, request.sensorTriggered.sensor, 10);
+                        sputint(&s, box, 10);
                         sputstr(&s, ", ");
-                        sputint(&s, request.sensorTriggered.number, 10);
+                        sputint(&s, offset, 10);
                         logS(&s);
                     }
 
@@ -282,35 +328,10 @@ static void controllerServer(void) {
                             i = (i + 1) % MAX_AWAITING_TRAINS) {
                         engineerSensorTriggered(
                             awaiting_trains.tid_buffer[i],
-                            request.sensorTriggered.sensor,
-                            request.sensorTriggered.number
+                            request.sensorTriggered.sensor
                         );
                     }
                 }
-
-                break;
-            }
-
-            case TURNOUT_REQUEST: {
-                struct String s;
-                sinit(&s);
-                sputstr(&s, "turnout ");
-                sputint(&s, request.turnoutRequest.address, 10);
-
-                switch (request.turnoutRequest.orientation) {
-                    case CURVE:
-                        sputstr(&s, " curve");
-                        turnoutCurve(request.turnoutRequest.address, 0);
-                        break;
-                    case STRAIGHT:
-                        sputstr(&s, " straight");
-                        turnoutStraight(request.turnoutRequest.address, 0);
-                        break;
-                    default:
-                        assert(0);
-                }
-
-                logS(&s);
 
                 break;
             }
@@ -371,13 +392,16 @@ void controllerUpdatePosition(int couriertid, int train_id,
     assert(ret == 0);
 }
 
-void controllerSetExpectation(int couriertid, int train_id, int sensor, int number) {
+void controllerSetExpectation(int couriertid, int train_id,
+        Sensor primary, Sensor secondary, Sensor alternative) {
+
     struct ControllerMessage msg;
 
     msg.type = SET_EXPECTATION;
     msg.setExpectation.train_id = train_id;
-    msg.setExpectation.sensor = sensor;
-    msg.setExpectation.number = number;
+    msg.setExpectation.primary = primary;
+    msg.setExpectation.secondary = secondary;
+    msg.setExpectation.alternative = alternative;
 
     int ret = Reply(
         couriertid,
@@ -401,46 +425,17 @@ void controllerSendTrain(int train_id, struct TrackNode *node, int mm) {
     );
 }
 
-void controllerSensorTriggered(int sensor, int number) {
+void controllerSensorTriggered(Sensor sensor) {
     struct ControllerMessage msg;
 
     msg.type = SENSOR_TRIGGERED;
     msg.sensorTriggered.sensor = sensor;
-    msg.sensorTriggered.number = number;
 
     Send(
         g_controller_server_tid,
         (char *) &msg, sizeof(struct ControllerMessage),
         (char *) 0, 0
     );
-}
-
-void controllerTurnoutCurve(int couriertid, int address) {
-    struct ControllerMessage msg;
-
-    msg.type = TURNOUT_REQUEST;
-    msg.turnoutRequest.orientation = CURVE;
-    msg.turnoutRequest.address = address;
-
-    int ret = Reply(
-        couriertid,
-        (char *) &msg, sizeof(struct ControllerMessage)
-    );
-    assert(ret == 0);
-}
-
-void controllerTurnoutStraight(int couriertid, int address) {
-    struct ControllerMessage msg;
-
-    msg.type = TURNOUT_REQUEST;
-    msg.turnoutRequest.orientation = STRAIGHT;
-    msg.turnoutRequest.address = address;
-
-    int ret = Reply(
-        couriertid,
-        (char *) &msg, sizeof(struct ControllerMessage)
-    );
-    assert(ret == 0);
 }
 
 void controllerQuit(void) {

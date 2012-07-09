@@ -348,6 +348,8 @@ void %s(struct TrackNode *track, struct TrackHashNode *hashtbl) {
           (idx, dir.upper(), idx2))
         fh.write("  track[%d].edge[DIR_%s].dist = %s;\n" % \
           (idx, dir.upper(), dist))
+        fh.write("  track[%d].edge[DIR_%s].reserved = -1;\n" % \
+          (idx, dir.upper()))
 
     djb_hash = djb2(nd.name) % int(options.s)
     if djb_hash not in hashtbl:
@@ -444,6 +446,7 @@ struct TrackEdge {
   struct TrackEdge *reverse;
   struct TrackNode *src, *dest;
   int dist;             /* in millimetres */
+  int reserved;         /* train id of whoever owns this track, -1 otherwise */
 };
 
 struct TrackNode {
