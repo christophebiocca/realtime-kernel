@@ -132,6 +132,7 @@ static inline void updateExpectation(struct Train *train){
             break;
         }
     }
+
     if(nextSensor && nextSensor != train->track.expectedSensor){
         train->track.expectedSensor = nextSensor;
         train->messaging.notifyExpectation = true;

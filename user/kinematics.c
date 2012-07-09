@@ -17,6 +17,9 @@ void computeAcceleration(struct Kinematics *k) {
 
     if (diffspeed < SPEED_THRESHOLD) {
         k->acceleration = 0;
+        if (k->target_speed == 0) {
+            k->current_speed = 0;
+        }
     } else {
         float acl = diffspeed * ACCELERATION_COEFFICIENT;
         k->acceleration = (int) acl * sign;
@@ -24,6 +27,10 @@ void computeAcceleration(struct Kinematics *k) {
 }
 
 static inline void computeStop(struct Kinematics *k) {
+    if (k->acceleration == 0 && k->target_speed == 0) {
+        k->stop = 0;
+    }
+
     float coeff = (k->orientation == FORWARD)
         ? FORWARD_STOPPING_COEFFICIENT
         : BACKWARD_STOPPING_COEFFICIENT;
@@ -38,6 +45,9 @@ void tick(struct Kinematics *k, int time){
 
     if (diffspeed < SPEED_THRESHOLD) {
         k->acceleration = 0;
+        if (k->target_speed == 0) {
+            k->current_speed = 0;
+        }
     }
 
     // Measure time delta
