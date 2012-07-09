@@ -22,7 +22,6 @@ enum {
     SET_EXPECTATION,
     SEND_TRAIN,
     SENSOR_TRIGGERED,
-    TURNOUT_REQUEST,
     QUIT
 };
 
@@ -63,15 +62,6 @@ struct ControllerMessage {
         struct SensorTriggeredMessage {
             Sensor sensor;
         } sensorTriggered;
-
-        struct TurnoutRequest {
-            enum {
-                CURVE,
-                STRAIGHT
-            } orientation;
-
-            int address;
-        } turnoutRequest;
     };
 };
 
@@ -346,30 +336,6 @@ static void controllerServer(void) {
                 break;
             }
 
-            case TURNOUT_REQUEST: {
-                struct String s;
-                sinit(&s);
-                sputstr(&s, "turnout ");
-                sputint(&s, request.turnoutRequest.address, 10);
-
-                switch (request.turnoutRequest.orientation) {
-                    case CURVE:
-                        sputstr(&s, " curve");
-                        turnoutCurve(request.turnoutRequest.address, 0);
-                        break;
-                    case STRAIGHT:
-                        sputstr(&s, " straight");
-                        turnoutStraight(request.turnoutRequest.address, 0);
-                        break;
-                    default:
-                        assert(0);
-                }
-
-                logS(&s);
-
-                break;
-            }
-
             case QUIT: {
                 logC("quitting engineers");
                 for (int i = 0; i < MAX_TRAINS; ++i) {
@@ -470,34 +436,6 @@ void controllerSensorTriggered(Sensor sensor) {
         (char *) &msg, sizeof(struct ControllerMessage),
         (char *) 0, 0
     );
-}
-
-void controllerTurnoutCurve(int couriertid, int address) {
-    struct ControllerMessage msg;
-
-    msg.type = TURNOUT_REQUEST;
-    msg.turnoutRequest.orientation = CURVE;
-    msg.turnoutRequest.address = address;
-
-    int ret = Reply(
-        couriertid,
-        (char *) &msg, sizeof(struct ControllerMessage)
-    );
-    assert(ret == 0);
-}
-
-void controllerTurnoutStraight(int couriertid, int address) {
-    struct ControllerMessage msg;
-
-    msg.type = TURNOUT_REQUEST;
-    msg.turnoutRequest.orientation = STRAIGHT;
-    msg.turnoutRequest.address = address;
-
-    int ret = Reply(
-        couriertid,
-        (char *) &msg, sizeof(struct ControllerMessage)
-    );
-    assert(ret == 0);
 }
 
 void controllerQuit(void) {

@@ -35,11 +35,6 @@ void controllerSendTrain(int train_id, struct TrackNode *node, int mm);
 // meant to be called only by the sensor server
 void controllerSensorTriggered(Sensor sensor);
 
-// meant to be called by engineers
-// FIXME: this could possibly fail when we implement reservations
-void controllerTurnoutCurve(int couriertid, int address);
-void controllerTurnoutStraight(int couriertid, int address);
-
 int controllerCourier(int sendertid);
 
 #endif
