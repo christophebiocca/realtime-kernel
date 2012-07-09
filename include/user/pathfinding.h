@@ -12,8 +12,13 @@ struct Position {
 
 void planRoute(char *start, char *end);
 
-int planPath(struct TrackNode *list, struct TrackNode *start,
-    struct TrackNode *goal, struct TrackNode **output);
+int planPath(
+    struct TrackNode *list,
+    int train_id,
+    struct TrackNode *start,
+    struct TrackNode *goal,
+    struct TrackNode **output
+);
 
 // Puts in ret the new position after traveling dist from start,
 // given that the switches are in the state given by turnouts.

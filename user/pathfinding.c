@@ -23,7 +23,14 @@ int heuristic(struct TrackNode *here, struct TrackNode *goal){
     return 0;
 }
 
-int planPath(struct TrackNode *list, struct TrackNode *start, struct TrackNode *goal, struct TrackNode **output){
+// Travelling over a piece of reserved track is equivalent to 10 meters
+#define RESERVED_COST(id, edge)                                             \
+    (((edge).reserved == id && (edge).reserved >= 0) ? 0 : 10000)
+
+int planPath(struct TrackNode *list, int train_id,
+        struct TrackNode *start, struct TrackNode *goal,
+        struct TrackNode **output) {
+
     struct PathNode nodes[TRACK_MAX];
     for(int i = 0; i < TRACK_MAX; ++i){
         nodes[i].node = &list[i];
@@ -31,6 +38,7 @@ int planPath(struct TrackNode *list, struct TrackNode *start, struct TrackNode *
         nodes[i].total = 0x7FFFFFFF;
         nodes[i].from = 0;
     }
+
     struct PathHeap heap;
     heap.count = 0;
     // Goal Node
@@ -40,6 +48,7 @@ int planPath(struct TrackNode *list, struct TrackNode *start, struct TrackNode *
         nodes[start->idx].total = heuristic(start, goal);
         nodes[start->idx].from = 0;
     }
+
     // Start Node, reverse direction
     // {
     //     nodes[start->reverse->idx].cost = 0;
@@ -48,30 +57,40 @@ int planPath(struct TrackNode *list, struct TrackNode *start, struct TrackNode *
     // }
     PathHeapPush(&heap, &nodes[start->idx]);
     // PathHeapPush(&heap, &nodes[start->reverse->idx]);
+
     struct PathNode *goalNode = &nodes[goal->idx];
-    while(heap.count && heap.heap[1]->total <= goalNode->cost){
+
+    while (heap.count && heap.heap[1]->total <= goalNode->cost) {
         struct PathNode *next = PathHeapPop(&heap);
         struct TrackNode *seq[3];
         int seqCost[3];
         int seqCount = 0;
-        if(/*next->node->type == NODE_MERGE || */next->node->reverse == goal){
+
+        if (/*next->node->type == NODE_MERGE || */next->node->reverse == goal) {
             seq[seqCount] = next->node->reverse;
             seqCost[seqCount++] = 0;
         }
-        if(next->node->type != NODE_EXIT){
+
+        if (next->node->type != NODE_EXIT) {
             seq[seqCount] = next->node->edge[0].dest;
-            seqCost[seqCount++] = next->node->edge[0].dist;
+            seqCost[seqCount++] = next->node->edge[0].dist +
+                RESERVED_COST(train_id, next->node->edge[0]);
         }
-        if(next->node->type == NODE_BRANCH){
+
+        if (next->node->type == NODE_BRANCH) {
             seq[seqCount] = next->node->edge[1].dest;
-            seqCost[seqCount++] = next->node->edge[1].dist;
+            seqCost[seqCount++] = next->node->edge[1].dist +
+                RESERVED_COST(train_id, next->node->edge[1]);
         }
-        for(int i = 0; i < seqCount; ++i){
+
+        for (int i = 0; i < seqCount; ++i) {
             struct TrackNode *node = seq[i];
             int cost = seqCost[i];
             if(next->cost + cost < nodes[node->idx].cost){
                 nodes[node->idx].cost = next->cost + cost;
-                nodes[node->idx].total = nodes[node->idx].cost + heuristic(nodes[node->idx].node, goal);
+                nodes[node->idx].total = nodes[node->idx].cost +
+                    heuristic(nodes[node->idx].node, goal);
+
                 nodes[node->idx].from = next;
                 if(nodes[node->idx].total < goalNode->total && node != goal){
                     PathHeapPush(&heap,&nodes[node->idx]);
@@ -79,15 +98,18 @@ int planPath(struct TrackNode *list, struct TrackNode *start, struct TrackNode *
             }
         }
     }
+
     // At this point, the current goal node has the shortest path made out of back-pointers.
     int solutionCount = 0;
     for(struct PathNode *n = goalNode; n != 0; n=n->from){
         ++solutionCount;
     }
+
     int i = solutionCount;
     for(struct PathNode *n = goalNode; n != 0; n=n->from){
         output[--i] = n->node;
     }
+
     assert(i == 0);
     return solutionCount;
 }
@@ -198,7 +220,8 @@ char c = src[i];
     assert(destNode);
 
     struct TrackNode *route[50];
-    int count = planPath(nodes, srcNode, destNode, route);
+    // use an invalid train id for planning purposes
+    int count = planPath(nodes, 81, srcNode, destNode, route);
     for(int i = 0; i < count; ++i){
         struct String s;
         sinit(&s);

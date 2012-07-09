@@ -319,7 +319,7 @@ static inline void trainNavigate(struct Train *train, struct Position *dest){
         train->kinematics.stop/1000,
         &pathStart, train->track.path, true);
     // Now plan a path from there to here.
-    planPath(nodes, pathStart.node, dest->node, train->track.path + (i-1));
+    planPath(nodes, train->id, pathStart.node, dest->node, train->track.path + (i-1));
     train->track.pathing = true;
     train->track.pathCurrent = train->track.path;
     train->track.goal.node = dest->node;
