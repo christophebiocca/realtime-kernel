@@ -66,7 +66,7 @@ int planPath(struct TrackNode *list, int train_id,
         int seqCost[3];
         int seqCount = 0;
 
-        if (/*next->node->type == NODE_MERGE || */next->node->reverse == goal) {
+        if (next->node->type & ~(NODE_MERGE | NODE_BRANCH | NODE_BRANCH_STRAIGHT | NODE_BRANCH_CURVED)) {
             seq[seqCount] = next->node->reverse;
             seqCost[seqCount++] = 0;
         }
