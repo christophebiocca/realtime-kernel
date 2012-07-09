@@ -43,7 +43,9 @@ void tick(struct Kinematics *k, int time){
     int sign = (k->target_speed < k->current_speed) ? -1 : 1;
     int diffspeed = (k->target_speed - k->current_speed) * sign;
 
-    if (diffspeed < SPEED_THRESHOLD) {
+    if (k->target_speed > k->current_speed) {
+        computeAcceleration(k);
+    } else if (diffspeed < SPEED_THRESHOLD) {
         k->acceleration = 0;
         if (k->target_speed == 0) {
             k->current_speed = 0;
