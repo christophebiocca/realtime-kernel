@@ -29,9 +29,20 @@ void controllerSetExpectation(
 );
 
 // reservations
-// returns 0 on success, or the train id that owns that specific piece of track
-int controllerReserve(int train_id, struct TrackEdge *edge);
-int controllerRelease(int train_id, struct TrackEdge *edge);
+void controllerReserve(
+    int courier_tid,
+    int train_id,
+    struct TrackEdge *edge
+);
+
+void controllerRelease(
+    int courier_tid,
+    int train_id,
+    struct TrackEdge *edge
+);
+
+void controllerBlockingReserve(int train_id, struct TrackEdge *edge);
+void controllerBlockingRelease(int train_id, struct TrackEdge *edge);
 
 // primary way to interact with a train, send it to a particular distance from a
 // node

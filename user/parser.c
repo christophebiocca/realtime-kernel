@@ -451,9 +451,9 @@ bool parse(struct Parser *parser, char c){
                 }
 
                 if (parser->data.reservation.op == RESERVE) {
-                    controllerReserve(81, edge);
+                    controllerBlockingReserve(81, edge);
                 } else {
-                    controllerRelease(81, edge);
+                    controllerBlockingRelease(81, edge);
                 }
 
                 break;

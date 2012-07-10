@@ -119,10 +119,7 @@ static void controllerServer(void) {
             sizeof(struct ControllerMessage)
         );
 
-        if (request.type != RESERVATION) {
-            // reservations have a return value
-            Reply(sender_tid, (char*) 0, 0);
-        }
+        Reply(sender_tid, (char*) 0, 0);
 
         switch (request.type) {
             case PREPARE_TRAIN: {
@@ -356,8 +353,6 @@ static void controllerServer(void) {
                 // ensure consistency
                 assert(edge->reserved == edge->reverse->reserved);
 
-                int response = -1;
-
                 if (request.reservation.op == RESERVE) {
                     if (edge->reserved == -1) {
                         struct String s;
@@ -370,29 +365,25 @@ static void controllerServer(void) {
                         sputstr(&s, edge->dest->name);
                         logS(&s);
 
-                        response = 0;
                         edge->reserved = edge->reverse->reserved =
                             request.reservation.train_id;
-                    } else {
-                        response = edge->reserved;
                     }
                 } else if (request.reservation.op == RELEASE) {
-                    assert(edge->reserved == request.reservation.train_id);
-                    edge->reserved = edge->reverse->reserved = -1;
-                    response = 0;
+                    if (edge->reserved == request.reservation.train_id) {
+                        edge->reserved = edge->reverse->reserved = -1;
 
-                    struct String s;
-                    sinit(&s);
-                    sputstr(&s, "Train ");
-                    sputint(&s, request.reservation.train_id, 10);
-                    sputstr(&s, " releases ");
-                    sputstr(&s, edge->src->name);
-                    sputstr(&s, " to ");
-                    sputstr(&s, edge->dest->name);
-                    logS(&s);
+                        struct String s;
+                        sinit(&s);
+                        sputstr(&s, "Train ");
+                        sputint(&s, request.reservation.train_id, 10);
+                        sputstr(&s, " releases ");
+                        sputstr(&s, edge->src->name);
+                        sputstr(&s, " to ");
+                        sputstr(&s, edge->dest->name);
+                        logS(&s);
+                    }
                 }
 
-                Reply(sender_tid, (char *) &response, sizeof(int));
                 break;
             }
 
@@ -472,6 +463,63 @@ void controllerSetExpectation(int couriertid, int train_id,
     assert(ret == 0);
 }
 
+void controllerReserve(int courier_tid, int train_id, struct TrackEdge *edge) {
+    struct ControllerMessage msg;
+    msg.type = RESERVATION;
+    msg.reservation.op = RESERVE;
+    msg.reservation.train_id = train_id;
+    msg.reservation.edge = edge;
+
+    int ret = Reply(
+        courier_tid,
+        (char *) &msg, sizeof(struct ControllerMessage)
+    );
+    assert(ret == 0);
+}
+
+void controllerRelease(int courier_tid, int train_id, struct TrackEdge *edge) {
+    struct ControllerMessage msg;
+    msg.type = RESERVATION;
+    msg.reservation.op = RELEASE;
+    msg.reservation.train_id = train_id;
+    msg.reservation.edge = edge;
+
+    int ret = Reply(
+        courier_tid,
+        (char *) &msg, sizeof(struct ControllerMessage)
+    );
+    assert(ret == 0);
+}
+
+void controllerBlockingReserve(int train_id, struct TrackEdge *edge) {
+    struct ControllerMessage msg;
+    msg.type = RESERVATION;
+    msg.reservation.op = RESERVE;
+    msg.reservation.train_id = train_id;
+    msg.reservation.edge = edge;
+
+    Send(
+        g_controller_server_tid,
+        (char *) &msg, sizeof(struct ControllerMessage),
+        (char *) 0, 0
+    );
+}
+
+void controllerBlockingRelease(int train_id, struct TrackEdge *edge) {
+    struct ControllerMessage msg;
+    msg.type = RESERVATION;
+    msg.reservation.op = RELEASE;
+    msg.reservation.train_id = train_id;
+    msg.reservation.edge = edge;
+
+    Send(
+        g_controller_server_tid,
+        (char *) &msg, sizeof(struct ControllerMessage),
+        (char *) 0, 0
+    );
+}
+
+
 void controllerSendTrain(int train_id, struct TrackNode *node, int mm) {
     struct ControllerMessage msg;
 
@@ -498,42 +546,6 @@ void controllerSensorTriggered(Sensor sensor) {
         (char *) &msg, sizeof(struct ControllerMessage),
         (char *) 0, 0
     );
-}
-
-int controllerReserve(int train_id, struct TrackEdge *edge) {
-    struct ControllerMessage msg;
-    msg.type = RESERVATION;
-    msg.reservation.op = RESERVE;
-    msg.reservation.train_id = train_id;
-    msg.reservation.edge = edge;
-
-    int response;
-
-    Send(
-        g_controller_server_tid,
-        (char *) &msg, sizeof(struct ControllerMessage),
-        (char *) &response, sizeof(int)
-    );
-
-    return response;
-}
-
-int controllerRelease(int train_id, struct TrackEdge *edge) {
-    struct ControllerMessage msg;
-    msg.type = RESERVATION;
-    msg.reservation.op = RELEASE;
-    msg.reservation.train_id = train_id;
-    msg.reservation.edge = edge;
-
-    int response;
-
-    Send(
-        g_controller_server_tid,
-        (char *) &msg, sizeof(struct ControllerMessage),
-        (char *) &response, sizeof(int)
-    );
-
-    return response;
 }
 
 void controllerQuit(void) {
