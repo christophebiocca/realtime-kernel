@@ -2,6 +2,7 @@
 #define TASK_INTERNAL_H 1
 
 #include <kernel/task.h>
+#include <debug.h>
 
 struct TaskDescriptor {
     unsigned int id;
@@ -23,6 +24,10 @@ struct TaskDescriptor {
     } status:8;
 
     int parent_task_id;
+
+    #ifndef PRODUCTION
+    struct Perf runtime;
+    #endif
 };
 
 // pointer to the currently active task

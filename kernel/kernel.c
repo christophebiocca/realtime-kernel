@@ -11,6 +11,8 @@
 #include <user/init.h>
 #include <lib.h>
 
+#include "task_internal.h"
+
 static void dispatchSyscall(struct TaskDescriptor *task,
         unsigned int syscall_id, unsigned int *args) {
 
@@ -175,6 +177,8 @@ int main(void) {
     hardware_pc_spsr[0] = 0;
     hardware_pc_spsr[1] = 0;
 
+    *TIMER4_CRTL = TIMER4_ENABLE;
+
     // set up memory bank
     *((unsigned int *) BANK_UNDEFINED_INSTR) = BANK_JUMP_INSTR;
     *((unsigned int *) BANK_SOFTWARE_INT) = BANK_JUMP_INSTR;
@@ -209,6 +213,9 @@ int main(void) {
     struct TaskDescriptor* active;
     for(active = scheduleTask(); active && (!idling() || awaitingInterrupts());
             active = scheduleTask()){
+
+        TIMER_START(active->runtime);
+
         unsigned int *sp = taskStackPointer(active);
         unsigned int spsr = taskSPSR(active);
 
@@ -245,6 +252,8 @@ int main(void) {
 
         setTaskState(active, sp, spsr);
 
+        TIMER_SUM(active->runtime);
+
         if (hardware_pc_spsr[0]) {
             setTaskState(active, sp, hardware_pc_spsr[1]);
 
@@ -272,6 +281,8 @@ int main(void) {
 
     *((unsigned int *) (VIC1_BASE + VIC_INT_ENABLE_CLEAR)) = 0xffffffff;
     *((unsigned int *) (VIC2_BASE + VIC_INT_ENABLE_CLEAR)) = 0xffffffff;
+
+    dumpTaskTimes();
 
     return 0;
 }

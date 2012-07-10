@@ -85,4 +85,7 @@ struct TaskDescriptor *getTask(unsigned int task_id);
 // Returns true iff the current task is the idle task.
 bool idling();
 
+// All the task runtimes.
+void dumpTaskTimes(void);
+
 #endif
