@@ -169,7 +169,8 @@ static inline void calculateStop(struct Train *train){
         int dist = distance(train->track.turnouts,
             &train->track.position,
             &train->track.next_stop);
-        if(dist <= train->kinematics.stop/1000){
+        if((train->track.next_stop.node == train->track.goal.node &&
+            dist <= train->kinematics.stop/1000) || dist <= 0){
             {
                 struct String s;
                 sinit(&s);
@@ -324,6 +325,15 @@ static inline void timerPositionUpdate(struct Train *train, int time){
             // For lack of anything better.
             pos.offset = train->kinematics.distance/1000 -
                 distance(train->track.turnouts, &train->track.position, &pos);
+            {
+                struct Position next;
+                next.node = path[i];
+                next.offset = 0;
+                int nextDist = distance(train->track.turnouts, &pos, &next);
+                if(pos.offset >= nextDist){
+                    pos.offset = nextDist - 1;
+                }
+            }
             break;
         }
     }
