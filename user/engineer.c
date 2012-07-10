@@ -250,14 +250,55 @@ static inline void calculateStop(struct Train *train){
 }
 
 static inline void updateTurnouts(struct Train *train){
+    if(train->track.pathing){
+        struct TrackNode **t = train->track.pathCurrent;
+        struct TrackNode **end = alongPath(t, train->kinematics.stop/1000, train->track.next_stop.node, true);
+        for(; t < end; ++t){
+            if((*t)->type == NODE_BRANCH){
+                // Find the first time we hit this branch
+                // How should it be set?
+                // Make the branch match expectations
+                if((*t)->edge[DIR_STRAIGHT].dest == t[1] &&
+                    isTurnoutCurved(train->track.turnouts, (*t)->num)){
+                    {
+                        struct String s;
+                        sinit(&s);
+                        sputstr(&s, "Straightening ");
+                        sputstr(&s, (**t).name);
+                        sputstr(&s, " (Pos ");
+                        sputstr(&s, train->track.position.node->name);
+                        sputc(&s, '@');
+                        sputint(&s, train->track.position.offset,10);
+                        sputc(&s, ')');
+                        logS(&s);
+                    }
+                    turnoutStraight((*t)->num, &train->track.turnouts);
+                } else if((*t)->edge[DIR_CURVED].dest == t[1] &&
+                    isTurnoutStraight(train->track.turnouts, (*t)->num)){
+                    {
+                        struct String s;
+                        sinit(&s);
+                        sputstr(&s, "Curving ");
+                        sputstr(&s, (**t).name);
+                        sputstr(&s, " (Pos ");
+                        sputstr(&s, train->track.position.node->name);
+                        sputc(&s, '@');
+                        sputint(&s, train->track.position.offset,10);
+                        sputc(&s, ')');
+                        logS(&s);
+                    }
+                    turnoutCurve((*t)->num, &train->track.turnouts);
+                }
+            }
+        }
+    }
+
     struct Position end;
     struct TrackNode *path[50];
     struct TrackNode **sweep = path;
     int len = alongTrack(train->track.turnouts, &train->track.position,
         train->kinematics.stop/1000, &end, path, NULLPTR, false);
     assert(len <= 50);
-
-    struct TrackNode **t = train->track.pathCurrent;
     while(*sweep != end.node){
         if((*sweep)->type == NODE_MERGE && sweep != path){
             // No conflict the merge nodes.
@@ -268,21 +309,6 @@ static inline void updateTurnouts(struct Train *train){
             } else if((*sweep)->reverse->edge[DIR_CURVED].reverse->src == prev &&
                 isTurnoutStraight(train->track.turnouts, (*sweep)->num)){
                 turnoutCurve((*sweep)->num, &train->track.turnouts);
-            }
-        } else if((*sweep)->type == NODE_BRANCH && train->track.pathing){
-            // Find the first time we hit this branch
-            for(; *t != *sweep && *t != train->track.next_stop.node; ++t);
-
-            if(*t == *sweep){
-                // How should it be set?
-                // Make the branch match expectations
-                if((*sweep)->edge[DIR_STRAIGHT].dest == t[1] &&
-                    isTurnoutCurved(train->track.turnouts, (*sweep)->num)){
-                    turnoutStraight((*sweep)->num, &train->track.turnouts);
-                } else if((*sweep)->edge[DIR_CURVED].dest == t[1] &&
-                    isTurnoutStraight(train->track.turnouts, (*sweep)->num)){
-                    turnoutCurve((*sweep)->num, &train->track.turnouts);
-                }
             }
         }
         sweep++;
