@@ -14,7 +14,9 @@ struct Perf {
 
 #define TIMER_INIT(perf) (void)(0)
 #define TIMER_START(perf) (void)(0)
-#define TIMER_MEASURE(perf) (void)(0)
+#define TIMER_WORST(perf) (void)(0)
+#define TIMER_SUM(perf) (void)(0)
+#define TIMER_BEST(perf) (void)(0)
 #define TIMER_PRINT(perf) (void)(0)
 
 #else
@@ -68,10 +70,26 @@ struct Perf {
 
 #define TIMER_START(perf) do{perf.start = *(TIMER4_VAL);}while(0)
 
-#define TIMER_MEASURE(perf)                 \
+#define TIMER_WORST(perf)                   \
 do {                                        \
     int diff = *(TIMER4_VAL)-perf.start;    \
     if(diff > perf.total){                  \
+        perf.total = diff;                  \
+    }                                       \
+} while(0)
+
+#define TIMER_SUM(perf)                     \
+do {                                        \
+    int diff = *(TIMER4_VAL)-perf.start;    \
+    if(diff > 0){                           \
+        perf.total += diff;                 \
+    }                                       \
+} while(0)
+
+#define TIMER_BEST(perf)                    \
+do {                                        \
+    int diff = *(TIMER4_VAL)-perf.start;    \
+    if(diff < perf.total){                  \
         perf.total = diff;                  \
     }                                       \
 } while(0)
