@@ -15,6 +15,7 @@
 #include <user/controller.h>
 #include <user/engineer.h>
 #include <user/log.h>
+#include <debug.h>
 
 // mm for how long the train is behind the pickup
 #define TRAIN_TAIL_PICKUP_FRONT 190
@@ -77,6 +78,17 @@ struct Train {
     struct Messaging messaging;
     struct Timing timing;
     struct TrackControl track;
+    struct Perf wholeLoop;
+    struct Perf plan;
+    struct Perf timerCallback;
+    struct Perf updatePosition;
+    struct Perf updateExpectation;
+    struct Perf updateTurnouts;
+    struct Perf calculateStop;
+    struct Perf handleReversals;
+    struct Perf findNextStop;
+    struct Perf kinematicsFuckery;
+    struct Perf tio;
 };
 
 static inline void recoverCourier(struct Train *train, int sender){
@@ -94,11 +106,13 @@ static inline void courierUsed(struct Train *train){
 #define UPDATE_INTERVAL 10
 
 static inline void reverse(struct Train *train){
+    TIMER_START(train->tio);
     struct String s;
     sinit(&s);
     sputc(&s, 15);
     sputc(&s, train->id);
     tioPrint(&s);
+    TIMER_WORST(train->tio);
 }
 
 static inline void setSpeed(struct Train *train, int speed){
@@ -106,7 +120,9 @@ static inline void setSpeed(struct Train *train, int speed){
     assert(0 <= train->id && train->id <= 80);
     assert(0 <= speed && speed <= 14);
     train->kinematics.target_speed = train->kinematics.ideal_speed[speed];
+    TIMER_START(train->kinematicsFuckery);
     computeAcceleration(&train->kinematics);
+    TIMER_WORST(train->kinematicsFuckery);
     {
         struct String s;
         sinit(&s);
@@ -114,11 +130,13 @@ static inline void setSpeed(struct Train *train, int speed){
         sputuint(&s, train->kinematics.target_speed,10);
         logS(&s);
     }
+    TIMER_START(train->tio);
     struct String s;
     sinit(&s);
     sputc(&s, speed);
     sputc(&s, train->id);
     tioPrint(&s);
+    TIMER_WORST(train->tio);
 }
 
 static inline void computeReservations(struct Train *train) {
@@ -302,7 +320,9 @@ static inline void handleReversals(struct Train *train){
             train->track.pathCurrent++;
             train->track.position.node = *(train->track.pathCurrent);
             train->track.position.offset = 0;
+            TIMER_START(train->findNextStop);
             findNextStop(train);
+            TIMER_WORST(train->findNextStop);
         }
     }
 }
@@ -319,10 +339,18 @@ static inline void updatePosition(struct Train *train, struct Position *pos){
         }
     }
 
+    TIMER_START(train->updateExpectation);
     updateExpectation(train);
+    TIMER_WORST(train->updateExpectation);
+    TIMER_START(train->updateTurnouts);
     updateTurnouts(train);
+    TIMER_WORST(train->updateTurnouts);
+    TIMER_START(train->calculateStop);
     calculateStop(train);
+    TIMER_WORST(train->calculateStop);
+    TIMER_START(train->handleReversals);
     handleReversals(train);
+    TIMER_WORST(train->handleReversals);
 }
 
 static inline void sensorUpdate(struct Train *train, Sensor sensor){
@@ -346,7 +374,9 @@ static inline void sensorUpdate(struct Train *train, Sensor sensor){
     tick(&train->kinematics, now);
     train->kinematics.distance = 0;
 
+    TIMER_START(train->updatePosition);
     updatePosition(train, &pos);
+    TIMER_WORST(train->updatePosition);
 
     train->timing.positionUpdate = now + UPDATE_INTERVAL;
 }
@@ -379,7 +409,9 @@ static inline void timerPositionUpdate(struct Train *train, int time){
             break;
         }
     }
+    TIMER_START(train->updatePosition);
     updatePosition(train, &pos);
+    TIMER_WORST(train->updatePosition);
     train->kinematics.distance = 0;
     train->timing.positionUpdate = time + UPDATE_INTERVAL;
 }
@@ -424,7 +456,9 @@ static inline void trainNavigate(struct Train *train, struct Position *dest){
     train->track.pathCurrent = train->track.path;
     train->track.goal.node = dest->node;
     train->track.goal.offset = dest->offset;
+    TIMER_START(train->findNextStop);
     findNextStop(train);
+    TIMER_WORST(train->findNextStop);
 
     for(struct TrackNode **i = train->track.pathCurrent;; i++){
         if(train->track.goal.node == *i){
@@ -446,10 +480,23 @@ void engineer(int trainID){
     }
 
     /* SET UP */
+    (*TIMER4_CRTL) = TIMER4_ENABLE;
 
     struct Train train;
     train.id = trainID;
     train.track.pathing = false;
+
+    TIMER_INIT(train.wholeLoop);
+    TIMER_INIT(train.plan);
+    TIMER_INIT(train.timerCallback);
+    TIMER_INIT(train.updatePosition);
+    TIMER_INIT(train.updateExpectation);
+    TIMER_INIT(train.updateTurnouts);
+    TIMER_INIT(train.calculateStop);
+    TIMER_INIT(train.handleReversals);
+    TIMER_INIT(train.findNextStop);
+    TIMER_INIT(train.kinematicsFuckery);
+    TIMER_INIT(train.tio);
 
     // Spawn our helpers and claim them.
     {
@@ -577,7 +624,10 @@ void engineer(int trainID){
 
         struct EngineerMessage mesg;
         int tid;
+
+        TIMER_WORST(train.wholeLoop);
         Receive(&tid, (char *)&mesg, sizeof(mesg));
+        TIMER_START(train.wholeLoop);
 
         // React to the outside world.
         if(tid == train.messaging.courier){
@@ -585,7 +635,9 @@ void engineer(int trainID){
         } else if(tid == train.timing.timer){
             int time = *((int *)&mesg);
             if(time >= train.timing.positionUpdate){
+                TIMER_START(train.timerCallback);
                 timerPositionUpdate(&train, time);
+                TIMER_WORST(train.timerCallback);
             }
             train.timing.timerReady = true;
         } else {
@@ -597,10 +649,24 @@ void engineer(int trainID){
                 }
                 case GOTO: {
                     computeReservations(&train);
+                    TIMER_START(train.plan);
                     trainNavigate(&train, &mesg.content.destination);
+                    TIMER_WORST(train.plan);
                     break;
                 }
                 case QUIT:
+                    // Dump all the timings to the log.
+                    TIMER_PRINT(train.wholeLoop);
+                    TIMER_PRINT(train.timerCallback);
+                    TIMER_PRINT(train.plan);
+                    TIMER_PRINT(train.updatePosition);
+                    TIMER_PRINT(train.updateExpectation);
+                    TIMER_PRINT(train.updateTurnouts);
+                    TIMER_PRINT(train.calculateStop);
+                    TIMER_PRINT(train.handleReversals);
+                    TIMER_PRINT(train.findNextStop);
+                    TIMER_PRINT(train.kinematicsFuckery);
+                    TIMER_PRINT(train.tio);
                     quit = true;
                     break;
                 default:
