@@ -84,7 +84,7 @@ static void tioNotifier(void) {
          */
         unsigned short int_flags = UARTEN_MASK | RIEN_MASK | MSIEN_MASK;
 
-        if (!txfe || g_tio_tx_buffer.head != g_tio_tx_buffer.tail) {
+        if (!txfe) {
             /* Only enable transmit interrupt when we have something to send or
              * we're waiting to know when the transmit buffer is empty.
              *
