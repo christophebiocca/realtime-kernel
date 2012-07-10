@@ -254,8 +254,9 @@ static inline void calculateStop(struct Train *train){
 static inline void updateTurnouts(struct Train *train){
     if(train->track.pathing){
         struct TrackNode **t = train->track.pathCurrent;
-        struct TrackNode **end = alongPath(t, train->kinematics.stop/1000, train->track.next_stop.node, true);
-        for(; t < end; ++t){
+        struct TrackNode **end = alongPath(t, train->kinematics.stop/1000 + train->track.position.offset,
+            train->track.next_stop.node, true);
+        for(; t <= end && *t != train->track.next_stop.node; ++t){
             if((*t)->type == NODE_BRANCH){
                 // Find the first time we hit this branch
                 // How should it be set?
