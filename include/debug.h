@@ -4,9 +4,18 @@
 
 #ifdef PRODUCTION
 
+struct Perf {
+   char nothing[0]; 
+};
+
 #define assert(expr)        (void)(0)
 #define static_assert(e)    (void)(0)
 #define trace(fmt, ...)     (void)(0)
+
+#define TIMER_INIT(perf) (void)(0)
+#define TIMER_START(perf) (void)(0)
+#define TIMER_MEASURE(perf) (void)(0)
+#define TIMER_PRINT(perf) (void)(0)
 
 #else
 
@@ -49,6 +58,33 @@ static void __assert_fail (__const char *__assertion, __const char *__file,
     __LINE__,                                                               \
     ## __VA_ARGS__                                                          \
 )
+
+struct Perf {
+    int start;
+    int total;
+};
+
+#define TIMER_INIT(perf) do{perf.start = 0x7FFFFFFF; perf.total = 0;}while(0)
+
+#define TIMER_START(perf) do{perf.start = *(TIMER4_VAL);}while(0)
+
+#define TIMER_MEASURE(perf)                 \
+do {                                        \
+    int diff = *(TIMER4_VAL)-perf.start;    \
+    if(diff > perf.total){                  \
+        perf.total = diff;                  \
+    }                                       \
+} while(0)
+
+#define TIMER_PRINT(perf)                   \
+do {                                        \
+    struct String s;                        \
+    sinit(&s);                              \
+    sputstr(&s, #perf ": ");                \
+    sputint(&s, perf.total, 10);            \
+    logS(&s);                               \
+} while(0);
+
 
 #endif // PRODUCTION
 
