@@ -480,8 +480,6 @@ void engineer(int trainID){
     }
 
     /* SET UP */
-    (*TIMER4_CRTL) = TIMER4_ENABLE;
-
     struct Train train;
     train.id = trainID;
     train.track.pathing = false;
