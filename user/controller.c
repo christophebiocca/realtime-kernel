@@ -449,6 +449,7 @@ void controllerUpdatePosition(int couriertid, int train_id,
         couriertid,
         (char *) &msg, sizeof(struct ControllerMessage)
     );
+    (void)(ret);
     assert(ret == 0);
 }
 
@@ -467,6 +468,7 @@ void controllerSetExpectation(int couriertid, int train_id,
         couriertid,
         (char *) &msg, sizeof(struct ControllerMessage)
     );
+    (void)(ret);
     assert(ret == 0);
 }
 

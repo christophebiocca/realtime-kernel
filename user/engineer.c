@@ -77,6 +77,7 @@ struct Train {
 
 static inline void recoverCourier(struct Train *train, int sender){
     assert(sender == train->messaging.courier);
+    (void)(sender);
     assert(!train->messaging.courierReady);
     train->messaging.courierReady = true;
 }
@@ -197,6 +198,7 @@ static inline void updateTurnouts(struct Train *train){
     struct TrackNode **sweep = path;
     int len = alongTrack(train->track.turnouts, &train->track.position,
         train->kinematics.stop/1000, &end, path, false);
+    (void)(len);
     assert(len <= 50);
 
     struct TrackNode **t = train->track.pathCurrent;
@@ -413,6 +415,7 @@ void engineer(int trainID){
         assert(train.timing.timer > 0);
         int tid;
         int len = Receive(&tid, (char *)&train.kinematics.time, sizeof(int));
+        (void)(len);
         assert(tid == train.timing.timer);
         assert(len == sizeof(int));
         assert(train.kinematics.time >= 0);
@@ -424,6 +427,7 @@ void engineer(int trainID){
         assert(train.messaging.courier > 0);
         int tid;
         int len = Receive(&tid, 0, 0);
+        (void)(len);
         assert(tid == train.messaging.courier);
         assert(len == 0);
         train.messaging.courierReady = true;
@@ -454,10 +458,12 @@ void engineer(int trainID){
         struct EngineerMessage msg;
 
         int len = Receive(&tid, (char *)&msg, sizeof(struct EngineerMessage));
+        (void)(len);
         assert(len == sizeof(struct EngineerMessage));
         assert(msg.messageType == SENSOR);
 
         int ret = Reply(tid, 0, 0);
+        (void)(ret);
         assert(ret == 0);
 
         // TODO: Get the actual turnout state from someone.
@@ -584,6 +590,7 @@ void engineerSensorTriggered(int engineer_tid, Sensor sensor) {
         .content.sensorTriggered.sensor = sensor,
     };
     int len = Send(engineer_tid, (char *)&msg, sizeof(struct EngineerMessage), 0, 0);
+    (void)(len);
     assert(len == 0);
 }
 
