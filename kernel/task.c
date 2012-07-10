@@ -223,11 +223,12 @@ void dumpTaskTimes(void){
     #ifndef PROD
     for(int i = 1; i < g_next_task_id; ++i){
         unsigned int id = g_task_table[i].id;
-        bwprintf(COM2, "Task(%d %d %d), time: %d\r\n",
-           (id & INDEX_MASK),
-           (id & PRIORITY_MASK) >> PRIORITY_OFFSET,
-           (id & UNIQUE_MASK) >> UNIQUE_OFFSET,
-           g_task_table[i].runtime.total);
+        bwprintf(COM2, "Task#%d(%d %d %d), time: %d\r\n",
+            id,
+            (id & INDEX_MASK),
+            (id & PRIORITY_MASK) >> PRIORITY_OFFSET,
+            (id & UNIQUE_MASK) >> UNIQUE_OFFSET,
+            g_task_table[i].runtime.total);
     }
     #endif
 }
