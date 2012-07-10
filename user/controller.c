@@ -26,6 +26,7 @@ enum {
     QUIT
 };
 
+#define MAX_TRACK_EDGES 5
 struct ControllerMessage {
     // should be the above enum
     // using an int here to explicitly specify size
@@ -71,7 +72,7 @@ struct ControllerMessage {
             } op;
 
             int train_id;
-            struct TrackEdge *edge;
+            struct TrackEdge *edges[MAX_TRACK_EDGES];
         } reservation;
     };
 };
@@ -348,14 +349,39 @@ static void controllerServer(void) {
             }
 
             case RESERVATION: {
-                struct TrackEdge *edge = request.reservation.edge;
-
-                // ensure consistency
-                assert(edge->reserved == edge->reverse->reserved);
-
                 if (request.reservation.op == RESERVE) {
-                    if (edge->reserved == -1) {
-                        struct String s;
+                    bool will_succeed = true;
+
+                    for (int i = 0; i < MAX_TRACK_EDGES; ++i) {
+                        struct TrackEdge *edge = request.reservation.edges[i];
+
+                        if (edge == NULLPTR) {
+                            break;
+                        }
+
+                        // ensure consistency
+                        assert(edge->reserved == edge->reverse->reserved);
+
+                        if (edge->reserved != request.reservation.train_id
+                                && edge->reserved != -1) {
+                            will_succeed = false;
+                            break;
+                        }
+                    }
+
+                    if (!will_succeed) {
+                        // FIXME: log failures?
+                        break;
+                    }
+
+                    struct String s;
+                    for (int i = 0; i < MAX_TRACK_EDGES; ++i) {
+                        struct TrackEdge *edge = request.reservation.edges[i];
+
+                        if (edge == NULLPTR) {
+                            break;
+                        }
+
                         sinit(&s);
                         sputstr(&s, "Train ");
                         sputint(&s, request.reservation.train_id, 10);
@@ -368,19 +394,24 @@ static void controllerServer(void) {
                         edge->reserved = edge->reverse->reserved =
                             request.reservation.train_id;
                     }
-                } else if (request.reservation.op == RELEASE) {
-                    if (edge->reserved == request.reservation.train_id) {
-                        edge->reserved = edge->reverse->reserved = -1;
 
-                        struct String s;
-                        sinit(&s);
-                        sputstr(&s, "Train ");
-                        sputint(&s, request.reservation.train_id, 10);
-                        sputstr(&s, " releases ");
-                        sputstr(&s, edge->src->name);
-                        sputstr(&s, " to ");
-                        sputstr(&s, edge->dest->name);
-                        logS(&s);
+                } else if (request.reservation.op == RELEASE) {
+                    for (int i = 0; i < MAX_TRACK_EDGES; ++i) {
+                        struct TrackEdge *edge = request.reservation.edges[i];
+
+                        if (edge->reserved == request.reservation.train_id) {
+                            edge->reserved = edge->reverse->reserved = -1;
+
+                            struct String s;
+                            sinit(&s);
+                            sputstr(&s, "Train ");
+                            sputint(&s, request.reservation.train_id, 10);
+                            sputstr(&s, " releases ");
+                            sputstr(&s, edge->src->name);
+                            sputstr(&s, " to ");
+                            sputstr(&s, edge->dest->name);
+                            logS(&s);
+                        }
                     }
                 }
 
@@ -463,12 +494,21 @@ void controllerSetExpectation(int couriertid, int train_id,
     assert(ret == 0);
 }
 
-void controllerReserve(int courier_tid, int train_id, struct TrackEdge *edge) {
+void controllerReserve(int courier_tid, int train_id,
+        struct TrackEdge *edge1, struct TrackEdge *edge2,
+        struct TrackEdge *edge3, struct TrackEdge *edge4,
+        struct TrackEdge *edge5) {
+
     struct ControllerMessage msg;
     msg.type = RESERVATION;
     msg.reservation.op = RESERVE;
     msg.reservation.train_id = train_id;
-    msg.reservation.edge = edge;
+
+    msg.reservation.edges[0] = edge1;
+    msg.reservation.edges[1] = edge2;
+    msg.reservation.edges[2] = edge3;
+    msg.reservation.edges[3] = edge4;
+    msg.reservation.edges[4] = edge5;
 
     int ret = Reply(
         courier_tid,
@@ -477,12 +517,22 @@ void controllerReserve(int courier_tid, int train_id, struct TrackEdge *edge) {
     assert(ret == 0);
 }
 
-void controllerRelease(int courier_tid, int train_id, struct TrackEdge *edge) {
+void controllerRelease(int courier_tid, int train_id,
+        struct TrackEdge *edge1, struct TrackEdge *edge2,
+        struct TrackEdge *edge3, struct TrackEdge *edge4,
+        struct TrackEdge *edge5) {
+
     struct ControllerMessage msg;
+
     msg.type = RESERVATION;
     msg.reservation.op = RELEASE;
     msg.reservation.train_id = train_id;
-    msg.reservation.edge = edge;
+
+    msg.reservation.edges[0] = edge1;
+    msg.reservation.edges[1] = edge2;
+    msg.reservation.edges[2] = edge3;
+    msg.reservation.edges[3] = edge4;
+    msg.reservation.edges[4] = edge5;
 
     int ret = Reply(
         courier_tid,
@@ -496,7 +546,8 @@ void controllerBlockingReserve(int train_id, struct TrackEdge *edge) {
     msg.type = RESERVATION;
     msg.reservation.op = RESERVE;
     msg.reservation.train_id = train_id;
-    msg.reservation.edge = edge;
+    msg.reservation.edges[0] = edge;
+    msg.reservation.edges[1] = NULLPTR;
 
     Send(
         g_controller_server_tid,
@@ -510,7 +561,8 @@ void controllerBlockingRelease(int train_id, struct TrackEdge *edge) {
     msg.type = RESERVATION;
     msg.reservation.op = RELEASE;
     msg.reservation.train_id = train_id;
-    msg.reservation.edge = edge;
+    msg.reservation.edges[0] = edge;
+    msg.reservation.edges[1] = NULLPTR;
 
     Send(
         g_controller_server_tid,

@@ -32,13 +32,21 @@ void controllerSetExpectation(
 void controllerReserve(
     int courier_tid,
     int train_id,
-    struct TrackEdge *edge
+    struct TrackEdge *edge1,
+    struct TrackEdge *edge2,
+    struct TrackEdge *edge3,
+    struct TrackEdge *edge4,
+    struct TrackEdge *edge5
 );
 
 void controllerRelease(
     int courier_tid,
     int train_id,
-    struct TrackEdge *edge
+    struct TrackEdge *edge1,
+    struct TrackEdge *edge2,
+    struct TrackEdge *edge3,
+    struct TrackEdge *edge4,
+    struct TrackEdge *edge5
 );
 
 void controllerBlockingReserve(int train_id, struct TrackEdge *edge);
