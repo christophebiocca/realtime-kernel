@@ -16,6 +16,10 @@
 #include <user/engineer.h>
 #include <user/log.h>
 
+// mm for how long the train is behind the pickup
+#define TRAIN_TAIL_PICKUP_FRONT 190
+#define TRAIN_TAIL_PICKUP_BACK  75
+
 struct Train;
 
 struct EngineerMessage {
@@ -117,12 +121,47 @@ static inline void setSpeed(struct Train *train, int speed){
     tioPrint(&s);
 }
 
-static inline void updateExpectation(struct Train *train){
+static inline void computeReservations(struct Train *train) {
+    int back = (train->kinematics.orientation == FORWARD)
+        ? TRAIN_TAIL_PICKUP_FRONT
+        : TRAIN_TAIL_PICKUP_BACK;
+
+    if (train->track.position.offset < back) {
+        // FIXME
+        logC("would reserve behind");
+    }
+
+    struct Position end;
+    struct TrackNode *path[50];
+    struct TrackEdge *edges[50];
+
+    int len = alongTrack(
+        train->track.turnouts,
+        &train->track.position,
+        train->kinematics.stop / 1000,
+        &end,
+        path,
+        edges,
+        false
+    );
+
+    for (int i = 0; i < (len - 1); ++i) {
+        struct String s;
+        sinit(&s);
+        sputstr(&s, "would reserve ");
+        sputstr(&s, edges[i]->src->name);
+        sputstr(&s, " to ");
+        sputstr(&s, edges[i]->dest->name);
+        logS(&s);
+    }
+}
+
+static inline void updateExpectation(struct Train *train) {
     // Find the next sensor along the path.
     struct Position end;
     struct TrackNode *path[50];
     int len = alongTrack(train->track.turnouts, &train->track.position,
-        train->kinematics.stop/1000, &end, path, false);
+        train->kinematics.stop/1000, &end, path, NULLPTR, false);
     assert(len <= 50);
     struct TrackNode *nextSensor = 0;
 
@@ -197,8 +236,7 @@ static inline void updateTurnouts(struct Train *train){
     struct TrackNode *path[50];
     struct TrackNode **sweep = path;
     int len = alongTrack(train->track.turnouts, &train->track.position,
-        train->kinematics.stop/1000, &end, path, false);
-    (void)(len);
+        train->kinematics.stop/1000, &end, path, NULLPTR, false);
     assert(len <= 50);
 
     struct TrackNode **t = train->track.pathCurrent;
@@ -273,12 +311,14 @@ static inline void updatePosition(struct Train *train, struct Position *pos){
     train->track.position.node = pos->node;
     train->track.position.offset = pos->offset;
     train->messaging.notifyPosition = true;
+
     if(train->track.pathing){
         while(*(train->track.pathCurrent) != pos->node &&
             *(train->track.pathCurrent) != train->track.next_stop.node){
             train->track.pathCurrent++;
         }
     }
+
     updateExpectation(train);
     updateTurnouts(train);
     calculateStop(train);
@@ -316,7 +356,7 @@ static inline void timerPositionUpdate(struct Train *train, int time){
     struct Position pos;
     struct TrackNode *path[50];
     int len = alongTrack(train->track.turnouts, &train->track.position,
-        train->kinematics.distance/1000, &pos, path, false);
+        train->kinematics.distance/1000, &pos, path, NULLPTR, false);
     assert(len <= 50);
     // Always skip the start point.
     for(int i = 1; i < len; ++i){
@@ -377,7 +417,7 @@ static inline void trainNavigate(struct Train *train, struct Position *dest){
     int i = alongTrack(train->track.turnouts,
         &train->track.position,
         train->kinematics.stop/1000,
-        &pathStart, train->track.path, true);
+        &pathStart, train->track.path, NULLPTR, true);
     // Now plan a path from there to here.
     planPath(nodes, train->id, pathStart.node, dest->node, train->track.path + (i-1));
     train->track.pathing = true;
@@ -557,6 +597,7 @@ void engineer(int trainID){
                     break;
                 }
                 case GOTO: {
+                    computeReservations(&train);
                     trainNavigate(&train, &mesg.content.destination);
                     break;
                 }

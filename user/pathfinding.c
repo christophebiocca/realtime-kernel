@@ -115,7 +115,8 @@ int planPath(struct TrackNode *list, int train_id,
 }
 
 int alongTrack(TurnoutTable turnouts, struct Position *start, 
-    int dist, struct Position *end, struct TrackNode **path, bool beyond){
+    int dist, struct Position *end, struct TrackNode **path,
+    struct TrackEdge **edges, bool beyond){
 
     dist = dist + start->offset;
     
@@ -125,7 +126,8 @@ int alongTrack(TurnoutTable turnouts, struct Position *start,
     struct TrackNode *last_pos;
 
     int i = 0;
-    while(dist >= 0 && pos->type != NODE_EXIT){
+
+    while (dist >= 0 && pos->type != NODE_EXIT) {
         last_dist = dist;
         last_pos = pos;
         /*{
@@ -136,19 +138,32 @@ int alongTrack(TurnoutTable turnouts, struct Position *start,
             sputuint(&s, dist, 10);
             logS(&s);
         }*/
-        if(path){
-            path[i++] = pos;
+
+        if (path) {
+            path[i] = pos;
         }
+
         int dir = 0;
         if(pos->type == NODE_BRANCH){
             dir = isTurnoutCurved(turnouts, pos->num);
         }
+
+        if (edges) {
+            edges[i] = &pos->edge[dir];
+        }
+
+        if (path || edges) {
+            i++;
+        }
+
         dist -= pos->edge[dir].dist;
         pos = pos->edge[dir].dest;
     }
-    if(path){
+
+    if (path) {
         path[i++] = pos;
     }
+
     if(dist >= 0 || beyond){
         end->node = pos;
         end->offset = dist;
@@ -156,6 +171,7 @@ int alongTrack(TurnoutTable turnouts, struct Position *start,
         end->node = last_pos;
         end->offset = last_dist;
     }
+
     return i;
 }
 
