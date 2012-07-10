@@ -524,11 +524,14 @@ void engineer(int trainID){
 
     setSpeed(&train, 14);
 
-    while(true) {
-        // Act on the outside world.
-        notifyPosition(&train);
-        notifyExpectation(&train);
-        scheduleTimer(&train);
+    bool quit = false;
+    while(!quit || !train.messaging.courierReady || !train.timing.timerReady) {
+        if(!quit){
+            // Act on the outside world.
+            notifyPosition(&train);
+            notifyExpectation(&train);
+            scheduleTimer(&train);
+        }
 
         struct EngineerMessage mesg;
         int tid;
@@ -555,7 +558,7 @@ void engineer(int trainID){
                     break;
                 }
                 case QUIT:
-                    assert(false);
+                    quit = true;
                     break;
                 default:
                     assert(false);
