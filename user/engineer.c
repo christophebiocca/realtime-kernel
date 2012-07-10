@@ -78,6 +78,7 @@ struct Train {
     struct Messaging messaging;
     struct Timing timing;
     struct TrackControl track;
+    #ifndef PRODUCTION
     struct Perf wholeLoop;
     struct Perf plan;
     struct Perf timerCallback;
@@ -89,6 +90,7 @@ struct Train {
     struct Perf findNextStop;
     struct Perf kinematicsFuckery;
     struct Perf tio;
+    #endif
 };
 
 static inline void recoverCourier(struct Train *train, int sender){
