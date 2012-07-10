@@ -427,7 +427,6 @@ static inline void trainNavigate(struct Train *train, struct Position *dest){
     findNextStop(train);
 
     for(struct TrackNode **i = train->track.pathCurrent;; i++){
-        logC((*i)->name);
         if(train->track.goal.node == *i){
             break;
         }
