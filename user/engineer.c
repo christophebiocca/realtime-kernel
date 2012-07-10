@@ -564,7 +564,7 @@ void engineer(int trainID){
         }
     }
 
-    setSpeed(&train, 0);
+    setSpeed(&train, 14);
 
     bool quit = false;
     while(!quit || !train.messaging.courierReady || !train.timing.timerReady) {
