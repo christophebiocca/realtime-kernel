@@ -392,6 +392,9 @@ static inline void trainNavigate(struct Train *train, struct Position *dest){
             break;
         }
     }
+
+    // go go go
+    setSpeed(train, 14);
 }
 
 void engineer(int trainID){
@@ -522,7 +525,7 @@ void engineer(int trainID){
         }
     }
 
-    setSpeed(&train, 14);
+    setSpeed(&train, 0);
 
     bool quit = false;
     while(!quit || !train.messaging.courierReady || !train.timing.timerReady) {
