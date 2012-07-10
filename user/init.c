@@ -35,19 +35,13 @@ void trainTaskInit(void) {
 
     Create(31, idlerTask);
 
-    Delay(10);
+    Delay(50);
     vtInit();
-    Delay(10);
 
     turnoutInit();
-    Delay(10);
     sensorInit();
-    Delay(10);
     parserInit();
-    Delay(10);
     clockDrawerInit();
-    Delay(10);
     controllerInit();
-    Delay(10);
     initTrackA(nodes, hashtbl);
 }

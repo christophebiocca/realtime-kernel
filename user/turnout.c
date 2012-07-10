@@ -34,7 +34,6 @@ void turnoutInit(void) {
         sputstr(&s, rows[i]);
         sputstr(&s, CURSOR_RESTORE);
         mioPrint(&s);
-        Delay(10);
     }
 
     for (int i = 1; i <= 18; ++i) {
