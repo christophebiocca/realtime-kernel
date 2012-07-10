@@ -15,7 +15,7 @@
 /* Position in the software interrupt register */
 #define SOFTINT_POS     (1 << (INT_UART2 - 32))
 
-#define MIO_TX_BUFFER_LEN   512
+#define MIO_TX_BUFFER_LEN   2048
 static volatile struct {
     unsigned int head;
     unsigned int tail;
