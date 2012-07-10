@@ -11,39 +11,29 @@
 #define CURVE           34
 
 void turnoutInit(void) {
+    const char *rows[] = {
+        "+--------+--------+--------+",
+        "|   1: # |   2: # |   3: # |",
+        "|   4: # |   5: # |   6: # |",
+        "|   7: # |   8: # |   9: # |",
+        "|  10: # |  11: # |  12: # |",
+        "|  13: # |  14: # |  15: # |",
+        "|  16: # |  17: # |  18: # |",
+        "+--------+--------+--------+--------+",
+        "| 153: # | 154: # | 155: # | 156: # |",
+        "+--------+--------+--------+--------+"
+    };
+
     struct String s;
 
-    sinit(&s);
-    vtPos(&s, SWITCH_ROW, 1);
-    sputstr(&s, "+--------+--------+--------+\r\n");
-    mioPrint(&s);
-    sinit(&s);
-    sputstr(&s, "|   1: # |   2: # |   3: # |\r\n");
-    mioPrint(&s);
-    sinit(&s);
-    sputstr(&s, "|   4: # |   5: # |   6: # |\r\n");
-    mioPrint(&s);
-    sinit(&s);
-    sputstr(&s, "|   7: # |   8: # |   9: # |\r\n");
-    mioPrint(&s);
-    sinit(&s);
-    sputstr(&s, "|  10: # |  11: # |  12: # |\r\n");
-    mioPrint(&s);
-    sinit(&s);
-    sputstr(&s, "|  13: # |  14: # |  15: # |\r\n");
-    mioPrint(&s);
-    sinit(&s);
-    sputstr(&s, "|  16: # |  17: # |  18: # |\r\n");
-    mioPrint(&s);
-    sinit(&s);
-    sputstr(&s, "+--------+--------+--------+--------+\r\n");
-    mioPrint(&s);
-    sinit(&s);
-    sputstr(&s, "| 153: # | 154: # | 155: # | 156: # |\r\n");
-    mioPrint(&s);
-    sinit(&s);
-    sputstr(&s, "+--------+--------+--------+--------+");
-    mioPrint(&s);
+    for (unsigned int i = 0; i < sizeof(rows) / sizeof(rows[0]); i++) {
+        sinit(&s);
+        sputstr(&s, CURSOR_SAVE);
+        vtPos(&s, SWITCH_ROW + i, 1);
+        sputstr(&s, rows[i]);
+        sputstr(&s, CURSOR_RESTORE);
+        mioPrint(&s);
+    }
 
     for (int i = 1; i <= 18; ++i) {
         turnoutCurve(i,0);
