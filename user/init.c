@@ -27,25 +27,20 @@ static void idlerTask(void) {
         ;
 }
 
-static void trainTask(void) {
-    vtInit();
-    turnoutInit();
-    sensorInit();
-    parserInit();
-    clockInitTask();
-    clockDrawerInit();
-    controllerInit();
-    initTrackA(nodes, hashtbl);
-
-    Exit();
-}
-
 void trainTaskInit(void) {
+    clockInitTask();
     mioInit();
     tioInit();
     logInit();
 
-    Create(TASK_PRIORITY, trainTask);
     Create(31, idlerTask);
-    Exit();
+    Delay(100);
+
+    vtInit();
+    turnoutInit();
+    sensorInit();
+    parserInit();
+    clockDrawerInit();
+    controllerInit();
+    initTrackA(nodes, hashtbl);
 }
