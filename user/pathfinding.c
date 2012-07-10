@@ -175,6 +175,26 @@ int alongTrack(TurnoutTable turnouts, struct Position *start,
     return i;
 }
 
+// Returns the node at that distance, or end if reached first.
+struct TrackNode **alongPath(
+    struct TrackNode **path,
+    int distance,
+    struct TrackNode *end, bool beyond){
+    while(distance > 0 && *path != end){
+        int dir = 0;
+        if((*path)->type == NODE_BRANCH && (*path)->edge[1].dest == *(path+1)){
+            dir = 1;
+        }
+        ++path;
+        distance -= (*path)->edge[dir].dist;
+    }
+    if(distance > 0 || beyond){
+        return path;
+    } else {
+        return path - 1;
+    }
+}
+
 #define MAX_SEARCH 40
 
 int distance(TurnoutTable turnouts, struct Position *from, struct Position *to) {
