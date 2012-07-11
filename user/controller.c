@@ -384,12 +384,14 @@ static void controllerServer(void) {
                         if (edge->reserved == -1) {
                             struct String s;
                             sinit(&s);
+                            sputstr(&s, YELLOW);
                             sputstr(&s, "Train ");
                             sputint(&s, request.reservation.train_id, 10);
-                            sputstr(&s, " reserves ");
+                            sputstr(&s, " <--- ");
                             sputstr(&s, edge->src->name);
                             sputstr(&s, " to ");
                             sputstr(&s, edge->dest->name);
+                            sputstr(&s, RESET);
                             logS(&s);
                         }
 
@@ -406,12 +408,14 @@ static void controllerServer(void) {
 
                             struct String s;
                             sinit(&s);
+                            sputstr(&s, GREEN);
                             sputstr(&s, "Train ");
                             sputint(&s, request.reservation.train_id, 10);
-                            sputstr(&s, " releases ");
+                            sputstr(&s, " ---> ");
                             sputstr(&s, edge->src->name);
                             sputstr(&s, " to ");
                             sputstr(&s, edge->dest->name);
+                            sputstr(&s, RESET);
                             logS(&s);
                         }
                     }
