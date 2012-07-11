@@ -47,6 +47,10 @@ union ParserData {
         char src[5];
         char dest[5];
     } reservation;
+
+    struct ReservationQuery {
+        int trainNumber;
+    } reservationQuery;
 };
 
 struct Parser {
@@ -75,6 +79,9 @@ struct Parser {
         P_src,
         P_secondSpace,
         P_dest,
+        Y_Y,
+        Y_firstSpace,
+        Y_trainNumber,
         Z_Z,
         Z_firstSpace,
         Z_trainNumber,
@@ -99,6 +106,20 @@ static inline int appendDecDigit(char c, int *num){
     }
     (*num) = (*num) * 10 + d;
     return 1;
+}
+
+static inline void trainOwnsEdge(int train_id, struct TrackEdge *edge) {
+    if (edge->reserved == train_id) {
+        struct String s;
+        sinit(&s);
+
+        sputstr(&s, "  ");
+        sputstr(&s, edge->src->name);
+        sputstr(&s, " -> ");
+        sputstr(&s, edge->dest->name);
+
+        logS(&s);
+    }
 }
 
 // Main entry point for parsing, allows us to
@@ -137,6 +158,9 @@ bool parse(struct Parser *parser, char c){
                         break;
                     case 's':
                         parser->state = SW_S;
+                        break;
+                    case 'y':
+                        parser->state = Y_Y;
                         break;
                     case 'z':
                         parser->state = Z_Z;
@@ -323,6 +347,25 @@ bool parse(struct Parser *parser, char c){
                 parser->state = ErrorState;
                 break;
 
+            case Y_Y:
+                EXPECT_EXACT(' ', Y_firstSpace);
+                break;
+
+            case Y_firstSpace:
+                parser->data.reservationQuery.trainNumber = 0;
+                if (appendDecDigit(c, &parser->data.reservationQuery.trainNumber)) {
+                    parser->state = Y_trainNumber;
+                } else {
+                    parser->state = ErrorState;
+                }
+                break;
+
+            case Y_trainNumber:
+                if (!appendDecDigit(c, &parser->data.reservationQuery.trainNumber)) {
+                    parser->state = ErrorState;
+                }
+                break;
+
             case Z_Z:
                 EXPECT_EXACT(' ', Z_firstSpace);
                 break;
@@ -478,6 +521,31 @@ bool parse(struct Parser *parser, char c){
 
             case P_dest: {
                 planRoute(parser->data.routeFind.src, parser->data.routeFind.dest);
+                break;
+            }
+
+            case Y_trainNumber: {
+                struct String s;
+                sinit(&s);
+                sputstr(&s, "Train ");
+                sputint(&s, parser->data.reservationQuery.trainNumber, 10);
+                sputstr(&s, " owns:");
+                logS(&s);
+
+                for (int i = 0; i < TRACK_MAX; ++i) {
+                    trainOwnsEdge(
+                        parser->data.reservationQuery.trainNumber,
+                        &nodes[i].edge[0]
+                    );
+
+                    if (nodes[i].type == NODE_BRANCH) {
+                        trainOwnsEdge(
+                            parser->data.reservationQuery.trainNumber,
+                            &nodes[i].edge[1]
+                        );
+                    }
+                }
+
                 break;
             }
 
