@@ -374,7 +374,6 @@ static void controllerServer(void) {
                         break;
                     }
 
-                    struct String s;
                     for (int i = 0; i < MAX_TRACK_EDGES; ++i) {
                         struct TrackEdge *edge = request.reservation.edges[i];
 
@@ -382,14 +381,17 @@ static void controllerServer(void) {
                             break;
                         }
 
-                        sinit(&s);
-                        sputstr(&s, "Train ");
-                        sputint(&s, request.reservation.train_id, 10);
-                        sputstr(&s, " reserves ");
-                        sputstr(&s, edge->src->name);
-                        sputstr(&s, " to ");
-                        sputstr(&s, edge->dest->name);
-                        logS(&s);
+                        if (edge->reserved == -1) {
+                            struct String s;
+                            sinit(&s);
+                            sputstr(&s, "Train ");
+                            sputint(&s, request.reservation.train_id, 10);
+                            sputstr(&s, " reserves ");
+                            sputstr(&s, edge->src->name);
+                            sputstr(&s, " to ");
+                            sputstr(&s, edge->dest->name);
+                            logS(&s);
+                        }
 
                         edge->reserved = edge->reverse->reserved =
                             request.reservation.train_id;

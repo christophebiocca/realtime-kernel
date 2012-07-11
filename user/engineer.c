@@ -45,6 +45,8 @@ struct Messaging {
     bool courierReady;
     bool notifyPosition;
     bool notifyExpectation;
+    bool notifyNeededReservations;
+    bool notifyDoNotWantReservations;
 };
 
 struct Timing {
@@ -72,13 +74,31 @@ struct TrackControl {
     struct TrackNode **pathCurrent;
 };
 
+#define TRACK_RESERVATION_EDGES 50
+struct TrackReservations {
+    int needed_head;
+    int needed_tail;
+    struct TrackEdge *needed[TRACK_RESERVATION_EDGES];
+
+    int granted_head;
+    int granted_tail;
+    struct TrackEdge *granted[TRACK_RESERVATION_EDGES];
+
+    // according to thesaurus.com "do not want" is the antonym of "need"
+    int donotwant_head;
+    int donotwant_tail;
+    struct TrackEdge *donotwant[TRACK_RESERVATION_EDGES];
+};
+
 struct Train {
     int id;
     struct Kinematics kinematics;
     struct Messaging messaging;
     struct Timing timing;
     struct TrackControl track;
-    #ifndef PRODUCTION
+    struct TrackReservations reservations;
+
+#ifndef PRODUCTION
     struct Perf wholeLoop;
     struct Perf plan;
     struct Perf timerCallback;
@@ -90,7 +110,7 @@ struct Train {
     struct Perf findNextStop;
     struct Perf kinematicsFuckery;
     struct Perf tio;
-    #endif
+#endif
 };
 
 static inline void recoverCourier(struct Train *train, int sender){
@@ -141,14 +161,65 @@ static inline void setSpeed(struct Train *train, int speed){
     TIMER_WORST(train->tio);
 }
 
-static inline void computeReservations(struct Train *train) {
+// FIXME: horrible O(n) performance
+static inline int edgeInArray(struct TrackEdge **array,
+        int head, int tail, struct TrackEdge *edge) {
+
+    for (int i = head; i != tail; i = (i + 1) % TRACK_RESERVATION_EDGES) {
+        if (array[i] == edge) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static inline void updateNeededReservations(struct Train *train) {
+    struct TrackReservations *r = &train->reservations;
+
     int back = (train->kinematics.orientation == FORWARD)
         ? TRAIN_TAIL_PICKUP_FRONT
         : TRAIN_TAIL_PICKUP_BACK;
 
     if (train->track.position.offset < back) {
-        // FIXME
-        logC("would reserve behind");
+        struct TrackNode *back = train->track.position.node->reverse;
+
+        int dir = 0;
+        if (back->type == NODE_BRANCH) {
+            dir = isTurnoutCurved(train->track.turnouts, back->num);
+        }
+
+        int already_needed = edgeInArray(
+            r->needed,
+            r->needed_head,
+            r->needed_tail,
+            &back->edge[dir]
+        );
+
+        if (!already_needed) {
+            r->needed[r->needed_tail++] = &back->edge[dir];
+            r->needed_tail %= TRACK_RESERVATION_EDGES;
+            train->messaging.notifyNeededReservations = true;
+        }
+
+        /*
+        int already_granted = edgeInArray(
+            r->granted,
+            r->granted_head,
+            r->granted_tail,
+            &back->edge[dir]
+        );
+
+        if (!already_granted) {
+            struct String s;
+            sinit(&s);
+            sputstr(&s, "newneed: ");
+            sputstr(&s, back->edge[dir].src->name);
+            sputstr(&s, " to " );
+            sputstr(&s, back->edge[dir].dest->name);
+            logS(&s);
+        }
+        */
     }
 
     struct Position end;
@@ -166,13 +237,197 @@ static inline void computeReservations(struct Train *train) {
     );
 
     for (int i = 0; i < (len - 1); ++i) {
-        struct String s;
-        sinit(&s);
-        sputstr(&s, "would reserve ");
-        sputstr(&s, edges[i]->src->name);
-        sputstr(&s, " to ");
-        sputstr(&s, edges[i]->dest->name);
-        logS(&s);
+        int already_needed = edgeInArray(
+            r->needed,
+            r->needed_head,
+            r->needed_tail,
+            edges[i]
+        );
+
+        if (!already_needed) {
+            r->needed[r->needed_tail++] = edges[i];
+            r->needed_tail %= TRACK_RESERVATION_EDGES;
+            train->messaging.notifyNeededReservations = true;
+        }
+
+        /*
+        int already_granted = edgeInArray(
+            r->granted,
+            r->granted_head,
+            r->granted_tail,
+            edges[i]
+        );
+
+        if (!already_granted) {
+            struct String s;
+            sinit(&s);
+            sputstr(&s, "newneed: ");
+            sputstr(&s, edges[i]->src->name);
+            sputstr(&s, " to " );
+            sputstr(&s, edges[i]->dest->name);
+            logS(&s);
+        }
+        */
+    }
+}
+
+static inline void updateGrantedReservations(struct Train *train) {
+    struct TrackReservations *r = &train->reservations;
+
+    for (int i = r->needed_head; i != r->needed_tail;
+            i = (i + 1) % TRACK_RESERVATION_EDGES) {
+
+        if (r->needed[i]->reserved != train->id) {
+            break;
+        }
+
+        struct TrackEdge *edge = r->needed[i];
+        r->needed_head = (r->needed_head + 1) % TRACK_RESERVATION_EDGES;
+        if (r->needed_head == r->needed_tail) {
+            train->messaging.notifyNeededReservations = false;
+        }
+
+        int edge_exists = edgeInArray(
+            r->granted,
+            r->granted_head,
+            r->granted_tail,
+            edge
+        );
+        if (!edge_exists) {
+            r->granted[r->granted_tail++] = edge;
+            r->granted_tail %= TRACK_RESERVATION_EDGES;
+
+            /*
+            {
+                struct String s;
+                sinit(&s);
+                sputstr(&s, "grant: ");
+                sputstr(&s, edge->src->name);
+                sputstr(&s, " to " );
+                sputstr(&s, edge->dest->name);
+                logS(&s);
+            }
+            */
+        }
+    }
+}
+
+static inline void updateDoNotWantReservations(struct Train *train) {
+    struct TrackReservations *r = &train->reservations;
+
+    for (int i = r->granted_head; i != r->granted_tail;
+            i = (i + 1) % TRACK_RESERVATION_EDGES) {
+
+        int edge_exists = edgeInArray(
+            r->needed,
+            r->needed_head,
+            r->needed_tail,
+            r->granted[i]
+        );
+
+        if (!edge_exists) {
+            // edge no longer needed, DO NOT WANT
+            struct TrackEdge *edge = r->granted[i];
+            r->granted_head = (r->granted_head + 1) % TRACK_RESERVATION_EDGES;
+
+            r->donotwant[r->donotwant_tail++] = edge;
+            r->donotwant_tail %= TRACK_RESERVATION_EDGES;
+
+            train->messaging.notifyDoNotWantReservations = true;
+
+            /*
+            {
+                struct String s;
+                sinit(&s);
+                sputstr(&s, "donotwant: ");
+                sputstr(&s, edge->src->name);
+                sputstr(&s, " to " );
+                sputstr(&s, edge->dest->name);
+                logS(&s);
+            }
+            */
+
+        }
+    }
+}
+
+static inline void notifyNeededReservations(struct Train *train) {
+    if (train->messaging.notifyNeededReservations &&
+            train->messaging.courierReady) {
+
+        struct TrackReservations *r = &train->reservations;
+        struct TrackEdge *edges[5];
+
+        int i, j;
+        for (i = r->needed_head, j = 0; j < 5 && i != r->needed_tail;
+                i = (i + 1) % TRACK_RESERVATION_EDGES) {
+
+            int already_granted = edgeInArray(
+                r->granted,
+                r->granted_head,
+                r->granted_tail,
+                r->needed[i]
+            );
+
+            if (!already_granted) {
+                edges[j++] = r->needed[i];
+            }
+        }
+
+        if (j > 0) {
+            for (; j < 5; ++j) {
+                edges[j] = NULLPTR;
+            }
+
+            controllerReserve(
+                train->messaging.courier,
+                train->id,
+                edges[0],
+                edges[1],
+                edges[2],
+                edges[3],
+                edges[4]
+            );
+            courierUsed(train);
+        }
+    }
+}
+
+static inline void notifyDoNotWantReservations(struct Train *train) {
+    if (train->messaging.notifyDoNotWantReservations &&
+            train->messaging.courierReady) {
+
+        struct TrackReservations *r = &train->reservations;
+        struct TrackEdge *edges[5];
+
+        int i, j;
+        for (i = r->donotwant_head, j = 0; j < 5 && i != r->donotwant_tail;
+                i = (i + 1) % TRACK_RESERVATION_EDGES, ++j) {
+            edges[j] = r->donotwant[i];
+        }
+
+        if (i != r->donotwant_head) {
+            for (; j < 5; ++j) {
+                edges[j] = NULLPTR;
+            }
+
+            controllerRelease(
+                train->messaging.courier,
+                train->id,
+                edges[0],
+                edges[1],
+                edges[2],
+                edges[3],
+                edges[4]
+            );
+            courierUsed(train);
+
+            // i has the new head
+            r->donotwant_head = i;
+            if (r->donotwant_head == r->donotwant_tail) {
+                train->messaging.notifyDoNotWantReservations = false;
+            }
+        }
     }
 }
 
@@ -366,6 +621,11 @@ static inline void updatePosition(struct Train *train, struct Position *pos){
             train->track.pathCurrent++;
         }
     }
+
+    // do not fuck with the ordering of these
+    updateGrantedReservations(train);
+    updateNeededReservations(train);
+    updateDoNotWantReservations(train);
 
     TIMER_START(train->updateExpectation);
     updateExpectation(train);
@@ -564,7 +824,11 @@ void engineer(int trainID){
     train.kinematics.time = Time();
     train.kinematics.distance = 0;
 
-    setSpeed(&train,14);
+    train.reservations.needed_head = train.reservations.needed_tail = 0;
+    train.reservations.granted_head = train.reservations.granted_tail = 0;
+    train.reservations.donotwant_head = train.reservations.donotwant_tail = 0;
+
+    setSpeed(&train, 14);
 
     // Go forth and hit a sensor.
     {
@@ -637,7 +901,7 @@ void engineer(int trainID){
         }
     }
 
-    setSpeed(&train, 14);
+    setSpeed(&train, 0);
 
     bool quit = false;
     while(!quit || !train.messaging.courierReady || !train.timing.timerReady) {
@@ -645,6 +909,9 @@ void engineer(int trainID){
             // Act on the outside world.
             notifyPosition(&train);
             notifyExpectation(&train);
+            notifyNeededReservations(&train);
+            notifyDoNotWantReservations(&train);
+
             scheduleTimer(&train);
         }
 
@@ -674,7 +941,6 @@ void engineer(int trainID){
                     break;
                 }
                 case GOTO: {
-                    computeReservations(&train);
                     TIMER_START(train.plan);
                     trainNavigate(&train, &mesg.content.destination);
                     TIMER_WORST(train.plan);
