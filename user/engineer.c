@@ -134,6 +134,8 @@ static inline void reverse(struct Train *train){
     sputc(&s, 15);
     sputc(&s, train->id);
     tioPrint(&s);
+    train->kinematics.orientation = (train->kinematics.orientation == FORWARD)
+        ? BACKWARD : FORWARD;
     TIMER_WORST(train->tio);
 }
 
