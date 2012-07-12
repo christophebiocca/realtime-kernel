@@ -26,11 +26,7 @@ struct Perf {
    If EXPRESSION is zero, print an error message and abort.  */
 
 /* This prints an "Assertion failed" message and aborts.  */
-static void __assert_fail (__const char *__assertion, __const char *__file,
-        unsigned int __line, __const char *__function)
-__attribute__((always_inline, noreturn));
-
-static void __assert_fail (__const char *__assertion, __const char *__file,
+__attribute__((always_inline, noreturn)) static inline void __assert_fail (__const char *__assertion, __const char *__file,
         unsigned int __line, __const char *__function){
     bwsetfifo(COM2, 0);
     bwsetspeed(COM2, 115200);
