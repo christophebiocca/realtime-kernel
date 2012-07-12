@@ -220,7 +220,7 @@ bool idling(){
 }
 
 void dumpTaskTimes(void){
-    #ifndef PROD
+    #ifndef PRODUCTION
     for(int i = 1; i < g_next_task_id; ++i){
         unsigned int id = g_task_table[i].id;
         bwprintf(COM2, "Task#%d(%d %d %d), time: %d\r\n",

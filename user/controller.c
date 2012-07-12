@@ -520,6 +520,7 @@ void controllerReserve(int courier_tid, int train_id,
         courier_tid,
         (char *) &msg, sizeof(struct ControllerMessage)
     );
+    (void) ret;
     assert(ret == 0);
 }
 
@@ -544,6 +545,7 @@ void controllerRelease(int courier_tid, int train_id,
         courier_tid,
         (char *) &msg, sizeof(struct ControllerMessage)
     );
+    (void) ret;
     assert(ret == 0);
 }
 

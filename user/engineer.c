@@ -558,6 +558,7 @@ static inline void updateTurnouts(struct Train *train){
     struct TrackNode **sweep = path;
     int len = alongTrack(train->track.turnouts, &train->track.position,
         train->kinematics.stop/1000, &end, path, NULLPTR, false);
+    (void) len;
     assert(len <= 50);
     while(*sweep != end.node){
         if((*sweep)->type == NODE_MERGE && sweep != path){
