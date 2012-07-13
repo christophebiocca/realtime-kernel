@@ -83,6 +83,22 @@ void tick(struct Kinematics *k, int time){
         // Deviation due to acceleration
         k->distance += (k->acceleration * (dt * dt))/2;
     }
+
+    {
+        struct String s;
+        sinit(&s);
+        sputstr(&s,"T:");
+        sputint(&s,k->time,10);
+        sputstr(&s," A:");
+        sputint(&s,k->acceleration,10);
+        sputstr(&s," Sp:");
+        sputint(&s,k->current_speed,10);
+        sputstr(&s," St:");
+        sputint(&s,k->stop,10);
+        sputstr(&s," D:");
+        sputint(&s,k->distance,10);
+        logS(&s);
+    }
 }
 
 int distForTime(struct Kinematics *k, int time) {
