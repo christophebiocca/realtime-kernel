@@ -1,3 +1,5 @@
+#include <lib.h>
+
 #include <user/track_data.h>
 #include <user/heap.h>
 #include <user/pathfinding.h>
@@ -122,8 +124,8 @@ int alongTrack(TurnoutTable turnouts, struct Position *start,
     
     struct TrackNode *pos = start->node;
 
-    int last_dist;
-    struct TrackNode *last_pos;
+    int last_dist = 0;
+    struct TrackNode *last_pos = NULLPTR;
 
     int i = 0;
 
