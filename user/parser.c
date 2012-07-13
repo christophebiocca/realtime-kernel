@@ -495,6 +495,16 @@ bool parse(struct Parser *parser, char c){
 
                 if (parser->data.reservation.op == RESERVE) {
                     controllerBlockingReserve(81, edge);
+
+                    if (edge->reserved != 81) {
+                        struct String s;
+                        sinit(&s);
+                        sputstr(&s, "Reservation failed, owned by ");
+                        sputint(&s, edge->reserved, 10);
+                        logS(&s);
+                    } else {
+                        logC("Reservation succeeded");
+                    }
                 } else {
                     controllerBlockingRelease(81, edge);
                 }
