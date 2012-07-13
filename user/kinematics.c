@@ -53,7 +53,7 @@ static inline void computeStop(struct Kinematics *k) {
         speed -= (MAXACCEL - (((speed - HALF_SPEED)-TRANSITION2)*(MAXACCEL - MINACCEL))/(TRANSITION1-TRANSITION2));
         travelled += speed;
     }
-    while(speed > (HALF_SPEED+TRANSITION2)){
+    while(speed > (HALF_SPEED-TRANSITION2)){
         speed -= MAXACCEL;
         travelled += speed;
     }
