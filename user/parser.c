@@ -532,6 +532,7 @@ bool parse(struct Parser *parser, char c){
                 sputstr(&s, " owns:");
                 logS(&s);
 
+                /*
                 for (int i = 0; i < TRACK_MAX; ++i) {
                     trainOwnsEdge(
                         parser->data.reservationQuery.trainNumber,
@@ -545,6 +546,8 @@ bool parse(struct Parser *parser, char c){
                         );
                     }
                 }
+                */
+                engineerDumpReservations(parser->data.reservationQuery.trainNumber);
 
                 break;
             }

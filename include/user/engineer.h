@@ -14,4 +14,6 @@ void engineerSend(int engineer_tid, struct TrackNode *dest, int mm);
 // tell an engineer that a sensor they expected was triggered
 void engineerSensorTriggered(int engineer_tid, Sensor sensor);
 
+void engineerDumpReservations(int engineer_tid);
+
 #endif

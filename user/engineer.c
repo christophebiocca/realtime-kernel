@@ -27,6 +27,7 @@ struct EngineerMessage {
     enum {
         GOTO,
         SENSOR,
+        DUMP_RESERVATIONS,
         QUIT,
         NUM_MESSAGE_TYPES
     } messageType;
@@ -892,6 +893,71 @@ void engineer(int trainID){
                     TIMER_WORST(train.plan);
                     break;
                 }
+
+                case DUMP_RESERVATIONS: {
+                    struct String s;
+                    struct TrackReservations *r = &train.reservations;
+
+                    sinit(&s);
+                    sputstr(&s, "Needed (");
+                    sputint(&s, r->needed_head, 10);
+                    sputstr(&s, ", ");
+                    sputint(&s, r->needed_tail, 10);
+                    sputstr(&s, ")");
+                    logS(&s);
+
+                    for (int i = r->needed_head; i != r->needed_tail;
+                            i = (i + 1) % TRACK_RESERVATION_EDGES) {
+                        sinit(&s);
+
+                        sputstr(&s, "    ");
+                        sputstr(&s, r->needed[i]->src->name);
+                        sputstr(&s, " to ");
+                        sputstr(&s, r->needed[i]->dest->name);
+                        logS(&s);
+                    }
+
+                    sinit(&s);
+                    sputstr(&s, "Granted (");
+                    sputint(&s, r->granted_head, 10);
+                    sputstr(&s, ", ");
+                    sputint(&s, r->granted_tail, 10);
+                    sputstr(&s, ")");
+                    logS(&s);
+
+                    for (int i = r->granted_head; i != r->granted_tail;
+                            i = (i + 1) % TRACK_RESERVATION_EDGES) {
+                        sinit(&s);
+
+                        sputstr(&s, "    ");
+                        sputstr(&s, r->granted[i]->src->name);
+                        sputstr(&s, " to ");
+                        sputstr(&s, r->granted[i]->dest->name);
+                        logS(&s);
+                    }
+
+                    sinit(&s);
+                    sputstr(&s, "Do Not Want (");
+                    sputint(&s, r->donotwant_head, 10);
+                    sputstr(&s, ", ");
+                    sputint(&s, r->donotwant_tail, 10);
+                    sputstr(&s, ")");
+                    logS(&s);
+
+                    for (int i = r->donotwant_head; i != r->donotwant_tail;
+                            i = (i + 1) % TRACK_RESERVATION_EDGES) {
+                        sinit(&s);
+
+                        sputstr(&s, "    ");
+                        sputstr(&s, r->donotwant[i]->src->name);
+                        sputstr(&s, " to ");
+                        sputstr(&s, r->donotwant[i]->dest->name);
+                        logS(&s);
+                    }
+
+                    break;
+                }
+
                 case QUIT:
                     // Dump all the timings to the log.
                     TIMER_PRINT(train.wholeLoop);
@@ -930,6 +996,13 @@ void engineerSend(int engineer_tid, struct TrackNode *dest, int mm) {
             .node = dest,
             .offset = mm
         }
+    };
+    Send(engineer_tid, (char *)&msg, sizeof(struct EngineerMessage), 0, 0);
+}
+
+void engineerDumpReservations(int engineer_tid) {
+    struct EngineerMessage msg = {
+        .messageType = DUMP_RESERVATIONS,
     };
     Send(engineer_tid, (char *)&msg, sizeof(struct EngineerMessage), 0, 0);
 }
