@@ -4,9 +4,6 @@
 
 // TODO: Confirm this actually works for train 44.
 
-#define FORWARD_STOPPING_COEFFICIENT        (0.0034)
-#define BACKWARD_STOPPING_COEFFICIENT       (0.0028)
-
 // if (abs(current_speed - expected_speed) < threshold) acceleration = 0
 #define SPEED_THRESHOLD                     (5)
 
@@ -43,12 +40,33 @@ static inline void computeStop(struct Kinematics *k) {
         k->stop = 0;
     }
 
-    float coeff = (k->orientation == FORWARD)
-        ? FORWARD_STOPPING_COEFFICIENT
-        : BACKWARD_STOPPING_COEFFICIENT;
+    int speed = k->current_speed;
+    int travelled = 0;
 
-    float s = k->current_speed / (2 * coeff);
-    k->stop = (int) s;
+    // TODO: Bust out the algebra, make this computation simpler.
+
+    while(speed > (HALF_SPEED+TRANSITION1)){
+        speed -= MINACCEL;
+        travelled += speed;
+    }
+    while(speed > (HALF_SPEED+TRANSITION2)){
+        speed -= (MAXACCEL - (((speed - HALF_SPEED)-TRANSITION2)*(MAXACCEL - MINACCEL))/(TRANSITION1-TRANSITION2));
+        travelled += speed;
+    }
+    while(speed > (HALF_SPEED+TRANSITION2)){
+        speed -= MAXACCEL;
+        travelled += speed;
+    }
+    while(speed > (HALF_SPEED-TRANSITION1)){
+        speed -= (MAXACCEL - (((HALF_SPEED - speed)-TRANSITION2)*(MAXACCEL - MINACCEL))/(TRANSITION1-TRANSITION2));
+        travelled += speed;
+    }
+    while(speed > 0){
+        speed -= MINACCEL;
+        travelled += speed;
+    }
+
+    k->stop = travelled;
 }
 
 void tick(struct Kinematics *k, int time){
