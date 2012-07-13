@@ -203,25 +203,6 @@ static inline void updateNeededReservations(struct Train *train) {
             r->needed_tail %= TRACK_RESERVATION_EDGES;
             train->messaging.notifyNeededReservations = true;
         }
-
-        /*
-        int already_granted = edgeInArray(
-            r->granted,
-            r->granted_head,
-            r->granted_tail,
-            &back->edge[dir]
-        );
-
-        if (!already_granted) {
-            struct String s;
-            sinit(&s);
-            sputstr(&s, "newneed: ");
-            sputstr(&s, back->edge[dir].src->name);
-            sputstr(&s, " to " );
-            sputstr(&s, back->edge[dir].dest->name);
-            logS(&s);
-        }
-        */
     }
 
     struct Position end;
@@ -251,25 +232,6 @@ static inline void updateNeededReservations(struct Train *train) {
             r->needed_tail %= TRACK_RESERVATION_EDGES;
             train->messaging.notifyNeededReservations = true;
         }
-
-        /*
-        int already_granted = edgeInArray(
-            r->granted,
-            r->granted_head,
-            r->granted_tail,
-            edges[i]
-        );
-
-        if (!already_granted) {
-            struct String s;
-            sinit(&s);
-            sputstr(&s, "newneed: ");
-            sputstr(&s, edges[i]->src->name);
-            sputstr(&s, " to " );
-            sputstr(&s, edges[i]->dest->name);
-            logS(&s);
-        }
-        */
     }
 }
 
@@ -298,18 +260,6 @@ static inline void updateGrantedReservations(struct Train *train) {
         if (!edge_exists) {
             r->granted[r->granted_tail++] = edge;
             r->granted_tail %= TRACK_RESERVATION_EDGES;
-
-            /*
-            {
-                struct String s;
-                sinit(&s);
-                sputstr(&s, "grant: ");
-                sputstr(&s, edge->src->name);
-                sputstr(&s, " to " );
-                sputstr(&s, edge->dest->name);
-                logS(&s);
-            }
-            */
         }
     }
 }
@@ -336,19 +286,6 @@ static inline void updateDoNotWantReservations(struct Train *train) {
             r->donotwant_tail %= TRACK_RESERVATION_EDGES;
 
             train->messaging.notifyDoNotWantReservations = true;
-
-            /*
-            {
-                struct String s;
-                sinit(&s);
-                sputstr(&s, "donotwant: ");
-                sputstr(&s, edge->src->name);
-                sputstr(&s, " to " );
-                sputstr(&s, edge->dest->name);
-                logS(&s);
-            }
-            */
-
         }
     }
 }
@@ -502,6 +439,7 @@ static inline void calculateStop(struct Train *train){
                 sputint(&s, train->kinematics.current_speed,10);
                 logS(&s);
             }
+
             setSpeed(train,0);
         }
     }
@@ -947,6 +885,7 @@ void engineer(int trainID){
                     sensorUpdate(&train, mesg.content.sensorTriggered.sensor);
                     break;
                 }
+
                 case GOTO: {
                     TIMER_START(train.plan);
                     trainNavigate(&train, &mesg.content.destination);

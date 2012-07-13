@@ -102,6 +102,7 @@ void tick(struct Kinematics *k, int time){
         k->distance += (k->acceleration * (dt * dt))/2;
     }
 
+    /*
     {
         struct String s;
         sinit(&s);
@@ -117,6 +118,7 @@ void tick(struct Kinematics *k, int time){
         sputint(&s,k->distance,10);
         logS(&s);
     }
+    */
 }
 
 int distForTime(struct Kinematics *k, int time) {
