@@ -403,6 +403,10 @@ static void controllerServer(void) {
                     for (int i = 0; i < MAX_TRACK_EDGES; ++i) {
                         struct TrackEdge *edge = request.reservation.edges[i];
 
+                        if (edge == NULLPTR) {
+                            break;
+                        }
+
                         if (edge->reserved == request.reservation.train_id) {
                             edge->reserved = edge->reverse->reserved = -1;
 
