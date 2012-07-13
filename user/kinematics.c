@@ -59,7 +59,17 @@ void tick(struct Kinematics *k, int time){
 
     // Update the train speed
     int oldspeed = k->current_speed;
-    k->current_speed += dt * k->acceleration;
+    {
+        // Correct for overshoot
+        int dv = dt * k->acceleration;
+        if((oldspeed < k->target_speed && oldspeed + dv > k->target_speed) ||
+            (oldspeed > k->target_speed && oldspeed + dv < k->target_speed)){
+            k->current_speed = k->target_speed;
+            k->acceleration = (k->current_speed - oldspeed)/dt;
+        } else {
+            k->current_speed += dt * k->acceleration;
+        }
+    }
 
     // Changed current_speed -> recompute stop distance.
     computeStop(k);
