@@ -599,7 +599,7 @@ static inline void findNextStop(struct Train *train){
 }
 
 static inline void handleReversals(struct Train *train){
-    if(train->kinematics.target_speed == 0){
+    if(train->kinematics.target_speed == 0 && train->track.pathing){
         bool a = (*(train->track.pathCurrent) == train->track.next_stop.node);
         bool b = train->track.next_stop.node != train->track.goal.node;
         bool c = train->kinematics.acceleration == 0;
