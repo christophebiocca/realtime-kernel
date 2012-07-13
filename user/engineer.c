@@ -111,6 +111,10 @@ struct Train {
     struct Perf findNextStop;
     struct Perf kinematicsFuckery;
     struct Perf tio;
+
+    struct Perf reservationsNeeded;
+    struct Perf reservationsGranted;
+    struct Perf reservationsDoNotWant;
 #endif
 };
 
@@ -569,9 +573,17 @@ static inline void updatePosition(struct Train *train, struct Position *pos){
     }
 
     // do not fuck with the ordering of these
+    TIMER_START(train->reservationsGranted);
     updateGrantedReservations(train);
+    TIMER_WORST(train->reservationsGranted);
+
+    TIMER_START(train->reservationsNeeded);
     updateNeededReservations(train);
+    TIMER_WORST(train->reservationsNeeded);
+
+    TIMER_START(train->reservationsDoNotWant);
     updateDoNotWantReservations(train);
+    TIMER_WORST(train->reservationsDoNotWant);
 
     TIMER_START(train->updateExpectation);
     updateExpectation(train);
@@ -729,6 +741,9 @@ void engineer(int trainID){
     TIMER_INIT(train.findNextStop);
     TIMER_INIT(train.kinematicsFuckery);
     TIMER_INIT(train.tio);
+    TIMER_INIT(train.reservationsNeeded);
+    TIMER_INIT(train.reservationsGranted);
+    TIMER_INIT(train.reservationsDoNotWant);
 
     // Spawn our helpers and claim them.
     {
@@ -971,6 +986,9 @@ void engineer(int trainID){
                     TIMER_PRINT(train.findNextStop);
                     TIMER_PRINT(train.kinematicsFuckery);
                     TIMER_PRINT(train.tio);
+                    TIMER_PRINT(train.reservationsNeeded);
+                    TIMER_PRINT(train.reservationsGranted);
+                    TIMER_PRINT(train.reservationsDoNotWant);
                     quit = true;
                     break;
                 default:
