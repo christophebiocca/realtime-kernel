@@ -280,7 +280,7 @@ static inline void updateGrantedReservations(struct Train *train) {
             i = (i + 1) % TRACK_RESERVATION_EDGES) {
 
         if (r->needed[i]->reserved != train->id) {
-            break;
+            continue;
         }
 
         struct TrackEdge *edge = r->needed[i];
