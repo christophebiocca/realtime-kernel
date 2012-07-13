@@ -525,29 +525,31 @@ bool parse(struct Parser *parser, char c){
             }
 
             case Y_trainNumber: {
-                struct String s;
-                sinit(&s);
-                sputstr(&s, "Train ");
-                sputint(&s, parser->data.reservationQuery.trainNumber, 10);
-                sputstr(&s, " owns:");
-                logS(&s);
+                if (parser->data.reservationQuery.trainNumber > 0 &&
+                        parser->data.reservationQuery.trainNumber <= 80) {
+                    struct String s;
+                    sinit(&s);
+                    sputstr(&s, "From track data, Train ");
+                    sputint(&s, parser->data.reservationQuery.trainNumber, 10);
+                    sputstr(&s, " owns:");
+                    logS(&s);
 
-                /*
-                for (int i = 0; i < TRACK_MAX; ++i) {
-                    trainOwnsEdge(
-                        parser->data.reservationQuery.trainNumber,
-                        &nodes[i].edge[0]
-                    );
-
-                    if (nodes[i].type == NODE_BRANCH) {
+                    for (int i = 0; i < TRACK_MAX; ++i) {
                         trainOwnsEdge(
                             parser->data.reservationQuery.trainNumber,
-                            &nodes[i].edge[1]
+                            &nodes[i].edge[0]
                         );
+
+                        if (nodes[i].type == NODE_BRANCH) {
+                            trainOwnsEdge(
+                                parser->data.reservationQuery.trainNumber,
+                                &nodes[i].edge[1]
+                            );
+                        }
                     }
+                } else {
+                    engineerDumpReservations(parser->data.reservationQuery.trainNumber);
                 }
-                */
-                engineerDumpReservations(parser->data.reservationQuery.trainNumber);
 
                 break;
             }
