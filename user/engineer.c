@@ -593,6 +593,8 @@ static inline void findNextStop(struct Train *train){
         sinit(&s);
         sputstr(&s, "Next Stop: ");
         sputstr(&s, train->track.next_stop.node->name);
+        sputc(&s, '@');
+        sputint(&s, train->track.next_stop.offset, 10);
         logS(&s);
     }
 }
