@@ -2,14 +2,20 @@
 #include <debug.h>
 #include <user/log.h>
 
+// TODO: Confirm this actually works for train 44.
+
 #define FORWARD_STOPPING_COEFFICIENT        (0.0034)
 #define BACKWARD_STOPPING_COEFFICIENT       (0.0028)
 
-// FIXME: This is probably incorrect...
-#define ACCELERATION_COEFFICIENT            (0.0034)
-
 // if (abs(current_speed - expected_speed) < threshold) acceleration = 0
-#define SPEED_THRESHOLD                     (250)
+#define SPEED_THRESHOLD                     (5)
+
+#define MINACCEL                            (4)
+#define MAXACCEL                            (26)
+#define MAX_SPEED                           (5480)
+#define HALF_SPEED                          (MAX_SPEED/2)
+#define TRANSITION1                         (2100)
+#define TRANSITION2                         (600)
 
 void computeAcceleration(struct Kinematics *k) {
     int sign = (k->target_speed < k->current_speed) ? -1 : 1;
@@ -17,12 +23,18 @@ void computeAcceleration(struct Kinematics *k) {
 
     if (diffspeed < SPEED_THRESHOLD) {
         k->acceleration = 0;
-        if (k->target_speed == 0) {
-            k->current_speed = 0;
-        }
+        k->current_speed = k->target_speed;
     } else {
-        float acl = diffspeed * ACCELERATION_COEFFICIENT;
-        k->acceleration = (int) acl * sign;
+        int dev = HALF_SPEED - k->current_speed;
+        if(dev < 0) dev = -dev;
+        if(dev > TRANSITION1){
+            k->acceleration = MINACCEL;
+        } else if(dev < TRANSITION2){
+            k->acceleration = MAXACCEL;
+        } else {
+            k->acceleration = (MAXACCEL - ((dev-TRANSITION2)*(MAXACCEL - MINACCEL))/(TRANSITION1-TRANSITION2));
+        }
+        k->acceleration *= sign;
     }
 }
 
@@ -40,17 +52,7 @@ static inline void computeStop(struct Kinematics *k) {
 }
 
 void tick(struct Kinematics *k, int time){
-    int sign = (k->target_speed < k->current_speed) ? -1 : 1;
-    int diffspeed = (k->target_speed - k->current_speed) * sign;
-
-    if (k->target_speed > k->current_speed) {
-        computeAcceleration(k);
-    } else if (diffspeed < SPEED_THRESHOLD) {
-        k->acceleration = 0;
-        if (k->target_speed == 0) {
-            k->current_speed = 0;
-        }
-    }
+    computeAcceleration(k);
 
     // Measure time delta
     int dt = time - k->time;
