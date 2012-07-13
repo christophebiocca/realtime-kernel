@@ -61,6 +61,6 @@ submit: prod
 	git archive HEAD --format=tar | tar -x -C ~/cs452/$(DIR)/src/
 
 prod: clean
-	make CFLAGS="$(CFLAGS) -DPRODUCTION"
+	make CFLAGS="$(CFLAGS) -DPRODUCTION -Wno-error"
 
 -include $(sources:.c=.d)
