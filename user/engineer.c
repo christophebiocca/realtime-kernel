@@ -486,8 +486,7 @@ static inline void calculateStop(struct Train *train){
         int dist = distance(train->track.turnouts,
             &train->track.position,
             &train->track.next_stop);
-        if((train->track.next_stop.node == train->track.goal.node &&
-            dist <= train->kinematics.stop/1000) || dist <= 0){
+        if(dist <= train->kinematics.stop/1000){
             {
                 struct String s;
                 sinit(&s);
