@@ -12,7 +12,7 @@
 #define MAX_SPEED                           (5480)
 #define HALF_SPEED                          (MAX_SPEED/2)
 #define TRANSITION1                         (2100)
-#define TRANSITION2                         (600)
+#define TRANSITION2                         (700)
 
 void computeAcceleration(struct Kinematics *k) {
     int sign = (k->target_speed < k->current_speed) ? -1 : 1;
@@ -23,7 +23,7 @@ void computeAcceleration(struct Kinematics *k) {
         k->current_speed = k->target_speed;
     } else {
         int dev = HALF_SPEED - k->current_speed;
-        if(dev < 0) dev = -dev;
+        if(dev < 0) dev = 0;
         if(dev > TRANSITION1){
             k->acceleration = MINACCEL;
         } else if(dev < TRANSITION2){
@@ -45,14 +45,14 @@ static inline void computeStop(struct Kinematics *k) {
 
     // TODO: Bust out the algebra, make this computation simpler.
 
-    while(speed > (HALF_SPEED+TRANSITION1)){
-        speed -= MINACCEL;
-        travelled += speed;
-    }
-    while(speed > (HALF_SPEED+TRANSITION2)){
-        speed -= (MAXACCEL - (((speed - HALF_SPEED)-TRANSITION2)*(MAXACCEL - MINACCEL))/(TRANSITION1-TRANSITION2));
-        travelled += speed;
-    }
+    // while(speed > (HALF_SPEED+TRANSITION1)){
+    //     speed -= MINACCEL;
+    //     travelled += speed;
+    // }
+    // while(speed > (HALF_SPEED+TRANSITION2)){
+    //     speed -= (MAXACCEL - (((speed - HALF_SPEED)-TRANSITION2)*(MAXACCEL - MINACCEL))/(TRANSITION1-TRANSITION2));
+    //     travelled += speed;
+    // }
     while(speed > (HALF_SPEED-TRANSITION2)){
         speed -= MAXACCEL;
         travelled += speed;
