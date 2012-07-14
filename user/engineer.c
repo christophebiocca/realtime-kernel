@@ -422,29 +422,72 @@ static inline void notifyExpectation(struct Train *train){
     }
 }
 
-static inline void calculateStop(struct Train *train){
-    if(train->track.pathing && train->kinematics.target_speed != 0){
-        int dist = distance(train->track.turnouts,
+static inline void adjustTargetSpeed(struct Train *train){
+    if(!train->track.pathing){
+        return;
+    }
+    bool stopping = train->kinematics.target_speed == 0;
+    int dist = distance(train->track.turnouts,
+        &train->track.position,
+        &train->track.next_stop);
+    int invdist = distance(train->track.turnouts,
+        &train->track.next_stop,
+        &train->track.position);
+    int stop = train->kinematics.stop/1000;
+    bool fullyReserved = true;
+    {
+        struct TrackEdge *edges[50];
+        struct Position end;
+        int i = alongTrack(train->track.turnouts,
             &train->track.position,
-            &train->track.next_stop);
-        if(dist <= train->kinematics.stop/1000){
-            {
-                struct String s;
-                sinit(&s);
-                sputstr(&s, "Dist: ");
-                sputint(&s, dist, 10);
-                sputstr(&s, " Stop: ");
-                sputint(&s, train->kinematics.stop, 10);
-                sputstr(&s, " Pos:");
-                sputstr(&s, train->track.position.node->name);
-                sputc(&s, '@');
-                sputint(&s, train->track.position.offset, 10);
-                sputstr(&s, " cs:");
-                sputint(&s, train->kinematics.current_speed,10);
-                logS(&s);
+            stop, &end, 0, edges, true) - 1;
+        assert(i < 50);
+        for(; i >= 0; --i){
+            if(edges[i]->reserved != train->id){
+                fullyReserved = false;
+                {
+                    struct String s;
+                    sinit(&s);
+                    sputstr(&s, edges[i]->src->name);
+                    sputstr(&s, " -> ");
+                    sputstr(&s, edges[i]->dest->name);
+                    sputstr(&s, " has ");
+                    sputint(&s, edges[i]->reserved,10);
+                    logS(&s);
+                }
+                break;
             }
-
-            setSpeed(train,0);
+        }
+    }
+    if(!stopping && ((stop >= dist && dist != 0x7FFFFFFF) || !fullyReserved)){
+        setSpeed(train,0);
+        {
+            struct String s;
+            sinit(&s);
+            sputstr(&s, "Dist: ");
+            sputint(&s, dist, 10);
+            sputstr(&s, " Stop: ");
+            sputint(&s, train->kinematics.stop, 10);
+            sputstr(&s, " Pos:");
+            sputstr(&s, train->track.position.node->name);
+            sputc(&s, '@');
+            sputint(&s, train->track.position.offset, 10);
+            logS(&s);
+        }
+    } else if(stopping && (invdist == 0x7FFFFFFF) && (stop < dist - 150) && fullyReserved){
+        setSpeed(train,14);
+        {
+            struct String s;
+            sinit(&s);
+            sputstr(&s, "Dist: ");
+            sputint(&s, dist, 10);
+            sputstr(&s, " Stop: ");
+            sputint(&s, train->kinematics.stop, 10);
+            sputstr(&s, " Pos:");
+            sputstr(&s, train->track.position.node->name);
+            sputc(&s, '@');
+            sputint(&s, train->track.position.offset, 10);
+            logS(&s);
         }
     }
 }
@@ -583,7 +626,7 @@ static inline void updatePosition(struct Train *train, struct Position *pos){
     updateTurnouts(train);
     TIMER_WORST(train->updateTurnouts);
     TIMER_START(train->calculateStop);
-    calculateStop(train);
+    adjustTargetSpeed(train);
     TIMER_WORST(train->calculateStop);
     TIMER_START(train->handleReversals);
     handleReversals(train);
