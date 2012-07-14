@@ -10,8 +10,8 @@
 #define MINACCEL                            (4)
 #define MAXACCEL                            (26)
 #define MAX_SPEED                           (5480)
-#define TRANSITION1                         (400)
-#define TRANSITION2                         (1800)
+#define TRANSITION1                         (200)
+#define TRANSITION2                         (2000)
 
 void computeAcceleration(struct Kinematics *k) {
     int sign = (k->target_speed < k->current_speed) ? -1 : 1;
