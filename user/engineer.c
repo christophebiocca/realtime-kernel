@@ -608,9 +608,10 @@ static inline void updatePosition(struct Train *train, struct Position *pos){
     train->messaging.notifyPosition = true;
 
     if(train->track.pathing){
-        while(*(train->track.pathCurrent) != pos->node &&
-            *(train->track.pathCurrent) != train->track.next_stop.node){
-            train->track.pathCurrent++;
+        for(int i = 1; i < 5 && train->track.pathCurrent[i-1] != train->track.next_stop.node; ++i){
+            if(train->track.pathCurrent[i] == pos->node){
+                train->track.pathCurrent += i;
+            }
         }
     }
 
