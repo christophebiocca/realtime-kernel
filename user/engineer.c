@@ -216,7 +216,7 @@ static inline void updateNeededReservations(struct Train *train) {
     int len = alongTrack(
         train->track.turnouts,
         &train->track.position,
-        train->kinematics.stop / 1000,
+        train->kinematics.stop / 1000 + 200,
         &end,
         path,
         edges,
