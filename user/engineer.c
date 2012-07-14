@@ -144,6 +144,9 @@ static inline void setSpeed(struct Train *train, int speed){
     logC("SetSpeed");
     assert(0 <= train->id && train->id <= 80);
     assert(0 <= speed && speed <= 14);
+    if(train->kinematics.target_speed == train->kinematics.ideal_speed[speed]){
+        return;
+    }
     train->kinematics.target_speed = train->kinematics.ideal_speed[speed];
     TIMER_START(train->kinematicsFuckery);
     computeAcceleration(&train->kinematics);
