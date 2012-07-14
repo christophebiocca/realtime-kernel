@@ -10,9 +10,8 @@
 #define MINACCEL                            (4)
 #define MAXACCEL                            (26)
 #define MAX_SPEED                           (5480)
-#define HALF_SPEED                          (MAX_SPEED/2)
-#define TRANSITION1                         (2100)
-#define TRANSITION2                         (700)
+#define TRANSITION1                         (400)
+#define TRANSITION2                         (1800)
 
 void computeAcceleration(struct Kinematics *k) {
     int sign = (k->target_speed < k->current_speed) ? -1 : 1;
@@ -22,14 +21,12 @@ void computeAcceleration(struct Kinematics *k) {
         k->acceleration = 0;
         k->current_speed = k->target_speed;
     } else {
-        int dev = HALF_SPEED - k->current_speed;
-        if(dev < 0) dev = 0;
-        if(dev > TRANSITION1){
+        if(k->current_speed < TRANSITION1){
             k->acceleration = MINACCEL;
-        } else if(dev < TRANSITION2){
+        } else if(k->current_speed > TRANSITION2){
             k->acceleration = MAXACCEL;
         } else {
-            k->acceleration = (MAXACCEL - ((dev-TRANSITION2)*(MAXACCEL - MINACCEL))/(TRANSITION1-TRANSITION2));
+            k->acceleration = MINACCEL + (k->target_speed-TRANSITION1)/(TRANSITION2-TRANSITION1);
         }
         k->acceleration *= sign;
     }
@@ -45,20 +42,12 @@ static inline void computeStop(struct Kinematics *k) {
 
     // TODO: Bust out the algebra, make this computation simpler.
 
-    // while(speed > (HALF_SPEED+TRANSITION1)){
-    //     speed -= MINACCEL;
-    //     travelled += speed;
-    // }
-    // while(speed > (HALF_SPEED+TRANSITION2)){
-    //     speed -= (MAXACCEL - (((speed - HALF_SPEED)-TRANSITION2)*(MAXACCEL - MINACCEL))/(TRANSITION1-TRANSITION2));
-    //     travelled += speed;
-    // }
-    while(speed > (HALF_SPEED-TRANSITION2)){
+    while(speed > TRANSITION2){
         speed -= MAXACCEL;
         travelled += speed;
     }
-    while(speed > (HALF_SPEED-TRANSITION1)){
-        speed -= (MAXACCEL - (((HALF_SPEED - speed)-TRANSITION2)*(MAXACCEL - MINACCEL))/(TRANSITION1-TRANSITION2));
+    while(speed > TRANSITION1){
+        speed -= MINACCEL + (k->target_speed-TRANSITION1)/(TRANSITION2-TRANSITION1);
         travelled += speed;
     }
     while(speed > 0){
