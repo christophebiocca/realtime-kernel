@@ -510,6 +510,10 @@ static inline void adjustTargetSpeed(struct Train *train){
             sputint(&s, train->track.position.offset, 10);
             logS(&s);
         }
+        if(dist <= stop && train->track.next_stop.node == train->track.goal.node &&
+            train->track.next_stop.offset == train->track.goal.offset){
+            train->track.pathing = false;
+        }
     } else if(stopping && (invdist >= dist) && (stop < dist - 50) && train->track.fullyReserved){
         setSpeed(train,14);
         train->timing.replan = 0x7FFFFFFF;
