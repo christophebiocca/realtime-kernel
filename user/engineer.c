@@ -551,32 +551,8 @@ static inline void updateTurnouts(struct Train *train){
                 // How should it be set?
                 // Make the branch match expectations
                 if((*t)->edge[DIR_STRAIGHT].dest == t[1]){
-                    {
-                        struct String s;
-                        sinit(&s);
-                        sputstr(&s, "Straightening ");
-                        sputstr(&s, (**t).name);
-                        sputstr(&s, " (Pos ");
-                        sputstr(&s, train->track.position.node->name);
-                        sputc(&s, '@');
-                        sputint(&s, train->track.position.offset,10);
-                        sputc(&s, ')');
-                        logS(&s);
-                    }
                     turnoutStraight((*t)->num, &train->track.turnouts);
                 } else if((*t)->edge[DIR_CURVED].dest == t[1]){
-                    {
-                        struct String s;
-                        sinit(&s);
-                        sputstr(&s, "Curving ");
-                        sputstr(&s, (**t).name);
-                        sputstr(&s, " (Pos ");
-                        sputstr(&s, train->track.position.node->name);
-                        sputc(&s, '@');
-                        sputint(&s, train->track.position.offset,10);
-                        sputc(&s, ')');
-                        logS(&s);
-                    }
                     turnoutCurve((*t)->num, &train->track.turnouts);
                 }
             }
