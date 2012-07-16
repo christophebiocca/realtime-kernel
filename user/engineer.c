@@ -639,6 +639,7 @@ static inline void handleReversals(struct Train *train){
         bool b = train->track.next_stop.node != train->track.goal.node;
         bool c = train->kinematics.acceleration == 0;
         if(a && b && c){
+            logC("Reversing");
             // We need to turn the train around.
             reverse(train);
             train->track.pathCurrent++;
