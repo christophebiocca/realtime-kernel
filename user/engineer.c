@@ -497,14 +497,6 @@ static inline void adjustTargetSpeed(struct Train *train){
     int stop = train->kinematics.stop/1000;
     if(!stopping && ((stop >= dist && dist != 0x7FFFFFFF) || !train->track.fullyReserved)){
         setSpeed(train,0);
-        train->timing.replan = Time() + 800;
-        {
-            struct String s;
-            sinit(&s);
-            sputstr(&s, "Replan @");
-            sputint(&s, train->timing.replan, 10);
-            logS(&s);
-        }
         {
             struct String s;
             sinit(&s);
@@ -532,6 +524,16 @@ static inline void adjustTargetSpeed(struct Train *train){
             sputstr(&s, train->track.position.node->name);
             sputc(&s, '@');
             sputint(&s, train->track.position.offset, 10);
+            logS(&s);
+        }
+    }
+    if(!train->track.fullyReserved && train->timing.replan == 0x7FFFFFFF){
+        train->timing.replan = Time() + 800;
+        {
+            struct String s;
+            sinit(&s);
+            sputstr(&s, "Replan @");
+            sputint(&s, train->timing.replan, 10);
             logS(&s);
         }
     }
