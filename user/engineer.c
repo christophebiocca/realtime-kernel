@@ -197,6 +197,8 @@ static inline void updateNeededReservations(struct Train *train) {
         int dir = 0;
         if (back->type == NODE_BRANCH) {
             dir = isTurnoutCurved(train->track.turnouts, back->num);
+        } else if (back->type == NODE_BRANCH_CURVED) {
+            dir = 1;
         }
 
         int already_needed = edgeInArray(

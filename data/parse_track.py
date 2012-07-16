@@ -209,7 +209,7 @@ class node:
       state.error("missing node type")
     if self.reverse == None:
       state.error("missing property 'reverse <NODE>'")
-    if self.nodetype in ['sensor', 'enter', 'merge', 'branch_curved', 'branch_straight']:
+    if self.nodetype in ['sensor', 'enter', 'merge']:
       try:
         assert self.ahead    != None
         assert self.straight == None
@@ -223,7 +223,7 @@ class node:
         assert self.curved   == None
       except (AssertionError):
         state.error("%s node expects NO edges" % self.nodetype)
-    elif self.nodetype in ['branch']:
+    elif self.nodetype in ['branch', 'branch_curved', 'branch_straight']:
       try:
         assert self.ahead    == None
         assert self.straight != None
@@ -231,6 +231,7 @@ class node:
       except (AssertionError):
         state.error("%s node expects 'straight' and 'curved' edges" \
           % self.nodetype)
+          
   def add_edge(self, state, dest, e):
     count = 0
     for dir in ['ahead', 'straight', 'curved']:
