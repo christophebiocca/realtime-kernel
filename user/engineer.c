@@ -797,7 +797,8 @@ static inline void trainNavigate(struct Train *train, struct Position *dest){
     int i = alongTrack(train->track.turnouts,
         &train->track.position,
         train->kinematics.stop/1000,
-        &pathStart, train->track.path, 0, NULLPTR, false);
+        &pathStart, train->track.path, 0, NULLPTR, (train->kinematics.stop == 0 &&
+        train->track.position.node->type == NODE_BRANCH));
     // Now plan a path from there to here.
     planPath(nodes, train->id, pathStart.node, dest->node, train->track.path + (i-1));
     train->track.pathing = true;
