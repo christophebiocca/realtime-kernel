@@ -21,8 +21,10 @@ static inline bool isTurnoutStraight(TurnoutTable table, int address){
 }
 
 void turnoutInit(void);
+void turnoutQuit(void);
 
 void turnoutCurve(int address, TurnoutTable* tbl);
 void turnoutStraight(int address, TurnoutTable* tbl);
+TurnoutTable turnoutQuery(void);
 
 #endif /* USER_TURNOUT_H */

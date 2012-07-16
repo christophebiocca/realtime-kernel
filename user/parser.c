@@ -623,6 +623,7 @@ void commandParser(void){
     mioPrint(&s);
     controllerQuit();
     sensorQuit();
+    turnoutQuit();
     clockDrawerQuit();
     Delay(150);
     logQuit();
