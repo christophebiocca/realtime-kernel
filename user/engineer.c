@@ -1056,6 +1056,7 @@ void engineer(int trainID){
         }
     }
 
+    setSpeed(&train, 0);
     Exit();
 }
 
