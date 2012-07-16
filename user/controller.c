@@ -242,7 +242,20 @@ static void controllerServer(void) {
                     int *fill = &expectations[SENSOR_DECODE_BOX(sensor)]
                         [SENSOR_DECODE_OFFSET(sensor)];
 
-                    assert(*fill == -1);
+                    if (*fill != -1) {
+                        struct String s;
+                        sinit(&s);
+                        sputstr(&s, "Train ");
+                        sputint(&s, request.setExpectation.train_id, 10);
+                        sputstr(&s, " tried to expect ");
+                        sputc(&s, 'A' + SENSOR_DECODE_BOX(sensor));
+                        sputint(&s, SENSOR_DECODE_OFFSET(sensor), 10);
+                        sputstr(&s, ", owned by ");
+                        sputint(&s, *fill, 10);
+                        logS(&s);
+
+                        assert(0);
+                    }
                     *fill = request.setExpectation.train_id;
                 }
 
@@ -251,7 +264,20 @@ static void controllerServer(void) {
                     int *fill = &expectations[SENSOR_DECODE_BOX(sensor)]
                         [SENSOR_DECODE_OFFSET(sensor)];
 
-                    assert(*fill == -1);
+                    if (*fill != -1) {
+                        struct String s;
+                        sinit(&s);
+                        sputstr(&s, "Train ");
+                        sputint(&s, request.setExpectation.train_id, 10);
+                        sputstr(&s, " tried to expect ");
+                        sputc(&s, 'A' + SENSOR_DECODE_BOX(sensor));
+                        sputint(&s, SENSOR_DECODE_OFFSET(sensor), 10);
+                        sputstr(&s, ", owned by ");
+                        sputint(&s, *fill, 10);
+                        logS(&s);
+
+                        assert(0);
+                    }
                     *fill = request.setExpectation.train_id;
                 }
 
@@ -260,7 +286,20 @@ static void controllerServer(void) {
                     int *fill = &expectations[SENSOR_DECODE_BOX(sensor)]
                         [SENSOR_DECODE_OFFSET(sensor)];
 
-                    assert(*fill == -1);
+                    if (*fill != -1) {
+                        struct String s;
+                        sinit(&s);
+                        sputstr(&s, "Train ");
+                        sputint(&s, request.setExpectation.train_id, 10);
+                        sputstr(&s, " tried to expect ");
+                        sputc(&s, 'A' + SENSOR_DECODE_BOX(sensor));
+                        sputint(&s, SENSOR_DECODE_OFFSET(sensor), 10);
+                        sputstr(&s, ", owned by ");
+                        sputint(&s, *fill, 10);
+                        logS(&s);
+
+                        assert(0);
+                    }
                     *fill = request.setExpectation.train_id;
                 }
 
@@ -386,7 +425,25 @@ static void controllerServer(void) {
                         }
 
                         // ensure consistency
-                        assert(edge->reserved == edge->reverse->reserved);
+                        if (edge->reserved != edge->reverse->reserved) {
+                            struct String s;
+                            sinit(&s);
+                            sputstr(&s, "IR: [");
+                            sputstr(&s, edge->src->name);
+                            sputstr(&s, "->");
+                            sputstr(&s, edge->dest->name);
+                            sputstr(&s, "]: ");
+                            sputint(&s, edge->reserved, 10);
+                            sputstr(&s, ", [");
+                            sputstr(&s, edge->reverse->src->name);
+                            sputstr(&s, "->");
+                            sputstr(&s, edge->reverse->dest->name);
+                            sputstr(&s, "]: ");
+                            sputint(&s, edge->reverse->reserved, 10);
+                            logS(&s);
+
+                            assert(0);
+                        }
 
                         if (edge->reserved != request.reservation.train_id
                                 && edge->reserved != -1) {
