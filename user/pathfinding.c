@@ -52,13 +52,13 @@ int planPath(struct TrackNode *list, int train_id,
     }
 
     // Start Node, reverse direction
-    // {
-    //     nodes[start->reverse->idx].cost = 0;
-    //     nodes[start->reverse->idx].total = heuristic(start->reverse, goal);
-    //     nodes[start->reverse->idx].from = &nodes[start->idx];
-    // }
+    {
+        nodes[start->reverse->idx].cost = 0;
+        nodes[start->reverse->idx].total = heuristic(start->reverse, goal);
+        nodes[start->reverse->idx].from = &nodes[start->idx];
+    }
     PathHeapPush(&heap, &nodes[start->idx]);
-    // PathHeapPush(&heap, &nodes[start->reverse->idx]);
+    PathHeapPush(&heap, &nodes[start->reverse->idx]);
 
     struct PathNode *goalNode = &nodes[goal->idx];
 
@@ -88,6 +88,7 @@ int planPath(struct TrackNode *list, int train_id,
         for (int i = 0; i < seqCount; ++i) {
             struct TrackNode *node = seq[i];
             int cost = seqCost[i];
+            assert(cost >= 0);
             if(next->cost + cost < nodes[node->idx].cost){
                 nodes[node->idx].cost = next->cost + cost;
                 nodes[node->idx].total = nodes[node->idx].cost +
