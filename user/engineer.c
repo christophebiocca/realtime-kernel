@@ -67,6 +67,7 @@ struct TrackControl {
     struct Position position;
     int last_error;
     struct TrackNode *expectedSensor;
+    struct TrackNode *secondarySensor;
 
     // Only applicable when pathing.
     bool pathing;
@@ -389,17 +390,23 @@ static inline void updateExpectation(struct Train *train) {
         train->kinematics.stop/1000, &end, path, NULLPTR, false);
     assert(len <= 50);
     struct TrackNode *nextSensor = 0;
+    struct TrackNode *secondarySensor = 0;
 
     // Skip the first node, since that's where we are right now.
     for(int i = 1; i < len; ++i){
         if(path[i]->type == NODE_SENSOR){
-            nextSensor = path[i];
-            break;
+            if(!nextSensor){
+                nextSensor = path[i];
+            } else {
+                secondarySensor = path[i];
+                break;
+            }
         }
     }
 
     if(nextSensor && nextSensor != train->track.expectedSensor){
         train->track.expectedSensor = nextSensor;
+        train->track.secondarySensor = secondarySensor;
         train->messaging.notifyExpectation = true;
     }
 }
@@ -411,6 +418,10 @@ static inline void notifyExpectation(struct Train *train){
             sinit(&s);
             sputstr(&s, "Expect:");
             sputstr(&s, train->track.expectedSensor->name);
+            if(train->track.secondarySensor){
+                sputstr(&s, ",");
+                sputstr(&s, train->track.secondarySensor->name);
+            }
             logS(&s);
         }
         controllerSetExpectation(
@@ -420,8 +431,11 @@ static inline void notifyExpectation(struct Train *train){
                 train->track.expectedSensor->num / 16,
                 train->track.expectedSensor->num % 16
             ),
-            // FIXME: set secondary and alternate expectations
-            SENSOR_INVALID,
+            // FIXME: set alternate expectation
+            train->track.secondarySensor ? SENSOR_ENCODE(
+                train->track.secondarySensor->num / 16,
+                train->track.secondarySensor->num % 16
+            ) : SENSOR_INVALID,
             SENSOR_INVALID
         );
         courierUsed(train);
@@ -857,6 +871,7 @@ void engineer(int trainID){
     train.reservations.donotwant_head = train.reservations.donotwant_tail = 0;
 
     train.track.expectedSensor = 0;
+    train.track.secondarySensor = 0;
     train.messaging.notifyExpectation = false;
 
     train.timing.replan = 0x7FFFFFFF;
