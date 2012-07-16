@@ -9,7 +9,7 @@ node A2:
   reverse A1
   ahead EX5
 node A3:
-  sensor 2
+  sensor_dead 2
   reverse A4
   ahead BR14
 node A4:
