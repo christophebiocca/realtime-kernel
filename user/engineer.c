@@ -390,15 +390,12 @@ static inline void updateExpectation(struct Train *train) {
         train->kinematics.stop/1000, &end, path, NULLPTR, false);
     assert(len <= 50);
     struct TrackNode *nextSensor = 0;
-    struct TrackNode *secondarySensor = 0;
 
     // Skip the first node, since that's where we are right now.
     for(int i = 1; i < len; ++i){
         if(path[i]->type == NODE_SENSOR){
             if(!nextSensor){
                 nextSensor = path[i];
-            } else {
-                secondarySensor = path[i];
                 break;
             }
         }
@@ -406,8 +403,23 @@ static inline void updateExpectation(struct Train *train) {
 
     if(nextSensor && nextSensor != train->track.expectedSensor){
         train->track.expectedSensor = nextSensor;
-        train->track.secondarySensor = secondarySensor;
         train->messaging.notifyExpectation = true;
+
+        // If we have a primary sensor, we should also seek the next sensor on the track.
+        struct TrackNode *node = train->track.expectedSensor;
+        do {
+            int dir = 0;
+            if(train->track.pathing && node->type == NODE_BRANCH &&
+                isTurnoutCurved(train->track.turnouts, node->num)){
+                dir = 1;
+            }
+            node = node->edge[dir].dest;
+        } while(!(node->type & (NODE_SENSOR | NODE_EXIT)));
+        if(node->type == NODE_SENSOR){
+            train->track.secondarySensor = node;
+        } else {
+            train->track.secondarySensor = 0;
+        }
     }
 }
 
