@@ -135,6 +135,20 @@ static void controllerServer(void) {
                 VALIDATE_TRAIN_ID(train_id);
                 assert(train_status[train_id].engineer_tid == -1);
 
+                // curve all the turnouts in the inner loops
+                turnoutCurve(8, NULLPTR);
+                turnoutCurve(9, NULLPTR);
+                turnoutCurve(10, NULLPTR);
+                turnoutCurve(13, NULLPTR);
+                turnoutCurve(14, NULLPTR);
+                turnoutCurve(15, NULLPTR);
+                turnoutCurve(16, NULLPTR);
+                turnoutCurve(17, NULLPTR);
+                turnoutCurve(153, NULLPTR);
+                turnoutCurve(154, NULLPTR);
+                turnoutCurve(155, NULLPTR);
+                turnoutCurve(156, NULLPTR);
+
                 train_status[train_id].engineer_tid =
                     engineerCreate(train_id);
                 train_status[train_id].node = NULLPTR;
