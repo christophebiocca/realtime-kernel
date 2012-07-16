@@ -84,11 +84,14 @@ static void controllerServer(void) {
         int engineer_tid;
         struct TrackNode *node;
         int mm;
+        int screen_row_offset;
 
         Sensor primary;
         Sensor secondary;
         Sensor alternative;
     } train_status[MAX_TRAINS];
+
+    int current_screen_row_offset = 0;
 
     int expectations[SENSOR_BOX_MAX][SENSOR_OFFSET_MAX];
 
@@ -193,6 +196,9 @@ static void controllerServer(void) {
 
                     // make sure we found an awaiting train
                     assert(i != awaiting_trains.tail);
+
+                    train_status[train_id].screen_row_offset =
+                        current_screen_row_offset++;
                 }
 
                 train_status[train_id].node = request.updatePosition.node;
@@ -203,10 +209,16 @@ static void controllerServer(void) {
                 sinit(&s);
                 sputstr(&s, CURSOR_SAVE);
                 sputstr(&s, CURSOR_HIDE);
-                vtPos(&s, TRAIN_ROW, 1);
+                vtPos(
+                    &s,
+                    TRAIN_ROW + train_status[train_id].screen_row_offset,
+                    1
+                );
                 sputstr(&s, CLEAR_LINE);
 
-                sputstr(&s, "Train: ");
+                sputstr(&s, "Train ");
+                sputint(&s, train_id, 10);
+                sputstr(&s, ": ");
                 sputstr(&s, request.updatePosition.node->name);
                 sputc(&s, ' ');
                 sputint(&s, request.updatePosition.mm, 10);

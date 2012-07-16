@@ -6,10 +6,10 @@
 #define TIMER_ROW         1
 #define TRAIN_ROW         2
 #define TIMER_COL         60
-#define SWITCH_ROW        4
-#define SENSOR_ROW        15
+#define SWITCH_ROW        5
+#define SENSOR_ROW        16
 #define SENSOR_COL        18
-#define LOG_ROW           17
+#define LOG_ROW           18
 #define SCROLL_BOTTOM     50
 #define CONSOLE_ROW       52
 
