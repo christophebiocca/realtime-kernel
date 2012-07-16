@@ -417,8 +417,8 @@ bool parse(struct Parser *parser, char c){
         }
         sputc(&s,c);
     } else if(c == 0x0D){
-        sputstr(&s, CLEAR_LINE);
         vtPos(&s, CONSOLE_ROW, 1);
+        sputstr(&s, CLEAR_LINE);
 
         switch(parser->state){
             case Q_Q:
