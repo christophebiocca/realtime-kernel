@@ -14,6 +14,11 @@ struct Kinematics {
         FORWARD,
         BACKWARD
     } orientation;
+
+    int minAccel;
+    int maxAccel;
+    int transition1;
+    int transition2;
 };
 
 void kinematicsInit(struct Kinematics *k, int trainID);
