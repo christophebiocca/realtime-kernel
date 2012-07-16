@@ -451,7 +451,7 @@ static inline void adjustTargetSpeed(struct Train *train){
         for(; i >= 0; --i){
             if(edges[i]->reserved != train->id){
                 fullyReserved = false;
-                {
+                if(!stopping){
                     struct String s;
                     sinit(&s);
                     sputstr(&s, edges[i]->src->name);
