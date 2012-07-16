@@ -856,6 +856,9 @@ void engineer(int trainID){
     train.reservations.granted_head = train.reservations.granted_tail = 0;
     train.reservations.donotwant_head = train.reservations.donotwant_tail = 0;
 
+    train.track.expectedSensor = 0;
+    train.messaging.notifyExpectation = false;
+
     train.timing.replan = 0x7FFFFFFF;
 
     setSpeed(&train, 14);
