@@ -409,15 +409,17 @@ static inline void updateExpectation(struct Train *train) {
 
         // If we have a primary sensor, we should also seek the next sensor on the track.
         struct TrackNode *node = train->track.expectedSensor;
+
         do {
             int dir = 0;
-            if(train->track.pathing && node->type == NODE_BRANCH &&
-                isTurnoutCurved(train->track.turnouts, node->num)){
+            if(node->type == NODE_BRANCH &&
+                    isTurnoutCurved(train->track.turnouts, node->num)) {
                 dir = 1;
             }
             node = node->edge[dir].dest;
-        } while(!(node->type & (NODE_SENSOR | NODE_EXIT)));
-        if(node->type == NODE_SENSOR){
+        } while (!(node->type & (NODE_SENSOR | NODE_EXIT)));
+
+        if (node->type == NODE_SENSOR) {
             train->track.secondarySensor = node;
         } else {
             train->track.secondarySensor = 0;
