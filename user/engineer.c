@@ -69,6 +69,8 @@ struct TrackControl {
     struct TrackNode *expectedSensor;
     struct TrackNode *secondarySensor;
 
+    bool fullyReserved;
+
     // Only applicable when pathing.
     bool pathing;
     struct Position next_stop;
@@ -213,7 +215,16 @@ static inline void updateNeededReservations(struct Train *train) {
         if (!already_needed) {
             r->needed[r->needed_tail++] = &back->edge[dir];
             r->needed_tail %= TRACK_RESERVATION_EDGES;
-            train->messaging.notifyNeededReservations = true;
+            int already_granted = edgeInArray(
+                r->granted,
+                r->granted_head,
+                r->granted_tail,
+                &back->edge[dir]
+            );
+            if(!already_granted){
+                train->messaging.notifyNeededReservations = true;
+                train->track.fullyReserved = false;
+            }
         }
     }
 
@@ -243,7 +254,16 @@ static inline void updateNeededReservations(struct Train *train) {
         if (!already_needed) {
             r->needed[r->needed_tail++] = edges[i];
             r->needed_tail %= TRACK_RESERVATION_EDGES;
-            train->messaging.notifyNeededReservations = true;
+            int already_granted = edgeInArray(
+                r->granted,
+                r->granted_head,
+                r->granted_tail,
+                edges[i]
+            );
+            if(!already_granted){
+                train->messaging.notifyNeededReservations = true;
+                train->track.fullyReserved = false;
+            }
         }
     }
 }
@@ -262,6 +282,7 @@ static inline void updateGrantedReservations(struct Train *train) {
         r->needed_head = (r->needed_head + 1) % TRACK_RESERVATION_EDGES;
         if (r->needed_head == r->needed_tail) {
             train->messaging.notifyNeededReservations = false;
+            train->track.fullyReserved = true;
         }
 
         int edge_exists = edgeInArray(
@@ -471,32 +492,7 @@ static inline void adjustTargetSpeed(struct Train *train){
         &train->track.next_stop,
         &train->track.position);
     int stop = train->kinematics.stop/1000;
-    bool fullyReserved = true;
-    {
-        struct TrackEdge *edges[50];
-        struct Position end;
-        int i = alongTrack(train->track.turnouts,
-            &train->track.position,
-            stop + 200, &end, 0, train->track.pathCurrent, edges, false) - 1;
-        assert(i < 50);
-        for(; i >= 0; --i){
-            if(edges[i]->reserved != train->id){
-                fullyReserved = false;
-                if(!stopping){
-                    struct String s;
-                    sinit(&s);
-                    sputstr(&s, edges[i]->src->name);
-                    sputstr(&s, " -> ");
-                    sputstr(&s, edges[i]->dest->name);
-                    sputstr(&s, " has ");
-                    sputint(&s, edges[i]->reserved,10);
-                    logS(&s);
-                }
-                break;
-            }
-        }
-    }
-    if(!stopping && ((stop >= dist && dist != 0x7FFFFFFF) || !fullyReserved)){
+    if(!stopping && ((stop >= dist && dist != 0x7FFFFFFF) || !train->track.fullyReserved)){
         setSpeed(train,0);
         train->timing.replan = Time() + 800;
         {
@@ -519,7 +515,7 @@ static inline void adjustTargetSpeed(struct Train *train){
             sputint(&s, train->track.position.offset, 10);
             logS(&s);
         }
-    } else if(stopping && (invdist >= dist) && (stop < dist - 50) && fullyReserved){
+    } else if(stopping && (invdist >= dist) && (stop < dist - 50) && train->track.fullyReserved){
         setSpeed(train,14);
         train->timing.replan = 0x7FFFFFFF;
         {
@@ -548,8 +544,7 @@ static inline void updateTurnouts(struct Train *train){
                 // Find the first time we hit this branch
                 // How should it be set?
                 // Make the branch match expectations
-                if((*t)->edge[DIR_STRAIGHT].dest == t[1] &&
-                    isTurnoutCurved(train->track.turnouts, (*t)->num)){
+                if((*t)->edge[DIR_STRAIGHT].dest == t[1]){
                     {
                         struct String s;
                         sinit(&s);
@@ -563,8 +558,7 @@ static inline void updateTurnouts(struct Train *train){
                         logS(&s);
                     }
                     turnoutStraight((*t)->num, &train->track.turnouts);
-                } else if((*t)->edge[DIR_CURVED].dest == t[1] &&
-                    isTurnoutStraight(train->track.turnouts, (*t)->num)){
+                } else if((*t)->edge[DIR_CURVED].dest == t[1]){
                     {
                         struct String s;
                         sinit(&s);
@@ -595,11 +589,9 @@ static inline void updateTurnouts(struct Train *train){
         if((*sweep)->type == NODE_MERGE && sweep != path){
             // No conflict the merge nodes.
             struct TrackNode *prev = (*(sweep-1));
-            if((*sweep)->reverse->edge[DIR_STRAIGHT].reverse->src == prev &&
-                isTurnoutCurved(train->track.turnouts, (*sweep)->num)){
+            if((*sweep)->reverse->edge[DIR_STRAIGHT].reverse->src == prev){
                 turnoutStraight((*sweep)->num, &train->track.turnouts);
-            } else if((*sweep)->reverse->edge[DIR_CURVED].reverse->src == prev &&
-                isTurnoutStraight(train->track.turnouts, (*sweep)->num)){
+            } else if((*sweep)->reverse->edge[DIR_CURVED].reverse->src == prev){
                 turnoutCurve((*sweep)->num, &train->track.turnouts);
             }
         }
