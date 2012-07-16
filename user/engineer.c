@@ -532,7 +532,7 @@ static inline void adjustTargetSpeed(struct Train *train){
         }
     }
     if(!train->track.fullyReserved && train->timing.replan == 0x7FFFFFFF){
-        train->timing.replan = Time() + 800;
+        train->timing.replan = Time() + 800 + ((train->id - 35) * 50);
         {
             struct String s;
             sinit(&s);
