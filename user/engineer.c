@@ -589,6 +589,8 @@ static inline void findNextStop(struct Train *train){
     }
 }
 
+static inline void updatePosition(struct Train *train, struct Position *pos);
+
 static inline void handleReversals(struct Train *train){
     if(train->kinematics.target_speed == 0 && train->track.pathing){
         bool a = (*(train->track.pathCurrent) == train->track.next_stop.node);
@@ -604,6 +606,7 @@ static inline void handleReversals(struct Train *train){
             TIMER_START(train->findNextStop);
             findNextStop(train);
             TIMER_WORST(train->findNextStop);
+            updatePosition(train, &train->track.position);
         }
     }
 }
