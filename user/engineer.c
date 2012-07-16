@@ -480,7 +480,7 @@ static inline void adjustTargetSpeed(struct Train *train){
             sputint(&s, train->track.position.offset, 10);
             logS(&s);
         }
-    } else if(stopping && (invdist == 0x7FFFFFFF) && (stop < dist - 150) && fullyReserved){
+    } else if(stopping && (invdist >= dist) && (stop < dist - 50) && fullyReserved){
         setSpeed(train,14);
         {
             struct String s;
