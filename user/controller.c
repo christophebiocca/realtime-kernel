@@ -236,6 +236,28 @@ static void controllerServer(void) {
                 int train_id = request.setExpectation.train_id;
                 VALIDATE_TRAIN_ID(train_id);
 
+                // clear any previous expectation set by this engineer
+                // FIXME: copy pasted from SENSOR_TRIGGERED
+                {
+                    Sensor sensor = train_status[train_id].primary;
+                    if (sensor != SENSOR_INVALID) {
+                        expectations[SENSOR_DECODE_BOX(sensor)]
+                            [SENSOR_DECODE_OFFSET(sensor)] = -1;
+                    }
+
+                    sensor = train_status[train_id].secondary;
+                    if (sensor != SENSOR_INVALID) {
+                        expectations[SENSOR_DECODE_BOX(sensor)]
+                            [SENSOR_DECODE_OFFSET(sensor)] = -1;
+                    }
+
+                    sensor = train_status[train_id].alternative;
+                    if (sensor != SENSOR_INVALID) {
+                        expectations[SENSOR_DECODE_BOX(sensor)]
+                            [SENSOR_DECODE_OFFSET(sensor)] = -1;
+                    }
+                }
+
                 // FIXME: Copy-paste *choke*
                 Sensor sensor = request.setExpectation.primary;
                 if (sensor != SENSOR_INVALID) {
