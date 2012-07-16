@@ -50,15 +50,15 @@ int planPath(struct TrackNode *list, int train_id,
         nodes[start->idx].total = heuristic(start, goal);
         nodes[start->idx].from = 0;
     }
+    PathHeapPush(&heap, &nodes[start->idx]);
 
-    // Start Node, reverse direction
+    if(start->type != NODE_MERGE)// Start Node, reverse direction
     {
         nodes[start->reverse->idx].cost = 0;
         nodes[start->reverse->idx].total = heuristic(start->reverse, goal);
         nodes[start->reverse->idx].from = &nodes[start->idx];
+        PathHeapPush(&heap, &nodes[start->reverse->idx]);
     }
-    PathHeapPush(&heap, &nodes[start->idx]);
-    PathHeapPush(&heap, &nodes[start->reverse->idx]);
 
     struct PathNode *goalNode = &nodes[goal->idx];
 
