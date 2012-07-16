@@ -986,10 +986,12 @@ void engineer(int trainID){
                 TIMER_WORST(train.timerCallback);
             }
             if(time >= train.timing.replan){
-                TIMER_START(train.plan);
-                logC("Replanning");
-                trainNavigate(&train, &train.track.goal);
-                TIMER_WORST(train.plan);
+                if(train.track.pathing){
+                    TIMER_START(train.plan);
+                    logC("Replanning");
+                    trainNavigate(&train, &train.track.goal);
+                    TIMER_WORST(train.plan);
+                }
                 train.timing.replan = 0x7FFFFFFF;
             }
             train.timing.timerReady = true;
