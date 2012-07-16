@@ -546,8 +546,7 @@ static inline void updateTurnouts(struct Train *train){
                 // Find the first time we hit this branch
                 // How should it be set?
                 // Make the branch match expectations
-                if((*t)->edge[DIR_STRAIGHT].dest == t[1] &&
-                    isTurnoutCurved(train->track.turnouts, (*t)->num)){
+                if((*t)->edge[DIR_STRAIGHT].dest == t[1]){
                     {
                         struct String s;
                         sinit(&s);
@@ -561,8 +560,7 @@ static inline void updateTurnouts(struct Train *train){
                         logS(&s);
                     }
                     turnoutStraight((*t)->num, &train->track.turnouts);
-                } else if((*t)->edge[DIR_CURVED].dest == t[1] &&
-                    isTurnoutStraight(train->track.turnouts, (*t)->num)){
+                } else if((*t)->edge[DIR_CURVED].dest == t[1]){
                     {
                         struct String s;
                         sinit(&s);
@@ -593,11 +591,9 @@ static inline void updateTurnouts(struct Train *train){
         if((*sweep)->type == NODE_MERGE && sweep != path){
             // No conflict the merge nodes.
             struct TrackNode *prev = (*(sweep-1));
-            if((*sweep)->reverse->edge[DIR_STRAIGHT].reverse->src == prev &&
-                isTurnoutCurved(train->track.turnouts, (*sweep)->num)){
+            if((*sweep)->reverse->edge[DIR_STRAIGHT].reverse->src == prev){
                 turnoutStraight((*sweep)->num, &train->track.turnouts);
-            } else if((*sweep)->reverse->edge[DIR_CURVED].reverse->src == prev &&
-                isTurnoutStraight(train->track.turnouts, (*sweep)->num)){
+            } else if((*sweep)->reverse->edge[DIR_CURVED].reverse->src == prev){
                 turnoutCurve((*sweep)->num, &train->track.turnouts);
             }
         }
