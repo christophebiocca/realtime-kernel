@@ -165,7 +165,22 @@ int alongTrack(TurnoutTable turnouts, struct Position *start,
             edges[j++] = &pos->edge[dir];
 
             if (pos->type == NODE_BRANCH) {
-                edges[j++] = &pos->edge[!dir];
+                // project up to the next sensor on the wrong branch
+                edges[j++] = &pos->edge[(dir == 0) ? 1 : 0];
+                struct TrackNode *node = pos->edge[(dir == 0) ? 1 : 0].dest;
+
+                while (node->type & ~(NODE_SENSOR | NODE_EXIT)) {
+                    int dirprime = 0;
+
+                    if (node->type == NODE_BRANCH) {
+                        dirprime = isTurnoutCurved(turnouts, node->num);
+                    } else if (node->type == NODE_BRANCH_CURVED) {
+                        dirprime = 1;
+                    }
+
+                    edges[j++] = &node->edge[dirprime];
+                    node = node->edge[dirprime].dest;
+                }
             }
         }
 
