@@ -497,14 +497,6 @@ static inline void adjustTargetSpeed(struct Train *train){
     int stop = train->kinematics.stop/1000;
     if(!stopping && ((stop >= dist && dist != 0x7FFFFFFF) || !train->track.fullyReserved)){
         setSpeed(train,0);
-        train->timing.replan = Time() + 800;
-        {
-            struct String s;
-            sinit(&s);
-            sputstr(&s, "Replan @");
-            sputint(&s, train->timing.replan, 10);
-            logS(&s);
-        }
         {
             struct String s;
             sinit(&s);
@@ -517,6 +509,10 @@ static inline void adjustTargetSpeed(struct Train *train){
             sputc(&s, '@');
             sputint(&s, train->track.position.offset, 10);
             logS(&s);
+        }
+        if(dist <= stop && train->track.next_stop.node == train->track.goal.node &&
+            train->track.next_stop.offset == train->track.goal.offset){
+            train->track.pathing = false;
         }
     } else if(stopping && (invdist >= dist) && (stop < dist - 50) && train->track.fullyReserved){
         setSpeed(train,14);
@@ -532,6 +528,16 @@ static inline void adjustTargetSpeed(struct Train *train){
             sputstr(&s, train->track.position.node->name);
             sputc(&s, '@');
             sputint(&s, train->track.position.offset, 10);
+            logS(&s);
+        }
+    }
+    if(!train->track.fullyReserved && train->timing.replan == 0x7FFFFFFF){
+        train->timing.replan = Time() + 800;
+        {
+            struct String s;
+            sinit(&s);
+            sputstr(&s, "Replan @");
+            sputint(&s, train->timing.replan, 10);
             logS(&s);
         }
     }
@@ -862,21 +868,8 @@ void engineer(int trainID){
         train.messaging.courierReady = true;
     }
 
-    // speeds in um / cs
-    memset16(train.kinematics.ideal_speed, 0, sizeof(train.kinematics.ideal_speed));
-    //computeSpeeds(trainID, ideal_speed, 8, 14);
-    
-    for(int i = 0; i < 15; ++i){
-        train.kinematics.ideal_speed[i] = 0;
-    }
-    train.kinematics.ideal_speed[14] = 5480;
-    train.kinematics.target_speed = 0;
-    train.kinematics.current_speed = 0;
-    train.kinematics.stop = 0;
-    train.kinematics.acceleration = 0;
-    // Set the time.
+    kinematicsInit(&train.kinematics, train.id);
     train.kinematics.time = Time();
-    train.kinematics.distance = 0;
 
     train.reservations.needed_head = train.reservations.needed_tail = 0;
     train.reservations.granted_head = train.reservations.granted_tail = 0;
@@ -993,10 +986,12 @@ void engineer(int trainID){
                 TIMER_WORST(train.timerCallback);
             }
             if(time >= train.timing.replan){
-                TIMER_START(train.plan);
-                logC("Replanning");
-                trainNavigate(&train, &train.track.goal);
-                TIMER_WORST(train.plan);
+                if(train.track.pathing){
+                    TIMER_START(train.plan);
+                    logC("Replanning");
+                    trainNavigate(&train, &train.track.goal);
+                    TIMER_WORST(train.plan);
+                }
                 train.timing.replan = 0x7FFFFFFF;
             }
             train.timing.timerReady = true;
