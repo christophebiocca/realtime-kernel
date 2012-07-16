@@ -227,6 +227,7 @@ static inline void updateNeededReservations(struct Train *train) {
         train->kinematics.stop / 1000 + 200,
         &end,
         path,
+        train->track.pathing ? train->track.pathCurrent : 0,
         edges,
         false
     );
@@ -387,7 +388,8 @@ static inline void updateExpectation(struct Train *train) {
     struct Position end;
     struct TrackNode *path[50];
     int len = alongTrack(train->track.turnouts, &train->track.position,
-        train->kinematics.stop/1000, &end, path, NULLPTR, false);
+        train->kinematics.stop/1000, &end, path,
+        (train->track.pathing ? train->track.pathCurrent : 0), NULLPTR, false);
     assert(len <= 50);
     struct TrackNode *nextSensor = 0;
 
@@ -473,7 +475,7 @@ static inline void adjustTargetSpeed(struct Train *train){
         struct Position end;
         int i = alongTrack(train->track.turnouts,
             &train->track.position,
-            stop, &end, 0, edges, true) - 1;
+            stop + 200, &end, 0, train->track.pathCurrent, edges, false) - 1;
         assert(i < 50);
         for(; i >= 0; --i){
             if(edges[i]->reserved != train->id){
@@ -583,7 +585,8 @@ static inline void updateTurnouts(struct Train *train){
     struct TrackNode *path[50];
     struct TrackNode **sweep = path;
     int len = alongTrack(train->track.turnouts, &train->track.position,
-        train->kinematics.stop/1000, &end, path, NULLPTR, false);
+        train->kinematics.stop/1000, &end, path,
+        (train->track.pathing ? train->track.pathCurrent : 0), NULLPTR, false);
     (void) len;
     assert(len <= 50);
     while(*sweep != end.node){
@@ -640,7 +643,7 @@ static inline void handleReversals(struct Train *train){
                 // Project, then reverse.
                 struct Position pos;
                 alongTrack(train->track.turnouts, &train->track.position,
-                    0, &pos, 0, 0, true);
+                    0, &pos, 0, 0, 0, true);
                 train->track.position.node = pos.node->reverse;
                 train->track.position.offset = -pos.offset;
             }
@@ -725,7 +728,7 @@ static inline void timerPositionUpdate(struct Train *train, int time){
     struct Position pos;
     struct TrackNode *path[50];
     int len = alongTrack(train->track.turnouts, &train->track.position,
-        train->kinematics.distance/1000, &pos, path, NULLPTR, false);
+        train->kinematics.distance/1000, &pos, path, 0, NULLPTR, false);
     assert(len <= 50);
     // Always skip the start point.
     for(int i = 1; i < len; ++i){
@@ -791,7 +794,7 @@ static inline void trainNavigate(struct Train *train, struct Position *dest){
     int i = alongTrack(train->track.turnouts,
         &train->track.position,
         train->kinematics.stop/1000,
-        &pathStart, train->track.path, NULLPTR, true);
+        &pathStart, train->track.path, 0, NULLPTR, true);
     // Now plan a path from there to here.
     planPath(nodes, train->id, pathStart.node, dest->node, train->track.path + (i-1));
     train->track.pathing = true;

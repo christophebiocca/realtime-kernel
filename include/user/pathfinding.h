@@ -28,6 +28,7 @@ int alongTrack(
     int dist,
     struct Position *end,
     struct TrackNode **path,
+    struct TrackNode **follow,
     struct TrackEdge **edges,
     bool beyond
 );

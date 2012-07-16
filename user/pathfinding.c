@@ -118,6 +118,7 @@ int planPath(struct TrackNode *list, int train_id,
 
 int alongTrack(TurnoutTable turnouts, struct Position *start, 
     int dist, struct Position *end, struct TrackNode **path,
+    struct TrackNode **follow,
     struct TrackEdge **edges, bool beyond){
 
     dist = dist + start->offset;
@@ -130,6 +131,11 @@ int alongTrack(TurnoutTable turnouts, struct Position *start,
     int i = 0;
 
     while (dist >= 0 && pos->type != NODE_EXIT) {
+        for(int i = 0; follow && (i < 5); ++i){
+            if(follow[i] == pos){
+                follow += i;
+            }
+        }
         last_dist = dist;
         last_pos = pos;
         /*{
@@ -147,7 +153,11 @@ int alongTrack(TurnoutTable turnouts, struct Position *start,
 
         int dir = 0;
         if(pos->type == NODE_BRANCH){
-            dir = isTurnoutCurved(turnouts, pos->num);
+            if(follow && *follow == pos){
+                dir = (pos->edge[0].dest == follow[1]) ? 0 : 1;
+            } else {
+                dir = isTurnoutCurved(turnouts, pos->num);
+            }
         }
 
         if (edges) {
