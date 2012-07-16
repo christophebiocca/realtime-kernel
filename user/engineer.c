@@ -480,7 +480,7 @@ static inline void adjustTargetSpeed(struct Train *train){
             sputint(&s, train->track.position.offset, 10);
             logS(&s);
         }
-    } else if(stopping && (invdist == 0x7FFFFFFF) && (stop < dist - 150) && fullyReserved){
+    } else if(stopping && (invdist >= dist) && (stop < dist - 50) && fullyReserved){
         setSpeed(train,14);
         {
             struct String s;
@@ -599,7 +599,6 @@ static inline void handleReversals(struct Train *train){
         if(a && b && c){
             // We need to turn the train around.
             reverse(train);
-            setSpeed(train, 14);
             train->track.pathCurrent++;
             {
                 // Project, then reverse.
@@ -769,9 +768,6 @@ static inline void trainNavigate(struct Train *train, struct Position *dest){
             break;
         }
     }
-
-    // go go go
-    setSpeed(train, 14);
 }
 
 void engineer(int trainID){
