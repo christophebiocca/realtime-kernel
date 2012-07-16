@@ -601,8 +601,14 @@ static inline void handleReversals(struct Train *train){
             reverse(train);
             setSpeed(train, 14);
             train->track.pathCurrent++;
-            train->track.position.node = *(train->track.pathCurrent);
-            train->track.position.offset = 0;
+            {
+                // Project, then reverse.
+                struct Position pos;
+                alongTrack(train->track.turnouts, &train->track.position,
+                    0, &pos, 0, 0, true);
+                train->track.position.node = pos.node->reverse;
+                train->track.position.offset = -pos.offset;
+            }
             TIMER_START(train->findNextStop);
             findNextStop(train);
             TIMER_WORST(train->findNextStop);
