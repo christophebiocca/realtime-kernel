@@ -213,7 +213,15 @@ static inline void updateNeededReservations(struct Train *train) {
         if (!already_needed) {
             r->needed[r->needed_tail++] = &back->edge[dir];
             r->needed_tail %= TRACK_RESERVATION_EDGES;
-            train->messaging.notifyNeededReservations = true;
+            int already_granted = edgeInArray(
+                r->granted,
+                r->granted_head,
+                r->granted_tail,
+                &back->edge[dir]
+            );
+            if(!already_granted){
+                train->messaging.notifyNeededReservations = true;
+            }
         }
     }
 
@@ -243,7 +251,15 @@ static inline void updateNeededReservations(struct Train *train) {
         if (!already_needed) {
             r->needed[r->needed_tail++] = edges[i];
             r->needed_tail %= TRACK_RESERVATION_EDGES;
-            train->messaging.notifyNeededReservations = true;
+            int already_granted = edgeInArray(
+                r->granted,
+                r->granted_head,
+                r->granted_tail,
+                edges[i]
+            );
+            if(!already_granted){
+                train->messaging.notifyNeededReservations = true;
+            }
         }
     }
 }
