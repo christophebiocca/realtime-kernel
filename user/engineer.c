@@ -176,7 +176,7 @@ static inline int edgeInArray(struct TrackEdge **array,
         int head, int tail, struct TrackEdge *edge) {
 
     for (int i = head; i != tail; i = (i + 1) % TRACK_RESERVATION_EDGES) {
-        if (array[i] == edge) {
+        if (array[i] == edge || array[i] == edge->reverse) {
             return true;
         }
     }
