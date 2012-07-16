@@ -491,9 +491,6 @@ static inline void adjustTargetSpeed(struct Train *train){
     int dist = distance(train->track.turnouts,
         &train->track.position,
         &train->track.next_stop);
-    int invdist = distance(train->track.turnouts,
-        &train->track.next_stop,
-        &train->track.position);
     int stop = train->kinematics.stop/1000;
     if(!stopping && ((stop >= dist && dist != 0x7FFFFFFF) || !train->track.fullyReserved)){
         setSpeed(train,0);
@@ -514,7 +511,7 @@ static inline void adjustTargetSpeed(struct Train *train){
             train->track.next_stop.offset == train->track.goal.offset){
             train->track.pathing = false;
         }
-    } else if(stopping && (invdist >= dist) && (stop < dist - 50) && train->track.fullyReserved){
+    } else if(stopping && (dist != 0x7FFFFFFF) && (stop < dist) && train->track.fullyReserved){
         setSpeed(train,14);
         train->timing.replan = 0x7FFFFFFF;
         {
@@ -554,32 +551,8 @@ static inline void updateTurnouts(struct Train *train){
                 // How should it be set?
                 // Make the branch match expectations
                 if((*t)->edge[DIR_STRAIGHT].dest == t[1]){
-                    {
-                        struct String s;
-                        sinit(&s);
-                        sputstr(&s, "Straightening ");
-                        sputstr(&s, (**t).name);
-                        sputstr(&s, " (Pos ");
-                        sputstr(&s, train->track.position.node->name);
-                        sputc(&s, '@');
-                        sputint(&s, train->track.position.offset,10);
-                        sputc(&s, ')');
-                        logS(&s);
-                    }
                     turnoutStraight((*t)->num, &train->track.turnouts);
                 } else if((*t)->edge[DIR_CURVED].dest == t[1]){
-                    {
-                        struct String s;
-                        sinit(&s);
-                        sputstr(&s, "Curving ");
-                        sputstr(&s, (**t).name);
-                        sputstr(&s, " (Pos ");
-                        sputstr(&s, train->track.position.node->name);
-                        sputc(&s, '@');
-                        sputint(&s, train->track.position.offset,10);
-                        sputc(&s, ')');
-                        logS(&s);
-                    }
                     turnoutCurve((*t)->num, &train->track.turnouts);
                 }
             }
@@ -639,6 +612,7 @@ static inline void handleReversals(struct Train *train){
         bool b = train->track.next_stop.node != train->track.goal.node;
         bool c = train->kinematics.acceleration == 0;
         if(a && b && c){
+            logC("Reversing");
             // We need to turn the train around.
             reverse(train);
             train->track.pathCurrent++;
@@ -797,7 +771,8 @@ static inline void trainNavigate(struct Train *train, struct Position *dest){
     int i = alongTrack(train->track.turnouts,
         &train->track.position,
         train->kinematics.stop/1000,
-        &pathStart, train->track.path, 0, NULLPTR, true);
+        &pathStart, train->track.path, 0, NULLPTR, (train->kinematics.stop == 0 &&
+        train->track.position.node->type == NODE_BRANCH));
     // Now plan a path from there to here.
     planPath(nodes, train->id, pathStart.node, dest->node, train->track.path + (i-1));
     train->track.pathing = true;
