@@ -13,6 +13,24 @@
 #define TRANSITION1                         (200)
 #define TRANSITION2                         (2000)
 
+void kinematicsInit(struct Kinematics *k, int trainID){
+    for(int i = 0; i < 15; ++i){
+        k->ideal_speed[i] = 0;
+    }
+    k->ideal_speed[14] = 5480;
+    k->target_speed = 0;
+    k->current_speed = 0;
+    k->stop = 0;
+    k->acceleration = 0;
+    k->time = 0;
+    k->distance = 0;
+    k->orientation = FORWARD;
+    switch(trainID){
+        default:
+            logC("Default Kinematics");
+    }
+}
+
 void computeAcceleration(struct Kinematics *k) {
     int sign = (k->target_speed < k->current_speed) ? -1 : 1;
     int diffspeed = (k->target_speed - k->current_speed) * sign;

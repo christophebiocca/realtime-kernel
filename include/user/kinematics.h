@@ -16,6 +16,8 @@ struct Kinematics {
     } orientation;
 };
 
+void kinematicsInit(struct Kinematics *k, int trainID);
+
 void computeAcceleration(struct Kinematics *k);
 
 // Calculate the changes that have occurred in the given time period.

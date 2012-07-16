@@ -862,21 +862,8 @@ void engineer(int trainID){
         train.messaging.courierReady = true;
     }
 
-    // speeds in um / cs
-    memset16(train.kinematics.ideal_speed, 0, sizeof(train.kinematics.ideal_speed));
-    //computeSpeeds(trainID, ideal_speed, 8, 14);
-    
-    for(int i = 0; i < 15; ++i){
-        train.kinematics.ideal_speed[i] = 0;
-    }
-    train.kinematics.ideal_speed[14] = 5480;
-    train.kinematics.target_speed = 0;
-    train.kinematics.current_speed = 0;
-    train.kinematics.stop = 0;
-    train.kinematics.acceleration = 0;
-    // Set the time.
+    kinematicsInit(&train.kinematics, train.id);
     train.kinematics.time = Time();
-    train.kinematics.distance = 0;
 
     train.reservations.needed_head = train.reservations.needed_tail = 0;
     train.reservations.granted_head = train.reservations.granted_tail = 0;
