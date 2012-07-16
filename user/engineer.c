@@ -58,6 +58,7 @@ struct Timing {
 
     // What we need to be woken up for (timestamps)
     int positionUpdate;
+    int replan;
 };
 
 struct TrackControl {
@@ -467,6 +468,14 @@ static inline void adjustTargetSpeed(struct Train *train){
     }
     if(!stopping && ((stop >= dist && dist != 0x7FFFFFFF) || !fullyReserved)){
         setSpeed(train,0);
+        train->timing.replan = Time() + 800;
+        {
+            struct String s;
+            sinit(&s);
+            sputstr(&s, "Replan @");
+            sputint(&s, train->timing.replan, 10);
+            logS(&s);
+        }
         {
             struct String s;
             sinit(&s);
@@ -482,6 +491,7 @@ static inline void adjustTargetSpeed(struct Train *train){
         }
     } else if(stopping && (invdist >= dist) && (stop < dist - 50) && fullyReserved){
         setSpeed(train,14);
+        train->timing.replan = 0x7FFFFFFF;
         {
             struct String s;
             sinit(&s);
@@ -735,6 +745,9 @@ static inline void notifyPosition(struct Train *train){
 
 static inline void scheduleTimer(struct Train *train){
     int closestEvent = train->timing.positionUpdate;
+    if(closestEvent > train->timing.replan){
+        closestEvent = train->timing.replan;
+    }
     // Schedule a timer for the next event
     if(train->timing.timerReady){
         Reply(train->timing.timer, (char *)&closestEvent, sizeof(closestEvent));
@@ -843,6 +856,8 @@ void engineer(int trainID){
     train.reservations.granted_head = train.reservations.granted_tail = 0;
     train.reservations.donotwant_head = train.reservations.donotwant_tail = 0;
 
+    train.timing.replan = 0x7FFFFFFF;
+
     setSpeed(&train, 14);
 
     // Go forth and hit a sensor.
@@ -946,6 +961,13 @@ void engineer(int trainID){
                 TIMER_START(train.timerCallback);
                 timerPositionUpdate(&train, time);
                 TIMER_WORST(train.timerCallback);
+            }
+            if(time >= train.timing.replan){
+                TIMER_START(train.plan);
+                logC("Replanning");
+                trainNavigate(&train, &train.track.goal);
+                TIMER_WORST(train.plan);
+                train.timing.replan = 0x7FFFFFFF;
             }
             train.timing.timerReady = true;
         } else {
