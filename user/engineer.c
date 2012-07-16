@@ -195,7 +195,10 @@ static inline void updateNeededReservations(struct Train *train) {
         ? TRAIN_TAIL_PICKUP_FRONT
         : TRAIN_TAIL_PICKUP_BACK;
 
-    if (train->track.position.offset < back) {
+    // entrances have no nodes before them
+    if (train->track.position.node->type != NODE_ENTER &&
+            train->track.position.offset < back) {
+
         struct TrackNode *back = train->track.position.node->reverse;
 
         int dir = 0;
