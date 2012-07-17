@@ -141,7 +141,7 @@ static inline void courierUsed(struct Train *train){
     train->messaging.courierReady = false;
 }
 
-#define UPDATE_INTERVAL 10
+#define UPDATE_INTERVAL 5
 
 static inline void reverse(struct Train *train){
     TIMER_START(train->tio);
@@ -245,7 +245,7 @@ static inline void updateNeededReservations(struct Train *train) {
     int len = alongTrack(
         train->track.turnouts,
         &train->track.position,
-        train->kinematics.stop / 1000 + 200,
+        train->kinematics.stop / 1000 + 500,
         &end,
         path,
         train->track.pathing ? train->track.pathCurrent : 0,
@@ -419,7 +419,7 @@ static inline void updateExpectation(struct Train *train) {
     struct Position end;
     struct TrackNode *path[50];
     int len = alongTrack(train->track.turnouts, &train->track.position,
-        train->kinematics.stop/1000, &end, path,
+        train->kinematics.stop/1000 + 100, &end, path,
         (train->track.pathing ? train->track.pathCurrent : 0), NULLPTR, false);
     assert(len <= 50);
     struct TrackNode *nextSensor = 0;
