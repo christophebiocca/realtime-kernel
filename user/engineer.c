@@ -794,7 +794,16 @@ static inline void trainNavigate(struct Train *train, struct Position *dest){
 }
 
 void engineer(int trainID){
-    logAssoc("en");
+    {
+        char name[5];
+        name[0] = 'e';
+        name[1] = 'n';
+        name[2] = '0' + (trainID % 10);
+        name[3] = '0' + (trainID / 10);
+        name[4] = 0;
+
+        logAssoc(name);
+    }
     {
         struct String s;
         sinit(&s);
