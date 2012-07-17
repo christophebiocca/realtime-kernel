@@ -3,6 +3,7 @@
 
 #include <user/sensor.h>
 #include <user/track_data.h>
+#include <user/engineer.h>
 
 void controllerInit(void);
 void controllerQuit(void);
@@ -16,7 +17,10 @@ void controllerUpdatePosition(
     int train_id,
     struct TrackNode *node,
     int mm,
-    int error
+    int error,
+    struct TrackNode *next_stop,
+    struct TrackNode *goal,
+    enum EngineerMode mode
 );
 
 // tells the controller to send the next sensor update to a specific engineer

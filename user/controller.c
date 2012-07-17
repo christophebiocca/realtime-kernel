@@ -46,6 +46,9 @@ struct ControllerMessage {
             int mm;
 
             int error;
+            struct TrackNode *next_stop;
+            struct TrackNode *goal;
+            enum EngineerMode mode;
         } updatePosition;
 
         struct SetExpectationMessage {
@@ -204,31 +207,95 @@ static void controllerServer(void) {
                 train_status[train_id].node = request.updatePosition.node;
                 train_status[train_id].mm = request.updatePosition.mm;
 
-                struct String s;
-                sinit(&s);
-                sputstr(&s, CURSOR_SAVE);
-                sputstr(&s, CURSOR_HIDE);
-                vtPos(
-                    &s,
-                    TRAIN_ROW + train_status[train_id].screen_row_offset,
-                    1
+                struct String info[4];
+                
+                sinit(&info[0]);
+                sputstr(&info[0], "Train ");
+                sputint(&info[0], train_id, 10);
+                sputstr(&info[0], " [");
+                sputint(&info[0], train_status[train_id].engineer_tid, 10);
+                sputc(&info[0], ']');
+
+                sinit(&info[1]);
+                sputstr(&info[1], "Cur: ");
+                sputstr(&info[1], request.updatePosition.node->name);
+                sputc(&info[1], ' ');
+                sputint(&info[1], request.updatePosition.mm, 10);
+                sputc(&info[1], ' ');
+                sputstr(&info[1], "mm | Err: ");
+                sputint(&info[1], request.updatePosition.error, 10);
+
+                sinit(&info[2]);
+                sputstr(&info[2], "Goal: ");
+                sputstr(&info[2],
+                    (request.updatePosition.goal == NULLPTR)
+                        ? "N/A"
+                        : request.updatePosition.goal->name
                 );
-                sputstr(&s, CLEAR_LINE);
+                sputstr(&info[2], " | Next: ");
+                sputstr(&info[2],
+                    (request.updatePosition.next_stop == NULLPTR)
+                        ? "N/A"
+                        : request.updatePosition.next_stop->name
+                );
 
-                sputstr(&s, "T");
-                sputint(&s, train_id, 10);
-                sputstr(&s, " [");
-                sputint(&s, train_status[train_id].engineer_tid, 10);
-                sputstr(&s, "]: ");
-                sputstr(&s, request.updatePosition.node->name);
-                sputc(&s, ' ');
-                sputint(&s, request.updatePosition.mm, 10);
-                sputstr(&s, "mm - E: ");
-                sputint(&s, request.updatePosition.error, 10);
+                enum EngineerMode mode = request.updatePosition.mode;
+                sputstr(&info[2], " | Mode: ");
+                sputstr(&info[2],
+                    (mode == ENGINEER_MODE_USER) ? "User" :
+                    (mode == ENGINEER_MODE_CIRCLE1) ? "Circle 1" :
+                    (mode == ENGINEER_MODE_CIRCLE2) ? "Circle 2" :
+                    /* Random */ "Random"
+                );
 
-                sputstr(&s, CURSOR_SHOW);
-                sputstr(&s, CURSOR_RESTORE);
-                mioPrint(&s);
+                sinit(&info[3]);
+                if (train_status[train_id].primary != SENSOR_INVALID) {
+                    sputc(&info[3], '[');
+                    sputsensor(&info[3], train_status[train_id].primary);
+                    sputstr(&info[3], "] ");
+                }
+                if (train_status[train_id].secondary != SENSOR_INVALID) {
+                    sputc(&info[3], '{');
+                    sputsensor(&info[3], train_status[train_id].secondary);
+                    sputstr(&info[3], "} ");
+                }
+                if (train_status[train_id].alternative != SENSOR_INVALID) {
+                    sputc(&info[3], '(');
+                    sputsensor(&info[3], train_status[train_id].alternative);
+                    sputc(&info[3], ')');
+                }
+
+                {
+                    struct String output;
+                    int offset = 1;
+
+                    for (int i = -1; i < 4; ++i) {
+                        sinit(&output);
+                        sputstr(&output, CURSOR_SAVE);
+                        sputstr(&output, CURSOR_HIDE);
+                        vtPos(
+                            &output,
+                            TRAIN_ROW + train_status[train_id].screen_row_offset,
+                            offset
+                        );
+
+                        if (i < 0) {
+                            sputstr(&output, CLEAR_LINE);
+                        } else {
+                            sconcat(&output, &info[i]);
+                            offset += slen(&info[i]);
+
+                            if (i != 3) {
+                                sputstr(&output, " | ");
+                                offset += 3;
+                            }
+                        }
+
+                        sputstr(&output, CURSOR_SHOW);
+                        sputstr(&output, CURSOR_RESTORE);
+                        mioPrint(&output);
+                    }
+                }
 
                 break;
             }
@@ -574,7 +641,10 @@ void controllerPrepareTrain(int train_id) {
 }
 
 void controllerUpdatePosition(int couriertid, int train_id,
-        struct TrackNode *node, int mm, int error) {
+        struct TrackNode *node, int mm, int error,
+        struct TrackNode *next_stop, struct TrackNode *goal,
+        enum EngineerMode mode) {
+
     struct ControllerMessage msg;
 
     msg.type = UPDATE_POSITION;
@@ -582,6 +652,9 @@ void controllerUpdatePosition(int couriertid, int train_id,
     msg.updatePosition.node = node;
     msg.updatePosition.mm = mm;
     msg.updatePosition.error = error;
+    msg.updatePosition.next_stop = next_stop;
+    msg.updatePosition.goal = goal;
+    msg.updatePosition.mode = mode;
 
     int ret = Reply(
         couriertid,

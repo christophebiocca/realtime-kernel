@@ -102,6 +102,7 @@ struct TrackReservations {
 
 struct Train {
     int id;
+    enum EngineerMode mode;
     struct Kinematics kinematics;
     struct Messaging messaging;
     struct Timing timing;
@@ -745,12 +746,28 @@ static inline void timerPositionUpdate(struct Train *train, int time){
 
 static inline void notifyPosition(struct Train *train){
     if(train->messaging.notifyPosition && train->messaging.courierReady){
+        struct TrackNode *next_stop;
+        int next_stop_offset;
+        struct TrackNode *goal;
+
+        if (train->track.pathing) {
+            next_stop = train->track.next_stop.node;
+            next_stop_offset = train->track.next_stop.offset;
+            goal = train->track.goal.node;
+        } else {
+            next_stop = goal = NULLPTR;
+            next_stop_offset = 0;
+        }
+
         controllerUpdatePosition(
             train->messaging.courier,
             train->id,
             train->track.position.node,
             train->track.position.offset,
-            train->track.last_error
+            train->track.last_error,
+            next_stop,
+            goal,
+            train->mode
         );
         courierUsed(train);
         train->messaging.notifyPosition = false;
@@ -820,6 +837,7 @@ void engineer(int trainID){
     /* SET UP */
     struct Train train;
     train.id = trainID;
+    train.mode = ENGINEER_MODE_USER;
     train.track.pathing = false;
 
     TIMER_INIT(train.wholeLoop);
@@ -949,12 +967,6 @@ void engineer(int trainID){
 
     setSpeed(&train, 0);
 
-    enum {
-        MODE_USER,
-        MODE_CIRCLE_ONE,
-        MODE_CIRCLE_TWO,
-        MODE_RANDOM
-    } current_mode = MODE_USER;
     int last_circle = 0;
     char *circles[][3] = {
         {
@@ -981,13 +993,13 @@ void engineer(int trainID){
                 struct TrackNode *dest = NULLPTR;
                 char *log_type = NULLPTR;
 
-                switch(current_mode) {
-                    case MODE_CIRCLE_ONE:
-                    case MODE_CIRCLE_TWO: {
+                switch(train.mode) {
+                    case ENGINEER_MODE_CIRCLE1:
+                    case ENGINEER_MODE_CIRCLE2: {
                         dest = lookupTrackNode(
                             hashtbl,
                             circles[
-                                (current_mode == MODE_CIRCLE_ONE) ? 0 : 1
+                                (train.mode == ENGINEER_MODE_CIRCLE1) ? 0 : 1
                             ][last_circle++]
                         );
                         last_circle %= 3;
@@ -998,7 +1010,7 @@ void engineer(int trainID){
                         break;
                     }
 
-                    case MODE_RANDOM: {
+                    case ENGINEER_MODE_RANDOM: {
                         unsigned int time = Time();
                         dest = &nodes[time % TRACK_MAX];
 
@@ -1082,7 +1094,7 @@ void engineer(int trainID){
 
                 case GOTO: {
                     TIMER_START(train.plan);
-                    current_mode = MODE_USER;
+                    train.mode = ENGINEER_MODE_USER;
                     trainNavigate(&train, &mesg.content.destination);
                     TIMER_WORST(train.plan);
                     break;
@@ -1092,13 +1104,11 @@ void engineer(int trainID){
                     switch (mesg.content.circle_mode) {
                         case 0:
                         case 1:
-                            logC("circle mode 1");
-                            current_mode = MODE_CIRCLE_ONE;
+                            train.mode = ENGINEER_MODE_CIRCLE1;
                             break;
 
                         case 2:
-                            logC("circle mode 2");
-                            current_mode = MODE_CIRCLE_TWO;
+                            train.mode = ENGINEER_MODE_CIRCLE2;
                             break;
 
                         default:
@@ -1108,8 +1118,7 @@ void engineer(int trainID){
                 }
 
                 case RANDOM_MODE: {
-                    logC("random mode");
-                    current_mode = MODE_RANDOM;
+                    train.mode = ENGINEER_MODE_RANDOM;
                     break;
                 }
 

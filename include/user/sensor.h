@@ -2,6 +2,7 @@
 #define USER_SENSOR_H   1
 
 #include <user/track_data.h>
+#include <user/string.h>
 
 typedef char Sensor;
 
@@ -28,6 +29,11 @@ static inline struct TrackNode *nodeForSensor(Sensor sensor){
         lookup[1] = '0' + number;
     }
     return lookupTrackNode(hashtbl, lookup);
+}
+
+static inline void sputsensor(struct String *s, Sensor sensor) {
+    sputc(s, 'A' + SENSOR_DECODE_BOX(sensor));
+    sputint(s, SENSOR_DECODE_OFFSET(sensor), 10);
 }
 
 #endif /* USER_SENSOR_H */

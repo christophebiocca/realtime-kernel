@@ -4,6 +4,13 @@
 #include <stdbool.h>
 #include <user/track_data.h>
 
+enum EngineerMode {
+    ENGINEER_MODE_USER,
+    ENGINEER_MODE_CIRCLE1,
+    ENGINEER_MODE_CIRCLE2,
+    ENGINEER_MODE_RANDOM,
+};
+
 extern volatile int engineerID;
 int engineerCreate(int trainID);
 void engineerQuit(int engineer_tid);
