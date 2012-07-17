@@ -20,7 +20,7 @@ struct TaskQueue {
 static struct TaskQueue g_task_queue[MAX_PRIORITY];
 unsigned int g_task_queue_mask;
 
-#define STACK_HIGH      0x300000
+#define STACK_HIGH      0x600000
 #define STACK_LOW       0x250000
 static unsigned int *g_current_stack;
 
