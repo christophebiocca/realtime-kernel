@@ -296,7 +296,9 @@ static inline void updateGrantedReservations(struct Train *train) {
         if (end < 0) {
             end += TRACK_RESERVATION_EDGES;
         }
+        assert(end >= 0);
         for (int j = i; j != end; j = (j + 1) % TRACK_RESERVATION_EDGES) {
+            assert(j >= 0 && j < TRACK_RESERVATION_EDGES);
             r->needed[j] = r->needed[(j + 1) % TRACK_RESERVATION_EDGES];
         }
         r->needed_tail = end;
@@ -340,7 +342,9 @@ static inline void updateDoNotWantReservations(struct Train *train) {
             if (end < 0) {
                 end += TRACK_RESERVATION_EDGES;
             }
+            assert(end >= 0);
             for (int j = i; j != end; j = (j + 1) % TRACK_RESERVATION_EDGES) {
+                assert(j >= 0 && j < TRACK_RESERVATION_EDGES);
                 r->granted[j] = r->granted[(j + 1) % TRACK_RESERVATION_EDGES];
             }
             r->granted_tail = end;
