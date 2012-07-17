@@ -204,7 +204,6 @@ static void controllerServer(void) {
                 train_status[train_id].node = request.updatePosition.node;
                 train_status[train_id].mm = request.updatePosition.mm;
 
-                // FIXME: multiple trains?
                 struct String s;
                 sinit(&s);
                 sputstr(&s, CURSOR_SAVE);
@@ -216,9 +215,11 @@ static void controllerServer(void) {
                 );
                 sputstr(&s, CLEAR_LINE);
 
-                sputstr(&s, "Train ");
+                sputstr(&s, "T");
                 sputint(&s, train_id, 10);
-                sputstr(&s, ": ");
+                sputstr(&s, " [");
+                sputint(&s, train_status[train_id].engineer_tid, 10);
+                sputstr(&s, "]: ");
                 sputstr(&s, request.updatePosition.node->name);
                 sputc(&s, ' ');
                 sputint(&s, request.updatePosition.mm, 10);
