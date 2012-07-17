@@ -776,7 +776,8 @@ static inline void trainNavigate(struct Train *train, struct Position *dest){
     struct Position pathStart;
     int i = alongTrack(train->track.turnouts,
         &train->track.position,
-        train->kinematics.stop/1000,
+        train->kinematics.stop/1000 + (train->kinematics.orientation == FORWARD) ?
+        TRAIN_TAIL_PICKUP_BACK : TRAIN_TAIL_PICKUP_FRONT,
         &pathStart, train->track.path, 0, NULLPTR, (train->kinematics.stop == 0 &&
         train->track.position.node->type == NODE_BRANCH));
     // Now plan a path from there to here.
