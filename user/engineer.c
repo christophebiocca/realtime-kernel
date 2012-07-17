@@ -433,7 +433,9 @@ static inline void updateExpectation(struct Train *train) {
         }
     }
 
-    if(nextSensor && nextSensor != train->track.expectedSensor){
+    if(nextSensor && nextSensor != train->track.expectedSensor &&
+        nextSensor->edge[DIR_STRAIGHT].reserved == train->id &&
+        nextSensor->reverse->edge[DIR_STRAIGHT].reserved == train->id){
         train->track.expectedSensor = nextSensor;
         train->messaging.notifyExpectation = true;
 
