@@ -20,6 +20,7 @@
 
 // mm for how long the train is behind the pickup
 #define TRAIN_TAIL_PICKUP_FRONT 190
+#define TRAIN_PICKUP_LENGTH     50
 #define TRAIN_TAIL_PICKUP_BACK  75
 
 struct Train;
@@ -649,7 +650,7 @@ static inline void handleReversals(struct Train *train){
                 // Project, then reverse.
                 struct Position pos;
                 alongTrack(train->track.turnouts, &train->track.position,
-                    0, &pos, 0, 0, 0, true);
+                    TRAIN_PICKUP_LENGTH, &pos, 0, 0, 0, true);
                 train->track.position.node = pos.node->reverse;
                 train->track.position.offset = -pos.offset;
                 {
