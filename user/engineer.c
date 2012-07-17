@@ -27,6 +27,7 @@ struct EngineerMessage {
     enum {
         GOTO,
         SENSOR,
+        CIRCLE_MODE,
         DUMP_RESERVATIONS,
         QUIT,
         NUM_MESSAGE_TYPES
@@ -38,6 +39,8 @@ struct EngineerMessage {
         struct {
             Sensor sensor;
         } sensorTriggered;
+
+        int circle_mode;
     } content;
 };
 
@@ -943,6 +946,20 @@ void engineer(int trainID){
 
     setSpeed(&train, 0);
 
+    int circle_mode = -1;
+    int last_circle = 0;
+    char *circles[][3] = {
+        {
+            "E14",
+            "D6",
+            "D1"
+        }, {
+            "C10",
+            "E2",
+            "A4"
+        }
+    };
+
     bool quit = false;
     while(!quit || !train.messaging.courierReady || !train.timing.timerReady) {
         if(!quit){
@@ -951,6 +968,23 @@ void engineer(int trainID){
             notifyExpectation(&train);
             notifyNeededReservations(&train);
             notifyDoNotWantReservations(&train);
+
+            if (circle_mode >= 0 && !train.track.pathing) {
+                struct TrackNode *dest =
+                    lookupTrackNode(hashtbl, circles[circle_mode][last_circle++]);
+                last_circle %= 3;
+
+                assert(dest != NULLPTR);
+                logC(dest->name);
+
+                struct Position pos;
+                pos.node = dest;
+                pos.offset = 0;
+
+                TIMER_START(train.plan);
+                trainNavigate(&train, &pos);
+                TIMER_WORST(train.plan);
+            }
 
             scheduleTimer(&train);
         }
@@ -992,8 +1026,16 @@ void engineer(int trainID){
 
                 case GOTO: {
                     TIMER_START(train.plan);
+                    circle_mode = -1;
                     trainNavigate(&train, &mesg.content.destination);
                     TIMER_WORST(train.plan);
+                    break;
+                }
+
+                case CIRCLE_MODE: {
+                    logC("circle mode!");
+                    circle_mode = mesg.content.circle_mode;
+                    last_circle = 0;
                     break;
                 }
 
@@ -1103,6 +1145,14 @@ void engineerSend(int engineer_tid, struct TrackNode *dest, int mm) {
             .node = dest,
             .offset = mm
         }
+    };
+    Send(engineer_tid, (char *)&msg, sizeof(struct EngineerMessage), 0, 0);
+}
+
+void engineerCircle(int engineer_tid, int circle_mode) {
+    struct EngineerMessage msg = {
+        .messageType = CIRCLE_MODE,
+        .content.circle_mode = circle_mode,
     };
     Send(engineer_tid, (char *)&msg, sizeof(struct EngineerMessage), 0, 0);
 }

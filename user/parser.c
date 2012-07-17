@@ -51,6 +51,11 @@ union ParserData {
     struct ReservationQuery {
         int trainNumber;
     } reservationQuery;
+
+    struct CircleMode {
+        int tid;
+        int mode;
+    } circleMode;
 };
 
 struct Parser {
@@ -59,6 +64,11 @@ struct Parser {
         Empty,
         A_A,
         B_B,
+        C_C,
+        C_firstSpace,
+        C_tid,
+        C_secondSpace,
+        C_mode,
         E_E,
         E_firstSpace,
         E_train,
@@ -141,6 +151,9 @@ bool parse(struct Parser *parser, char c){
                     case 'b':
                         parser->state = B_B;
                         break;
+                    case 'c':
+                        parser->state = C_C;
+                        break;
                     case 'e':
                         parser->state = E_E;
                         break;
@@ -168,6 +181,43 @@ bool parse(struct Parser *parser, char c){
                     default:
                         parser->state = ErrorState;
                         break;
+                }
+                break;
+
+            case C_C:
+                parser->data.circleMode.tid = 0;
+                EXPECT_EXACT(' ', C_firstSpace);
+                break;
+
+            case C_firstSpace:
+                if(appendDecDigit(c, &parser->data.circleMode.tid)){
+                    parser->state = C_tid;
+                } else {
+                    parser->state = ErrorState;
+                }
+                break;
+
+            case C_tid:
+                if (c == ' ') {
+                    parser->data.circleMode.mode = 0;
+                    parser->state = C_secondSpace;
+                    break;
+                } else if (!appendDecDigit(c, &parser->data.circleMode.tid)) {
+                    parser->state = ErrorState;
+                }
+                break;
+
+            case C_secondSpace:
+                if(appendDecDigit(c, &parser->data.circleMode.mode)){
+                    parser->state = C_mode;
+                } else {
+                    parser->state = ErrorState;
+                }
+                break;
+
+            case C_mode:
+                if (!appendDecDigit(c, &parser->data.circleMode.mode)) {
+                    parser->state = ErrorState;
                 }
                 break;
 
@@ -439,6 +489,13 @@ bool parse(struct Parser *parser, char c){
                     logC("Setting up track B.");
                     initTrackB(nodes, hashtbl);
                 }
+                break;
+
+            case C_mode:
+                engineerCircle(
+                    parser->data.circleMode.tid,
+                    parser->data.circleMode.mode
+                );
                 break;
 
             case E_train: {
