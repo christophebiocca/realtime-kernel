@@ -2,6 +2,7 @@
 #define USER_TURNOUT_H  1
 
 #include <stdbool.h>
+#include <debug.h>
 
 // bits 0-17 are switches 1-18, 18-22 are 153-156
 typedef int TurnoutTable;
