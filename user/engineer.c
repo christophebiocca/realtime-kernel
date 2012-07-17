@@ -335,7 +335,15 @@ static inline void updateDoNotWantReservations(struct Train *train) {
         if (!edge_exists) {
             // edge no longer needed, DO NOT WANT
             struct TrackEdge *edge = r->granted[i];
-            r->granted_head = (r->granted_head + 1) % TRACK_RESERVATION_EDGES;
+
+            int end = r->granted_tail - 1;
+            if (end < 0) {
+                end += TRACK_RESERVATION_EDGES;
+            }
+            for (int j = i; j != end; j = (j + 1) % TRACK_RESERVATION_EDGES) {
+                r->granted[j] = r->granted[(j + 1) % TRACK_RESERVATION_EDGES];
+            }
+            r->granted_tail = end;
 
             r->donotwant[r->donotwant_tail++] = edge;
             r->donotwant_tail %= TRACK_RESERVATION_EDGES;
