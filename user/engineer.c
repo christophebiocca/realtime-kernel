@@ -623,7 +623,9 @@ static inline void findNextStop(struct Train *train){
     {
         struct String s;
         sinit(&s);
-        sputstr(&s, "Next Stop: ");
+        sputstr(&s, "Next Stop:[");
+        sputint(&s, next - train->track.path, 10);
+        sputc(&s, ']');
         sputstr(&s, train->track.next_stop.node->name);
         sputc(&s, '@');
         sputint(&s, train->track.next_stop.offset, 10);
@@ -650,6 +652,15 @@ static inline void handleReversals(struct Train *train){
                     0, &pos, 0, 0, 0, true);
                 train->track.position.node = pos.node->reverse;
                 train->track.position.offset = -pos.offset;
+                {
+                    struct String s;
+                    sinit(&s);
+                    sputstr(&s, "NP:");
+                    sputstr(&s, train->track.position.node->name);
+                    sputc(&s, '@');
+                    sputint(&s, train->track.position.offset, 10);
+                    logS(&s);
+                }
             }
             TIMER_START(train->findNextStop);
             findNextStop(train);
