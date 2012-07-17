@@ -9,6 +9,7 @@ int engineerCreate(int trainID);
 void engineerQuit(int engineer_tid);
 
 void engineerCircle(int engineer_tid, int circle_mode);
+void engineerRandom(int engineer_tid);
 
 // send an engineer to dest + mm
 void engineerSend(int engineer_tid, struct TrackNode *dest, int mm);

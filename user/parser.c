@@ -56,6 +56,10 @@ union ParserData {
         int tid;
         int mode;
     } circleMode;
+
+    struct RandomMode {
+        int tid;
+    } randomMode;
 };
 
 struct Parser {
@@ -69,6 +73,9 @@ struct Parser {
         C_tid,
         C_secondSpace,
         C_mode,
+        D_D,
+        D_firstSpace,
+        D_tid,
         E_E,
         E_firstSpace,
         E_train,
@@ -154,6 +161,9 @@ bool parse(struct Parser *parser, char c){
                     case 'c':
                         parser->state = C_C;
                         break;
+                    case 'd':
+                        parser->state = D_D;
+                        break;
                     case 'e':
                         parser->state = E_E;
                         break;
@@ -217,6 +227,25 @@ bool parse(struct Parser *parser, char c){
 
             case C_mode:
                 if (!appendDecDigit(c, &parser->data.circleMode.mode)) {
+                    parser->state = ErrorState;
+                }
+                break;
+
+            case D_D:
+                parser->data.randomMode.tid = 0;
+                EXPECT_EXACT(' ', D_tid);
+                break;
+
+            case D_firstSpace:
+                if(appendDecDigit(c, &parser->data.randomMode.tid)){
+                    parser->state = D_tid;
+                } else {
+                    parser->state = ErrorState;
+                }
+                break;
+
+            case D_tid:
+                if (!appendDecDigit(c, &parser->data.randomMode.tid)) {
                     parser->state = ErrorState;
                 }
                 break;
@@ -496,6 +525,10 @@ bool parse(struct Parser *parser, char c){
                     parser->data.circleMode.tid,
                     parser->data.circleMode.mode
                 );
+                break;
+
+            case D_tid:
+                engineerRandom(parser->data.randomMode.tid);
                 break;
 
             case E_train: {

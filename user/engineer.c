@@ -29,6 +29,7 @@ struct EngineerMessage {
         GOTO,
         SENSOR,
         CIRCLE_MODE,
+        RANDOM_MODE,
         DUMP_RESERVATIONS,
         QUIT,
         NUM_MESSAGE_TYPES
@@ -976,35 +977,69 @@ void engineer(int trainID){
             notifyNeededReservations(&train);
             notifyDoNotWantReservations(&train);
 
-            if ((current_mode == MODE_CIRCLE_ONE ||
-                    current_mode == MODE_CIRCLE_TWO) && !train.track.pathing) {
+            if (!train.track.pathing) {
+                struct TrackNode *dest = NULLPTR;
+                char *log_type = NULLPTR;
 
-                struct TrackNode *dest = lookupTrackNode(
-                    hashtbl,
-                    circles[
-                        (current_mode == MODE_CIRCLE_ONE) ? 0 : 1
-                    ][last_circle++]
-                );
-                last_circle %= 3;
+                switch(current_mode) {
+                    case MODE_CIRCLE_ONE:
+                    case MODE_CIRCLE_TWO: {
+                        dest = lookupTrackNode(
+                            hashtbl,
+                            circles[
+                                (current_mode == MODE_CIRCLE_ONE) ? 0 : 1
+                            ][last_circle++]
+                        );
+                        last_circle %= 3;
 
-                assert(dest != NULLPTR);
-                {
+                        assert(dest != NULLPTR);
+                        log_type = "Circle";
+
+                        break;
+                    }
+
+                    case MODE_RANDOM: {
+                        unsigned int time = Time();
+                        dest = &nodes[time % TRACK_MAX];
+
+                        // only try 5 times max to get a new destination
+                        for (int i = 0; dest->type == NODE_NONE && i < 5; ++i) {
+                            time <<= i;
+                            dest = &nodes[time % TRACK_MAX];
+                        }
+
+                        if (dest->type == NODE_NONE) {
+                            // failed 5 times, just go to first node
+                            dest = &nodes[0];
+                        }
+
+                        log_type = "Random";
+
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
+
+                if (dest != NULLPTR) {
+                    struct Position pos;
+                    pos.node = dest;
+                    pos.offset = 0;
+
+                    TIMER_START(train.plan);
+                    trainNavigate(&train, &pos);
+                    TIMER_WORST(train.plan);
+
                     struct String s;
                     sinit(&s);
                     sputstr(&s, CYAN);
-                    sputstr(&s, "Circle: ");
+                    sputstr(&s, log_type);
+                    sputstr(&s, ": ");
                     sputstr(&s, dest->name);
                     sputstr(&s, RESET);
                     logS(&s);
                 }
-
-                struct Position pos;
-                pos.node = dest;
-                pos.offset = 0;
-
-                TIMER_START(train.plan);
-                trainNavigate(&train, &pos);
-                TIMER_WORST(train.plan);
             }
 
             scheduleTimer(&train);
@@ -1069,6 +1104,12 @@ void engineer(int trainID){
                         default:
                             logC("unknown circle mode");
                     }
+                    break;
+                }
+
+                case RANDOM_MODE: {
+                    logC("random mode");
+                    current_mode = MODE_RANDOM;
                     break;
                 }
 
@@ -1186,6 +1227,13 @@ void engineerCircle(int engineer_tid, int circle_mode) {
     struct EngineerMessage msg = {
         .messageType = CIRCLE_MODE,
         .content.circle_mode = circle_mode,
+    };
+    Send(engineer_tid, (char *)&msg, sizeof(struct EngineerMessage), 0, 0);
+}
+
+void engineerRandom(int engineer_tid) {
+    struct EngineerMessage msg = {
+        .messageType = RANDOM_MODE
     };
     Send(engineer_tid, (char *)&msg, sizeof(struct EngineerMessage), 0, 0);
 }
