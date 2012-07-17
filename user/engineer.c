@@ -2,14 +2,15 @@
 #include <stdbool.h>
 #include <ts7200.h>
 
+#include <user/kinematics.h>
+#include <user/pathfinding.h>
 #include <user/priorities.h>
+#include <user/sensor.h>
 #include <user/string.h>
 #include <user/syscall.h>
 #include <user/tio.h>
 #include <user/track_data.h>
-#include <user/pathfinding.h>
-#include <user/kinematics.h>
-#include <user/sensor.h>
+#include <user/vt100.h>
 
 #include <user/clock.h>
 #include <user/controller.h>
@@ -947,7 +948,12 @@ void engineer(int trainID){
 
     setSpeed(&train, 0);
 
-    int circle_mode = -1;
+    enum {
+        MODE_USER,
+        MODE_CIRCLE_ONE,
+        MODE_CIRCLE_TWO,
+        MODE_RANDOM
+    } current_mode = MODE_USER;
     int last_circle = 0;
     char *circles[][3] = {
         {
@@ -970,13 +976,27 @@ void engineer(int trainID){
             notifyNeededReservations(&train);
             notifyDoNotWantReservations(&train);
 
-            if (circle_mode >= 0 && !train.track.pathing) {
-                struct TrackNode *dest =
-                    lookupTrackNode(hashtbl, circles[circle_mode][last_circle++]);
+            if ((current_mode == MODE_CIRCLE_ONE ||
+                    current_mode == MODE_CIRCLE_TWO) && !train.track.pathing) {
+
+                struct TrackNode *dest = lookupTrackNode(
+                    hashtbl,
+                    circles[
+                        (current_mode == MODE_CIRCLE_ONE) ? 0 : 1
+                    ][last_circle++]
+                );
                 last_circle %= 3;
 
                 assert(dest != NULLPTR);
-                logC(dest->name);
+                {
+                    struct String s;
+                    sinit(&s);
+                    sputstr(&s, CYAN);
+                    sputstr(&s, "Circle: ");
+                    sputstr(&s, dest->name);
+                    sputstr(&s, RESET);
+                    logS(&s);
+                }
 
                 struct Position pos;
                 pos.node = dest;
@@ -1027,16 +1047,28 @@ void engineer(int trainID){
 
                 case GOTO: {
                     TIMER_START(train.plan);
-                    circle_mode = -1;
+                    current_mode = MODE_USER;
                     trainNavigate(&train, &mesg.content.destination);
                     TIMER_WORST(train.plan);
                     break;
                 }
 
                 case CIRCLE_MODE: {
-                    logC("circle mode!");
-                    circle_mode = mesg.content.circle_mode;
-                    last_circle = 0;
+                    switch (mesg.content.circle_mode) {
+                        case 0:
+                        case 1:
+                            logC("circle mode 1");
+                            current_mode = MODE_CIRCLE_ONE;
+                            break;
+
+                        case 2:
+                            logC("circle mode 2");
+                            current_mode = MODE_CIRCLE_TWO;
+                            break;
+
+                        default:
+                            logC("unknown circle mode");
+                    }
                     break;
                 }
 
