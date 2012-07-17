@@ -300,6 +300,8 @@ if errors > 0:
 
 ########################################################################
 #### Output the .c code.
+maxidx = max([len(tracks[function].nodes) for function in tracks])
+
 fh = open(options.c, 'w')
 fh.write('''/* THIS FILE IS GENERATED CODE -- DO NOT EDIT */
 
@@ -352,6 +354,7 @@ void %s(struct TrackNode *track, struct TrackHashNode *hashtbl) {
         fh.write("  track[%d].edge[DIR_%s].reserved = -1;\n" % \
           (idx, dir.upper()))
 
+
     djb_hash = djb2(nd.name) % int(options.s)
     if djb_hash not in hashtbl:
         hashtbl[djb_hash] = 0
@@ -362,6 +365,9 @@ void %s(struct TrackNode *track, struct TrackHashNode *hashtbl) {
     hashtbl[djb_hash] += 1
     if hashtbl[djb_hash] > max_collisions:
         max_collisions = hashtbl[djb_hash]
+
+  for i in range(0, maxidx - len(tracks[fun].nodes)):
+    fh.write("  track[%d].type = NODE_NONE;\n" % (len(tracks[fun].nodes) + i))
 
   for i in range(int(options.s)):
       if i in hashtbl:
@@ -419,7 +425,6 @@ fh.close()
 # This is the right place to make changes that you want to appear in
 # the generated file (as opposed to in the file itself, since it will
 # be overwritten when this script is run again).
-maxidx = max([len(tracks[function].nodes) for function in tracks])
 maxhn = max([tracks[function].max_collisions for function in tracks])
 fh = open(options.h, 'w')
 fh.write('''#ifndef USER_TRACK_DATA_H
