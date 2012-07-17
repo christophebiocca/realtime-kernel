@@ -196,6 +196,9 @@ static inline int edgeInArray(struct TrackEdge **array,
 }
 
 static inline void updateNeededReservations(struct Train *train) {
+    {
+        Delay(1);
+    }
     struct TrackReservations *r = &train->reservations;
 
     int back = (train->kinematics.orientation == FORWARD)
@@ -276,9 +279,15 @@ static inline void updateNeededReservations(struct Train *train) {
             }
         }
     }
+    {
+        Delay(1);
+    }
 }
 
 static inline void updateGrantedReservations(struct Train *train) {
+    {
+        Delay(1);
+    }
     struct TrackReservations *r = &train->reservations;
 
     for (int i = r->needed_head; i != r->needed_tail;
@@ -319,6 +328,9 @@ static inline void updateGrantedReservations(struct Train *train) {
             r->granted_tail %= TRACK_RESERVATION_EDGES;
         }
     }
+    {
+        Delay(1);
+    }
 }
 
 static inline void updateDoNotWantReservations(struct Train *train) {
@@ -333,6 +345,9 @@ static inline void updateDoNotWantReservations(struct Train *train) {
             r->needed_tail,
             r->granted[i]
         );
+        {
+            Delay(1);
+        }
 
         if (!edge_exists) {
             // edge no longer needed, DO NOT WANT
@@ -354,6 +369,9 @@ static inline void updateDoNotWantReservations(struct Train *train) {
 
             train->messaging.notifyDoNotWantReservations = true;
         }
+    }
+    {
+        Delay(1);
     }
 }
 
@@ -576,17 +594,6 @@ static inline void adjustTargetSpeed(struct Train *train){
             sputstr(&s, "Replan @");
             sputint(&s, train->timing.replan, 10);
             logS(&s);
-        }
-    }
-    if(stopping && !train->kinematics.target_speed){
-        if(invdist < dist){
-            logC("Overshot");
-        }
-        if(stop > dist){
-            logC("Slowing Down");
-        }
-        if(!train->track.fullyReserved){
-            logC("Waiting on reservations");
         }
     }
 }
@@ -920,7 +927,7 @@ void engineer(int trainID){
         assert(train.kinematics.time >= 0);
         train.timing.timerReady = true;
     }
-
+    Delay(1);
     {
         train.messaging.courier = controllerCourier(MyTid());
         assert(train.messaging.courier > 0);
@@ -931,6 +938,7 @@ void engineer(int trainID){
         assert(len == 0);
         train.messaging.courierReady = true;
     }
+    Delay(1);
 
     kinematicsInit(&train.kinematics, train.id);
     train.kinematics.time = Time();
@@ -947,6 +955,8 @@ void engineer(int trainID){
 
     setSpeed(&train, 14);
 
+    Delay(1);
+
     // Go forth and hit a sensor.
     {
         // Wait for a sensor message update.
@@ -961,6 +971,8 @@ void engineer(int trainID){
         int ret = Reply(tid, 0, 0);
         (void)(ret);
         assert(ret == 0);
+
+        Delay(1);
 
         // TODO: Get the actual turnout state from someone.
         train.track.turnouts = (1<<23)-1;
