@@ -245,7 +245,7 @@ static inline void updateNeededReservations(struct Train *train) {
     int len = alongTrack(
         train->track.turnouts,
         &train->track.position,
-        train->kinematics.stop / 1000 + 500,
+        train->kinematics.stop / 1000 + 200,
         &end,
         path,
         train->track.pathing ? train->track.pathCurrent : 0,
@@ -288,8 +288,19 @@ static inline void updateGrantedReservations(struct Train *train) {
             continue;
         }
 
+
         struct TrackEdge *edge = r->needed[i];
-        r->needed_head = (r->needed_head + 1) % TRACK_RESERVATION_EDGES;
+
+        // shift everything to the left
+        int end = r->needed_tail - 1;
+        if (end < 0) {
+            end += TRACK_RESERVATION_EDGES;
+        }
+        for (int j = i; j != end; j = (j + 1) % TRACK_RESERVATION_EDGES) {
+            r->needed[j] = r->needed[(j + 1) % TRACK_RESERVATION_EDGES];
+        }
+        r->needed_tail = end;
+
         if (r->needed_head == r->needed_tail) {
             train->messaging.notifyNeededReservations = false;
             train->track.fullyReserved = true;
