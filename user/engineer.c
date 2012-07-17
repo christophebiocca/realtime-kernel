@@ -613,7 +613,7 @@ static inline void findNextStop(struct Train *train){
     train->track.next_stop.node = *next;
     if(*next == train->track.goal.node){
         train->track.next_stop.offset = train->track.goal.offset;
-    } else if(*(next+1) == train->track.goal.node){
+    } else if((*(next+1))->reverse == train->track.goal.node){
         train->track.next_stop.offset = -train->track.next_stop.offset;
     } else {
         train->track.next_stop.offset = train->track.next_stop.offset +
