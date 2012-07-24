@@ -404,8 +404,18 @@ static inline void notifyDoNotWantReservations(struct Train *train) {
 
         int i, j;
         for (i = r->donotwant_head, j = 0; j < 5 && i != r->donotwant_tail;
-                i = (i + 1) % TRACK_RESERVATION_EDGES, ++j) {
-            edges[j] = r->donotwant[i];
+                i = (i + 1) % TRACK_RESERVATION_EDGES) {
+
+            int still_needed = edgeInArray(
+                r->needed,
+                r->needed_head,
+                r->needed_tail,
+                r->donotwant[i]
+            );
+
+            if (!still_needed) {
+                edges[j++] = r->donotwant[i];
+            }
         }
 
         if (i != r->donotwant_head) {
