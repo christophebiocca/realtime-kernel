@@ -288,7 +288,6 @@ static inline void updateGrantedReservations(struct Train *train) {
             continue;
         }
 
-
         struct TrackEdge *edge = r->needed[i];
 
         // shift everything to the left

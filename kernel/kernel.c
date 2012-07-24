@@ -97,19 +97,19 @@ static void undefined_instr(void) {
     bwprintf(COM2, "Task ID: %d\r\n", getActiveTaskId());
 
     DUMPR(usr_sp);
-    DUMPR(r0);
-    DUMPR(r1);
-    DUMPR(r2);
-    DUMPR(r3);
-    DUMPR(r4);
-    DUMPR(r5);
-    DUMPR(r6);
-    DUMPR(r7);
-    DUMPR(r8);
-    DUMPR(r9);
-    DUMPR(r10);
-    DUMPR(r11);
     DUMPR(r12);
+    DUMPR(r11);
+    DUMPR(r10);
+    DUMPR(r9);
+    DUMPR(r8);
+    DUMPR(r7);
+    DUMPR(r6);
+    DUMPR(r5);
+    DUMPR(r4);
+    DUMPR(r3);
+    DUMPR(r2);
+    DUMPR(r1);
+    DUMPR(r0);
 
     // loop forever
     while (1);
@@ -125,19 +125,19 @@ static void abort_prefetch(void) {
     bwprintf(COM2, "Task ID: %d\r\n", getActiveTaskId());
 
     DUMPR(usr_sp);
-    DUMPR(r0);
-    DUMPR(r1);
-    DUMPR(r2);
-    DUMPR(r3);
-    DUMPR(r4);
-    DUMPR(r5);
-    DUMPR(r6);
-    DUMPR(r7);
-    DUMPR(r8);
-    DUMPR(r9);
-    DUMPR(r10);
-    DUMPR(r11);
     DUMPR(r12);
+    DUMPR(r11);
+    DUMPR(r10);
+    DUMPR(r9);
+    DUMPR(r8);
+    DUMPR(r7);
+    DUMPR(r6);
+    DUMPR(r5);
+    DUMPR(r4);
+    DUMPR(r3);
+    DUMPR(r2);
+    DUMPR(r1);
+    DUMPR(r0);
 
     // loop forever
     while (1);
@@ -153,19 +153,19 @@ static void abort_data(void) {
     bwprintf(COM2, "Task ID: %d\r\n", getActiveTaskId());
 
     DUMPR(usr_sp);
-    DUMPR(r0);
-    DUMPR(r1);
-    DUMPR(r2);
-    DUMPR(r3);
-    DUMPR(r4);
-    DUMPR(r5);
-    DUMPR(r6);
-    DUMPR(r7);
-    DUMPR(r8);
-    DUMPR(r9);
-    DUMPR(r10);
-    DUMPR(r11);
     DUMPR(r12);
+    DUMPR(r11);
+    DUMPR(r10);
+    DUMPR(r9);
+    DUMPR(r8);
+    DUMPR(r7);
+    DUMPR(r6);
+    DUMPR(r5);
+    DUMPR(r4);
+    DUMPR(r3);
+    DUMPR(r2);
+    DUMPR(r1);
+    DUMPR(r0);
 
     // loop forever
     while (1);
