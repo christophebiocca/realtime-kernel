@@ -1,21 +1,22 @@
 #include <stdbool.h>
 #include <lib.h>
 
-#include <user/parser.h>
-#include <user/string.h>
-#include <user/mio.h>
-#include <user/tio.h>
-#include <user/priorities.h>
-#include <user/syscall.h>
-#include <user/sensor.h>
-#include <user/turnout.h>
 #include <user/clock.h>
-#include <user/vt100.h>
 #include <user/clock_drawer.h>
-#include <user/engineer.h>
 #include <user/controller.h>
+#include <user/engineer.h>
+#include <user/freight.h>
 #include <user/log.h>
+#include <user/mio.h>
+#include <user/parser.h>
 #include <user/pathfinding.h>
+#include <user/priorities.h>
+#include <user/sensor.h>
+#include <user/string.h>
+#include <user/syscall.h>
+#include <user/tio.h>
+#include <user/turnout.h>
+#include <user/vt100.h>
 
 union ParserData {
     struct SwitchThrowParse {
@@ -712,6 +713,7 @@ void commandParser(void){
     sputstr(&s, "Graceful shutdown in progress\r\n");
     mioPrint(&s);
     controllerQuit();
+    freightQuit();
     sensorQuit();
     turnoutQuit();
     clockDrawerQuit();

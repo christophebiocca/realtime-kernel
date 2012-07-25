@@ -15,11 +15,12 @@
 #include <user/clock_drawer.h>
 #include <user/controller.h>
 #include <user/engineer.h>
+#include <user/freight.h>
 #include <user/log.h>
 #include <user/parser.h>
 #include <user/sensor.h>
-#include <user/turnout.h>
 #include <user/track_data.h>
+#include <user/turnout.h>
 
 /* Train IO test */
 static void idlerTask(void) {
@@ -43,5 +44,6 @@ void trainTaskInit(void) {
     parserInit();
     clockDrawerInit();
     controllerInit();
+    freightInit();
     initTrackA(nodes, hashtbl);
 }
