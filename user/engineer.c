@@ -534,7 +534,7 @@ static inline void adjustTargetSpeed(struct Train *train){
             train->track.pathing = false;
         }
     } else if(stopping && (((invdist >= dist) && (stop <= dist)) ||
-        (dist == 0x7FFFFFFF && invdist == 0x7FFFFFFF)) && train->track.fullyReserved){
+        (invdist >= 200 && dist == 0x7FFFFFFF)) && train->track.fullyReserved){
         setSpeed(train,14);
         train->timing.replan = 0x7FFFFFFF;
         {
