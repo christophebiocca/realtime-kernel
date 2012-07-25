@@ -288,6 +288,7 @@ static inline void updateGrantedReservations(struct Train *train) {
             r->needed[j-1] = r->needed[j];
         }
         --r->needed_count;
+        --i;
 
         if(r->needed_count == 0) {
             train->messaging.notifyNeededReservations = false;
@@ -325,6 +326,7 @@ static inline void updateDoNotWantReservations(struct Train *train) {
                 r->granted[j-1] = r->granted[j];
             }
             --r->granted_count;
+            --i;
 
             r->donotwant[r->donotwant_count++] = edge;
             assert(r->donotwant_count <= TRACK_RESERVATION_EDGES);
