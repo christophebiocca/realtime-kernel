@@ -678,16 +678,25 @@ static inline void handleReversals(struct Train *train){
     }
 }
 
+static inline void trainNavigate(struct Train *train, struct Position *dest);
+
 static inline void updatePosition(struct Train *train, struct Position *pos){
     train->track.position.node = pos->node;
     train->track.position.offset = pos->offset;
     train->messaging.notifyPosition = true;
 
     if(train->track.pathing){
-        for(int i = 1; i < 5 && train->track.pathCurrent[i-1] != train->track.goal.node; ++i){
+        bool found = false;
+        for(int i = 0; i < 5 && train->track.pathCurrent[i-1] != train->track.goal.node; ++i){
             if(train->track.pathCurrent[i] == pos->node){
                 train->track.pathCurrent += i;
+                found = true;
+                break;
             }
+        }
+        if(!found){
+            logC("Messed up, recalc");
+            trainNavigate(train, &train->track.goal);
         }
     }
 
