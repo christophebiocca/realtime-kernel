@@ -1,6 +1,7 @@
 #ifndef DEBUG_H
 #define DEBUG_H 1
 #include <bwio.h>
+#include <kernel/trampoline.h>
 
 #ifdef PRODUCTION
 
@@ -30,8 +31,34 @@ __attribute__((always_inline, noreturn)) static inline void __assert_fail (__con
         unsigned int __line, __const char *__function){
     bwsetfifo(COM2, 0);
     bwsetspeed(COM2, 115200);
-    bwprintf(COM2, "kernel: %s:%d: %s: Assertion `%s' failed\r\n", __file, __line,
+    // clear the screen
+    bwprintf(COM2, "\033[2Jkernel: %s:%d: %s: Assertion `%s' failed\r\n", __file, __line,
         __function, __assertion);
+
+    bwputstr(COM2, "\r\nSTACK TRACE:\r\n");
+
+    unsigned int *fp = __builtin_frame_address(0);
+    while (1) {
+        if (!fp) {
+            break;
+        }
+
+        unsigned int *pc = (unsigned int *) fp[0];
+        unsigned int *toppc = pc;
+        while ((toppc[-1] & 0xff000000) != 0xff000000) {
+            --toppc;
+        }
+
+        char *fn = ((char *) (toppc - 1)) - (toppc[-1] & 0x00ffffff);
+        bwprintf(COM2, "%s @ %x\r\n", fn, pc);
+
+        if (toppc == (unsigned int *) &trampoline) {
+            break;
+        }
+
+        fp = (unsigned int *) fp[-3];
+    }
+
     while(1){asm volatile("nop");};
 }
 
