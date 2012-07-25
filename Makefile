@@ -1,7 +1,7 @@
 PATH := /u/wbcowan/gnuarm-4.0.2/libexec/gcc/arm-elf/4.0.2:/u/wbcowan/gnuarm-4.0.2/arm-elf/bin:${PATH}
 
 CC      = gcc
-CFLAGS  = -c -fPIC -Wall -Wextra -Werror -I. -Iinclude -mcpu=arm920t -msoft-float -std=gnu99
+CFLAGS  = -c -fPIC -Wall -Wextra -Werror -I. -Iinclude -mcpu=arm920t -msoft-float -std=gnu99 -fno-omit-frame-pointer -mapcs -mpoke-function-name
 
 AS	= as
 ASFLAGS	= -mcpu=arm920t -mapcs-32
