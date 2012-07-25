@@ -73,13 +73,13 @@ int planPath(struct TrackNode *list, int train_id,
             seqCost[seqCount++] = 0;
         }
 
-        if (next->node->type != NODE_EXIT) {
+        if (!(next->node->type & (NODE_EXIT | NODE_BRANCH_CURVED))) {
             seq[seqCount] = next->node->edge[0].dest;
             seqCost[seqCount++] = next->node->edge[0].dist +
                 RESERVED_COST(train_id, next->node->edge[0]);
         }
 
-        if (next->node->type == NODE_BRANCH) {
+        if ((next->node->type & (NODE_BRANCH | NODE_BRANCH_CURVED))) {
             seq[seqCount] = next->node->edge[1].dest;
             seqCost[seqCount++] = next->node->edge[1].dist +
                 RESERVED_COST(train_id, next->node->edge[1]);
@@ -160,6 +160,8 @@ int alongTrack(TurnoutTable turnouts, struct Position *start,
             } else {
                 dir = isTurnoutCurved(turnouts, pos->num);
             }
+        } else if(pos->type == NODE_BRANCH_CURVED){
+            dir = 1;
         }
 
         if (edges) {
@@ -213,6 +215,8 @@ struct TrackNode **alongPath(
         int dir = 0;
         if((*path)->type == NODE_BRANCH && (*path)->edge[1].dest == *(path+1)){
             dir = 1;
+        } else if((*path)->type == NODE_BRANCH_CURVED){
+            dir = 1;
         }
         ++path;
         distance -= (*path)->edge[dir].dist;
@@ -239,6 +243,8 @@ int distance(TurnoutTable turnouts, struct Position *from, struct Position *to) 
         int dir = 0;
         if(pos->type == NODE_BRANCH){
             dir = isTurnoutCurved(turnouts, pos->num);
+        } else if(pos->type == NODE_BRANCH_CURVED){
+            dir = 1;
         }
         dist += pos->edge[dir].dist;
         pos = pos->edge[dir].dest;
