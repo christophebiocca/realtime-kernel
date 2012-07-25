@@ -87,17 +87,14 @@ struct TrackControl {
 
 #define TRACK_RESERVATION_EDGES 50
 struct TrackReservations {
-    int needed_head;
-    int needed_tail;
+    int needed_count;
     struct TrackEdge *needed[TRACK_RESERVATION_EDGES];
 
-    int granted_head;
-    int granted_tail;
+    int granted_count;
     struct TrackEdge *granted[TRACK_RESERVATION_EDGES];
 
     // according to thesaurus.com "do not want" is the antonym of "need"
-    int donotwant_head;
-    int donotwant_tail;
+    int donotwant_count;
     struct TrackEdge *donotwant[TRACK_RESERVATION_EDGES];
 };
 
@@ -184,9 +181,9 @@ static inline void setSpeed(struct Train *train, int speed){
 
 // FIXME: horrible O(n) performance
 static inline int edgeInArray(struct TrackEdge **array,
-        int head, int tail, struct TrackEdge *edge) {
+        int size, struct TrackEdge *edge) {
 
-    for (int i = head; i != tail; i = (i + 1) % TRACK_RESERVATION_EDGES) {
+    for (int i = 0; i < size; ++i) {
         if (array[i] == edge || array[i] == edge->reverse) {
             return true;
         }
@@ -217,18 +214,16 @@ static inline void updateNeededReservations(struct Train *train) {
 
         int already_needed = edgeInArray(
             r->needed,
-            r->needed_head,
-            r->needed_tail,
+            r->needed_count,
             &back->edge[dir]
         );
 
         if (!already_needed) {
-            r->needed[r->needed_tail++] = &back->edge[dir];
-            r->needed_tail %= TRACK_RESERVATION_EDGES;
+            r->needed[r->needed_count++] = &back->edge[dir];
+            assert(r->needed_count <= TRACK_RESERVATION_EDGES);
             int already_granted = edgeInArray(
                 r->granted,
-                r->granted_head,
-                r->granted_tail,
+                r->granted_count,
                 &back->edge[dir]
             );
             if(!already_granted){
@@ -256,18 +251,16 @@ static inline void updateNeededReservations(struct Train *train) {
     for (int i = 0; i < (len - 1); ++i) {
         int already_needed = edgeInArray(
             r->needed,
-            r->needed_head,
-            r->needed_tail,
+            r->needed_count,
             edges[i]
         );
 
         if (!already_needed) {
-            r->needed[r->needed_tail++] = edges[i];
-            r->needed_tail %= TRACK_RESERVATION_EDGES;
+            r->needed[r->needed_count++] = edges[i];
+            assert(r->needed_count <= TRACK_RESERVATION_EDGES);
             int already_granted = edgeInArray(
                 r->granted,
-                r->granted_head,
-                r->granted_tail,
+                r->granted_count,
                 edges[i]
             );
             if(!already_granted){
@@ -281,8 +274,7 @@ static inline void updateNeededReservations(struct Train *train) {
 static inline void updateGrantedReservations(struct Train *train) {
     struct TrackReservations *r = &train->reservations;
 
-    for (int i = r->needed_head; i != r->needed_tail;
-            i = (i + 1) % TRACK_RESERVATION_EDGES) {
+    for (int i = 0; i < r->needed_count; ++i) {
 
         if (r->needed[i]->reserved != train->id) {
             continue;
@@ -292,31 +284,24 @@ static inline void updateGrantedReservations(struct Train *train) {
         struct TrackEdge *edge = r->needed[i];
 
         // shift everything to the left
-        int end = r->needed_tail - 1;
-        if (end < 0) {
-            end += TRACK_RESERVATION_EDGES;
+        for(int j = i+1; j < r->needed_count; ++j){
+            r->needed[j-1] = r->needed[j];
         }
-        assert(end >= 0);
-        for (int j = i; j != end; j = (j + 1) % TRACK_RESERVATION_EDGES) {
-            assert(j >= 0 && j < TRACK_RESERVATION_EDGES);
-            r->needed[j] = r->needed[(j + 1) % TRACK_RESERVATION_EDGES];
-        }
-        r->needed_tail = end;
+        --r->needed_count;
 
-        if (r->needed_head == r->needed_tail) {
+        if(r->needed_count == 0) {
             train->messaging.notifyNeededReservations = false;
             train->track.fullyReserved = true;
         }
 
         int edge_exists = edgeInArray(
             r->granted,
-            r->granted_head,
-            r->granted_tail,
+            r->granted_count,
             edge
         );
         if (!edge_exists) {
-            r->granted[r->granted_tail++] = edge;
-            r->granted_tail %= TRACK_RESERVATION_EDGES;
+            r->granted[r->granted_count++] = edge;
+            assert(r->granted_count <= TRACK_RESERVATION_EDGES);
         }
     }
 }
@@ -324,13 +309,11 @@ static inline void updateGrantedReservations(struct Train *train) {
 static inline void updateDoNotWantReservations(struct Train *train) {
     struct TrackReservations *r = &train->reservations;
 
-    for (int i = r->granted_head; i != r->granted_tail;
-            i = (i + 1) % TRACK_RESERVATION_EDGES) {
+    for (int i = 0; i < r->granted_count; ++i) {
 
         int edge_exists = edgeInArray(
             r->needed,
-            r->needed_head,
-            r->needed_tail,
+            r->needed_count,
             r->granted[i]
         );
 
@@ -338,19 +321,13 @@ static inline void updateDoNotWantReservations(struct Train *train) {
             // edge no longer needed, DO NOT WANT
             struct TrackEdge *edge = r->granted[i];
 
-            int end = r->granted_tail - 1;
-            if (end < 0) {
-                end += TRACK_RESERVATION_EDGES;
+            for(int j = i + 1; j < r->granted_count; ++j){
+                r->granted[j-1] = r->granted[j];
             }
-            assert(end >= 0);
-            for (int j = i; j != end; j = (j + 1) % TRACK_RESERVATION_EDGES) {
-                assert(j >= 0 && j < TRACK_RESERVATION_EDGES);
-                r->granted[j] = r->granted[(j + 1) % TRACK_RESERVATION_EDGES];
-            }
-            r->granted_tail = end;
+            --r->granted_count;
 
-            r->donotwant[r->donotwant_tail++] = edge;
-            r->donotwant_tail %= TRACK_RESERVATION_EDGES;
+            r->donotwant[r->donotwant_count++] = edge;
+            assert(r->donotwant_count <= TRACK_RESERVATION_EDGES);
 
             train->messaging.notifyDoNotWantReservations = true;
         }
@@ -364,14 +341,12 @@ static inline void notifyNeededReservations(struct Train *train) {
         struct TrackReservations *r = &train->reservations;
         struct TrackEdge *edges[5];
 
-        int i, j;
-        for (i = r->needed_head, j = 0; j < 5 && i != r->needed_tail;
-                i = (i + 1) % TRACK_RESERVATION_EDGES) {
+        int j;
+        for (int i = j = 0; j < 5 && i < r->needed_count; ++i) {
 
             int already_granted = edgeInArray(
                 r->granted,
-                r->granted_head,
-                r->granted_tail,
+                r->granted_count,
                 r->needed[i]
             );
 
@@ -406,23 +381,25 @@ static inline void notifyDoNotWantReservations(struct Train *train) {
         struct TrackReservations *r = &train->reservations;
         struct TrackEdge *edges[5];
 
-        int i, j;
-        for (i = r->donotwant_head, j = 0; j < 5 && i != r->donotwant_tail;
-                i = (i + 1) % TRACK_RESERVATION_EDGES) {
+        int j;
+        for (int i = j = 0; j < 5 && i < r->donotwant_count; ++i) {
 
             int still_needed = edgeInArray(
                 r->needed,
-                r->needed_head,
-                r->needed_tail,
+                r->needed_count,
                 r->donotwant[i]
             );
 
             if (!still_needed) {
                 edges[j++] = r->donotwant[i];
+                for(int k = i + 1; k < r->donotwant_count; ++k){
+                    r->donotwant[k-1] = r->donotwant[k];
+                }
+                --r->donotwant_count;
             }
         }
 
-        if (i != r->donotwant_head) {
+        if (j > 0) {
             for (; j < 5; ++j) {
                 edges[j] = NULLPTR;
             }
@@ -437,12 +414,6 @@ static inline void notifyDoNotWantReservations(struct Train *train) {
                 edges[4]
             );
             courierUsed(train);
-
-            // i has the new head
-            r->donotwant_head = i;
-            if (r->donotwant_head == r->donotwant_tail) {
-                train->messaging.notifyDoNotWantReservations = false;
-            }
         }
     }
 }
@@ -945,9 +916,9 @@ void engineer(int trainID){
     kinematicsInit(&train.kinematics, train.id);
     train.kinematics.time = Time();
 
-    train.reservations.needed_head = train.reservations.needed_tail = 0;
-    train.reservations.granted_head = train.reservations.granted_tail = 0;
-    train.reservations.donotwant_head = train.reservations.donotwant_tail = 0;
+    train.reservations.needed_count = 0;
+    train.reservations.granted_count = 0;
+    train.reservations.donotwant_count = 0;
 
     train.track.expectedSensor = 0;
     train.track.secondarySensor = 0;
@@ -1191,14 +1162,11 @@ void engineer(int trainID){
 
                     sinit(&s);
                     sputstr(&s, "Needed (");
-                    sputint(&s, r->needed_head, 10);
-                    sputstr(&s, ", ");
-                    sputint(&s, r->needed_tail, 10);
+                    sputint(&s, r->needed_count, 10);
                     sputstr(&s, ")");
                     logS(&s);
 
-                    for (int i = r->needed_head; i != r->needed_tail;
-                            i = (i + 1) % TRACK_RESERVATION_EDGES) {
+                    for (int i = 0; i < r->needed_count; ++i) {
                         sinit(&s);
 
                         sputstr(&s, "    ");
@@ -1210,14 +1178,11 @@ void engineer(int trainID){
 
                     sinit(&s);
                     sputstr(&s, "Granted (");
-                    sputint(&s, r->granted_head, 10);
-                    sputstr(&s, ", ");
-                    sputint(&s, r->granted_tail, 10);
+                    sputint(&s, r->granted_count, 10);
                     sputstr(&s, ")");
                     logS(&s);
 
-                    for (int i = r->granted_head; i != r->granted_tail;
-                            i = (i + 1) % TRACK_RESERVATION_EDGES) {
+                    for (int i = 0; i < r->granted_count; ++i) {
                         sinit(&s);
 
                         sputstr(&s, "    ");
@@ -1229,14 +1194,11 @@ void engineer(int trainID){
 
                     sinit(&s);
                     sputstr(&s, "Do Not Want (");
-                    sputint(&s, r->donotwant_head, 10);
-                    sputstr(&s, ", ");
-                    sputint(&s, r->donotwant_tail, 10);
+                    sputint(&s, r->donotwant_count, 10);
                     sputstr(&s, ")");
                     logS(&s);
 
-                    for (int i = r->donotwant_head; i != r->donotwant_tail;
-                            i = (i + 1) % TRACK_RESERVATION_EDGES) {
+                    for (int i = 0; i < r->donotwant_count; ++i) {
                         sinit(&s);
 
                         sputstr(&s, "    ");
