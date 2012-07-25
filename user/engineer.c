@@ -1049,22 +1049,8 @@ void engineer(int trainID){
                     }
 
                     case ENGINEER_MODE_RANDOM: {
-                        unsigned int time = Time();
-                        dest = &nodes[time % TRACK_MAX];
-
-                        // only try 5 times max to get a new destination
-                        for (int i = 0; dest->type == NODE_NONE && i < 5; ++i) {
-                            time <<= i;
-                            dest = &nodes[time % TRACK_MAX];
-                        }
-
-                        if (dest->type == NODE_NONE) {
-                            // failed 5 times, just go to first node
-                            dest = &nodes[0];
-                        }
-
+                        dest = randomTrackNode(nodes);
                         log_type = "Random";
-
                         break;
                     }
 

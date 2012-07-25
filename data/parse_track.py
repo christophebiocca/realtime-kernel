@@ -307,6 +307,7 @@ fh.write('''/* THIS FILE IS GENERATED CODE -- DO NOT EDIT */
 
 #include <lib.h>
 #include <user/track_data.h>
+#include <user/clock.h>
 
 struct TrackNode nodes[TRACK_MAX];
 struct TrackHashNode hashtbl[MAX_HASHNODES];
@@ -416,6 +417,24 @@ struct TrackNode *lookupTrackNode(struct TrackHashNode *hashtbl, const char *nam
             return (struct TrackNode*) 0;
     }
 }
+
+struct TrackNode *randomTrackNode(struct TrackNode *track) {
+    unsigned int time = Time();
+    struct TrackNode *dest = &track[time %% TRACK_MAX];
+
+    // only try 5 times max to get a new destination
+    for (int i = 0; dest->type == NODE_NONE && i < 5; ++i) {
+        time <<= i;
+        dest = &track[time %% TRACK_MAX];
+    }
+
+    if (dest->type == NODE_NONE) {
+        // failed 5 times, just go to first node
+        dest = &track[0];
+    }
+
+    return dest;
+}
 ''' % options.s)
 
 fh.close()
@@ -479,6 +498,7 @@ struct TrackHashNode {
 #define TRACK_MAX %d
 
 struct TrackNode *lookupTrackNode(struct TrackHashNode *hashtbl, const char *name);
+struct TrackNode *randomTrackNode(struct TrackNode *track);
 
 extern struct TrackNode nodes[TRACK_MAX];
 extern struct TrackHashNode hashtbl[MAX_HASHNODES];
