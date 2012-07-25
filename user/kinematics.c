@@ -22,7 +22,7 @@ void kinematicsInit(struct Kinematics *k, int trainID){
     switch(trainID){
         default:
             logC("Default Kinematics");
-            k->minAccel = 5;
+            k->minAccel = 7;
             k->maxAccel = 26;
             k->transition1 = 300;
             k->transition2 = 1600;
