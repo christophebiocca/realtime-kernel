@@ -657,7 +657,8 @@ static inline void handleReversals(struct Train *train){
                 // Project, then reverse.
                 struct Position pos;
                 alongTrack(train->track.turnouts, &train->track.position,
-                    TRAIN_PICKUP_LENGTH, &pos, 0, 0, 0, true);
+                    TRAIN_PICKUP_LENGTH - (train->kinematics.orientation == FORWARD ? TRAIN_TAIL_PICKUP_BACK : TRAIN_TAIL_PICKUP_FRONT),
+                    &pos, 0, 0, 0, true);
                 train->track.position.node = pos.node->reverse;
                 train->track.position.offset = -pos.offset;
                 {
