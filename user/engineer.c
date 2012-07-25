@@ -638,9 +638,11 @@ static inline void updateTurnouts(struct Train *train){
         if((*sweep)->type == NODE_MERGE && sweep != path){
             // No conflict the merge nodes.
             struct TrackNode *prev = (*(sweep-1));
-            if((*sweep)->reverse->edge[DIR_STRAIGHT].reverse->src == prev){
+            if((*sweep)->reverse->edge[DIR_STRAIGHT].reverse->src == prev &&
+                ((*sweep)->reverse->type & (NODE_BRANCH | NODE_BRANCH_STRAIGHT))){
                 turnoutStraight((*sweep)->num, &train->track.turnouts);
-            } else if((*sweep)->reverse->edge[DIR_CURVED].reverse->src == prev){
+            } else if((*sweep)->reverse->edge[DIR_CURVED].reverse->src == prev &&
+                ((*sweep)->reverse->type & (NODE_BRANCH | NODE_BRANCH_CURVED))){
                 turnoutCurve((*sweep)->num, &train->track.turnouts);
             }
         }
