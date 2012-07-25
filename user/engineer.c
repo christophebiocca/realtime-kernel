@@ -605,17 +605,6 @@ static inline void adjustTargetSpeed(struct Train *train){
             logS(&s);
         }
     }
-    if(stopping && !train->kinematics.target_speed){
-        if(invdist < dist){
-            logC("Overshot");
-        }
-        if(stop > dist){
-            logC("Slowing Down");
-        }
-        if(!train->track.fullyReserved){
-            logC("Waiting on reservations");
-        }
-    }
 }
 
 static inline void updateTurnouts(struct Train *train){
