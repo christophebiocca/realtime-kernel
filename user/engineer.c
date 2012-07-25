@@ -747,12 +747,13 @@ static inline void sensorUpdate(struct Train *train, Sensor sensor){
 }
 
 static inline void timerPositionUpdate(struct Train *train, int time){
+    Pass();
     tick(&train->kinematics, time);
     struct Position pos;
     struct TrackNode *path[50];
     int len = alongTrack(train->track.turnouts, &train->track.position,
         train->kinematics.distance/1000, &pos, path, 0, NULLPTR, false);
-    assert(len <= 50);
+    assert(len >= 0 && len <= 50);
     // Always skip the start point.
     for(int i = 1; i < len; ++i){
         if(path[i]->type == NODE_SENSOR){
