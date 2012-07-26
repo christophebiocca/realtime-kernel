@@ -150,12 +150,23 @@ static inline void reverse(struct Train *train){
     train->kinematics.orientation = (train->kinematics.orientation == FORWARD)
         ? BACKWARD : FORWARD;
     TIMER_WORST(train->tio);
+    logC("Sent reverse command");
 }
 
 static inline void setSpeed(struct Train *train, int speed){
-    logC("SetSpeed");
     assert(0 <= train->id && train->id <= 80);
     assert(0 <= speed && speed <= 14);
+    {
+
+        struct String s;
+        sinit(&s);
+        sputstr(&s, "SetSpeed:");
+        sputuint(&s, train->kinematics.ideal_speed[speed],10);
+        sputc(&s, '(');
+        sputuint(&s, speed,10);
+        sputc(&s, ')');
+        logS(&s);
+    }
     if(train->kinematics.target_speed == train->kinematics.ideal_speed[speed]){
         return;
     }
@@ -163,13 +174,6 @@ static inline void setSpeed(struct Train *train, int speed){
     TIMER_START(train->kinematicsFuckery);
     computeAcceleration(&train->kinematics);
     TIMER_WORST(train->kinematicsFuckery);
-    {
-        struct String s;
-        sinit(&s);
-        sputstr(&s, "ts:");
-        sputuint(&s, train->kinematics.target_speed,10);
-        logS(&s);
-    }
     TIMER_START(train->tio);
     struct String s;
     sinit(&s);
