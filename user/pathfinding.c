@@ -112,12 +112,14 @@ int planPath(struct TrackNode *list, int train_id,
         ++solutionCount;
     }
 
-    int i = solutionCount;
-    for(struct PathNode *n = goalNode; n != 0; n=n->from){
-        output[--i] = n->node;
+    if (output != NULLPTR) {
+        int i = solutionCount;
+        for(struct PathNode *n = goalNode; n != 0; n=n->from){
+            output[--i] = n->node;
+        }
+        assert(i == 0);
     }
 
-    assert(i == 0);
     return solutionCount;
 }
 
