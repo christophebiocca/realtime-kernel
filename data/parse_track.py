@@ -418,14 +418,20 @@ struct TrackNode *lookupTrackNode(struct TrackHashNode *hashtbl, const char *nam
     }
 }
 
+#define M (0x7fffffffU)
+#define A (1664525U)
+#define C (1013904223U)
+
 struct TrackNode *randomTrackNode(struct TrackNode *track) {
-    unsigned int time = Time();
-    struct TrackNode *dest = &track[time %% TRACK_MAX];
+    static unsigned int rand = 0;
+
+    rand = (A * rand + C) & M;
+    struct TrackNode *dest = &track[rand %% TRACK_MAX];
 
     // only try 5 times max to get a new destination
     for (int i = 0; dest->type == NODE_NONE && i < 5; ++i) {
-        time <<= i;
-        dest = &track[time %% TRACK_MAX];
+        rand = (A * rand + C) & M;
+        dest = &track[rand %% TRACK_MAX];
     }
 
     if (dest->type == NODE_NONE) {
