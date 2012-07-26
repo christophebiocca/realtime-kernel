@@ -337,10 +337,10 @@ static void controllerServer(void) {
                         sinit(&s);
                         sputstr(&s, "Train ");
                         sputint(&s, request.setExpectation.train_id, 10);
-                        sputstr(&s, " tried to expect ");
+                        sputstr(&s, " expect ");
                         sputc(&s, 'A' + SENSOR_DECODE_BOX(sensor));
                         sputint(&s, SENSOR_DECODE_OFFSET(sensor), 10);
-                        sputstr(&s, ", owned by ");
+                        sputstr(&s, ", owned ");
                         sputint(&s, *fill, 10);
                         logS(&s);
 
@@ -359,10 +359,10 @@ static void controllerServer(void) {
                         sinit(&s);
                         sputstr(&s, "Train ");
                         sputint(&s, request.setExpectation.train_id, 10);
-                        sputstr(&s, " tried to expect ");
+                        sputstr(&s, " expect ");
                         sputc(&s, 'A' + SENSOR_DECODE_BOX(sensor));
                         sputint(&s, SENSOR_DECODE_OFFSET(sensor), 10);
-                        sputstr(&s, ", owned by ");
+                        sputstr(&s, ", owned ");
                         sputint(&s, *fill, 10);
                         logS(&s);
 
