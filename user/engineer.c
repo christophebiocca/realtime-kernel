@@ -563,11 +563,15 @@ static inline void adjustTargetSpeed(struct Train *train){
         {
             struct String s;
             sinit(&s);
-            sputstr(&s, "Dist: ");
-            sputint(&s, dist, 10);
-            sputstr(&s, " Stop: ");
+            sputstr(&s, "D: ");
+            if(dist == 0x7FFFFFFF){
+                sputstr(&s, "Max");
+            } else {
+                sputint(&s, dist, 10);
+            }
+            sputstr(&s, " S: ");
             sputint(&s, train->kinematics.stop, 10);
-            sputstr(&s, " Pos:");
+            sputstr(&s, " P:");
             sputstr(&s, train->track.position.node->name);
             sputc(&s, '@');
             sputint(&s, train->track.position.offset, 10);
@@ -584,11 +588,15 @@ static inline void adjustTargetSpeed(struct Train *train){
         {
             struct String s;
             sinit(&s);
-            sputstr(&s, "Dist: ");
-            sputint(&s, dist, 10);
-            sputstr(&s, " Stop: ");
+            sputstr(&s, "D: ");
+            if(dist == 0x7FFFFFFF){
+                sputstr(&s, "Max");
+            } else {
+                sputint(&s, dist, 10);
+            }
+            sputstr(&s, " S: ");
             sputint(&s, train->kinematics.stop, 10);
-            sputstr(&s, " Pos:");
+            sputstr(&s, " P:");
             sputstr(&s, train->track.position.node->name);
             sputc(&s, '@');
             sputint(&s, train->track.position.offset, 10);
