@@ -1,3 +1,4 @@
+#include <debug.h>
 #include <lib.h>
 #include <stdbool.h>
 #include <ts7200.h>
@@ -15,8 +16,8 @@
 #include <user/clock.h>
 #include <user/controller.h>
 #include <user/engineer.h>
+#include <user/freight.h>
 #include <user/log.h>
-#include <debug.h>
 
 // mm for how long the train is behind the pickup
 #define TRAIN_TAIL_PICKUP_FRONT 190
@@ -31,6 +32,7 @@ struct EngineerMessage {
         SENSOR,
         CIRCLE_MODE,
         RANDOM_MODE,
+        FREIGHT_MODE,
         DUMP_RESERVATIONS,
         QUIT,
         NUM_MESSAGE_TYPES
@@ -98,9 +100,15 @@ struct TrackReservations {
     struct TrackEdge *donotwant[TRACK_RESERVATION_EDGES];
 };
 
+struct EngineerFreight {
+    int id;
+    struct TrackNode *dest;
+};
+
 struct Train {
     int id;
     enum EngineerMode mode;
+    struct EngineerFreight freight;
     struct Kinematics kinematics;
     struct Messaging messaging;
     struct Timing timing;
@@ -1104,6 +1112,46 @@ void engineer(int trainID){
                         break;
                     }
 
+                    case ENGINEER_MODE_FREIGHT_SEARCHING: {
+                        int min_cost = 0x7fffffff;
+                        int min_index;
+
+                        for (int i = 0; i < NUM_FREIGHTS; ++i) {
+                            int cost;
+                            planPath(
+                                nodes,
+                                train.id,
+                                train.track.position.node,
+                                g_freights[i].src,
+                                NULLPTR,
+                                &cost
+                            );
+
+                            if (cost < min_cost) {
+                                min_index = i;
+                            }
+                        }
+
+                        dest = g_freights[min_index].src;
+                        train.freight.id = g_freights[min_index].id;
+                        train.freight.dest = g_freights[min_index].dest;
+
+                        train.mode = ENGINEER_MODE_FREIGHT_DELIVERING;
+                        log_type = "Freight Pickup";
+                        break;
+                    }
+
+                    case ENGINEER_MODE_FREIGHT_DELIVERING: {
+                        if (freightClaim(train.freight.id)) {
+                            dest = train.freight.dest;
+                            log_type = "Freight Deliver";
+                        } else {
+                            logC("missed freight pickup :(");
+                        }
+
+                        train.mode = ENGINEER_MODE_FREIGHT_SEARCHING;
+                    }
+
                     default:
                         break;
                 }
@@ -1193,6 +1241,11 @@ void engineer(int trainID){
 
                 case RANDOM_MODE: {
                     train.mode = ENGINEER_MODE_RANDOM;
+                    break;
+                }
+
+                case FREIGHT_MODE: {
+                    train.mode = ENGINEER_MODE_FREIGHT_SEARCHING;
                     break;
                 }
 
