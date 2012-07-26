@@ -61,6 +61,10 @@ union ParserData {
     struct RandomMode {
         int tid;
     } randomMode;
+
+    struct FreightMode {
+        int tid;
+    } freightMode;
 };
 
 struct Parser {
@@ -80,6 +84,9 @@ struct Parser {
         E_E,
         E_firstSpace,
         E_train,
+        F_F,
+        F_firstSpace,
+        F_tid,
         L_L,
         R_R,
         LR_firstSpace,
@@ -168,6 +175,9 @@ bool parse(struct Parser *parser, char c){
                     case 'e':
                         parser->state = E_E;
                         break;
+                    case 'f':
+                        parser->state = F_F;
+                        break;
                     case 'l':
                         parser->state = L_L;
                         break;
@@ -234,7 +244,7 @@ bool parse(struct Parser *parser, char c){
 
             case D_D:
                 parser->data.randomMode.tid = 0;
-                EXPECT_EXACT(' ', D_tid);
+                EXPECT_EXACT(' ', D_firstSpace);
                 break;
 
             case D_firstSpace:
@@ -266,6 +276,25 @@ bool parse(struct Parser *parser, char c){
 
             case E_train:
                 if(!appendDecDigit(c, &parser->data.prepareTrain.trainID)){
+                    parser->state = ErrorState;
+                }
+                break;
+
+            case F_F:
+                parser->data.freightMode.tid = 0;
+                EXPECT_EXACT(' ', F_firstSpace);
+                break;
+
+            case F_firstSpace:
+                if(appendDecDigit(c, &parser->data.freightMode.tid)){
+                    parser->state = F_tid;
+                } else {
+                    parser->state = ErrorState;
+                }
+                break;
+
+            case F_tid:
+                if (!appendDecDigit(c, &parser->data.freightMode.tid)) {
                     parser->state = ErrorState;
                 }
                 break;
@@ -543,6 +572,10 @@ bool parse(struct Parser *parser, char c){
                 }
                 break;
             }
+
+            case F_tid:
+                engineerFreight(parser->data.freightMode.tid);
+                break;
 
             case LR_dest: {
                 struct TrackNode *src = lookupTrackNode(

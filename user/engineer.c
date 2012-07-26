@@ -1365,6 +1365,13 @@ void engineerRandom(int engineer_tid) {
     Send(engineer_tid, (char *)&msg, sizeof(struct EngineerMessage), 0, 0);
 }
 
+void engineerFreight(int engineer_tid) {
+    struct EngineerMessage msg = {
+        .messageType = FREIGHT_MODE
+    };
+    Send(engineer_tid, (char *)&msg, sizeof(struct EngineerMessage), 0, 0);
+}
+
 void engineerDumpReservations(int engineer_tid) {
     struct EngineerMessage msg = {
         .messageType = DUMP_RESERVATIONS,

@@ -42,11 +42,11 @@ static void freightServer(void) {
     struct Freight next;
     next.id = false;
 
+    int tid;
+    struct FreightCommand cmd;
+
     bool quit = false;
     while (!quit) {
-        int tid;
-        struct FreightCommand cmd;
-
         int len = Receive(&tid, (char *) &cmd, sizeof(struct FreightCommand));
         assert(len == sizeof(struct FreightCommand));
 
@@ -79,7 +79,7 @@ static void freightServer(void) {
                     }
                 }
 
-                Reply(tid, (char *) reply, sizeof(int));
+                Reply(tid, (char *) &reply, sizeof(int));
                 break;
             }
 
@@ -97,6 +97,9 @@ static void freightServer(void) {
                 quit = true;
                 Reply(tid, NULLPTR, 0);
                 break;
+
+            default:
+                assert(0);
         }
     }
 
