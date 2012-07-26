@@ -204,52 +204,68 @@ static inline int edgeInArray(struct TrackEdge **array,
     return false;
 }
 
-static inline void updateNeededReservations(struct Train *train) {
+static inline void writeNeededReservations(struct Train *train,
+        struct TrackEdge **edges, int len) {
+
     struct TrackReservations *r = &train->reservations;
 
+    for (int i = 0; i < len; ++i) {
+        int already_needed = edgeInArray(
+            r->needed,
+            r->needed_count,
+            edges[i]
+        );
+
+        if(!already_needed){
+            train->messaging.notifyNeededReservations = true;
+            r->needed[r->needed_count++] = edges[i];
+            assert(r->needed_count <= TRACK_RESERVATION_EDGES);
+        }
+
+        int already_granted = edgeInArray(
+            r->granted,
+            r->granted_count,
+            edges[i]
+        );
+
+        if (!already_granted) {
+            train->track.fullyReserved = false;
+        }
+    }
+}
+
+static inline void updateNeededReservations(struct Train *train) {
     int back = (train->kinematics.orientation == FORWARD)
         ? TRAIN_TAIL_PICKUP_FRONT
         : TRAIN_TAIL_PICKUP_BACK;
 
-    // entrances have no nodes before them
-    if (train->track.position.node->type != NODE_ENTER &&
-            train->track.position.offset < back) {
-
-        struct TrackNode *back = train->track.position.node->reverse;
-
-        int dir = 0;
-        if (back->type == NODE_BRANCH) {
-            dir = isTurnoutCurved(train->track.turnouts, back->num);
-        } else if (back->type == NODE_BRANCH_CURVED) {
-            dir = 1;
-        }
-
-        int already_needed = edgeInArray(
-            r->needed,
-            r->needed_count,
-            &back->edge[dir]
-        );
-
-        if (!already_needed) {
-            r->needed[r->needed_count++] = &back->edge[dir];
-            assert(r->needed_count <= TRACK_RESERVATION_EDGES);
-            int already_granted = edgeInArray(
-                r->granted,
-                r->granted_count,
-                &back->edge[dir]
-            );
-            if(!already_granted){
-                train->messaging.notifyNeededReservations = true;
-                train->track.fullyReserved = false;
-            }
-        }
-    }
-
     struct Position end;
     struct TrackNode *path[50];
+    struct TrackEdge *edges[50];
+
+    // reserve all pieces of the track that the tail is on
+    if (train->track.position.offset < back) {
+        struct Position cur;
+
+        cur.node = train->track.position.node->reverse;
+        cur.offset = 0;
+
+        int len = alongTrack(
+            train->track.turnouts,
+            &cur,
+            back - train->track.position.offset,
+            &end,
+            path,
+            train->track.pathing ? train->track.pathCurrent : NULLPTR,
+            edges,
+            true
+        );
+        assert(len < 50);
+
+        writeNeededReservations(train, edges, len - 1);
+    }
 
     {
-        struct TrackEdge *edges[50];
         // The edges we need
         int len = alongTrack(
             train->track.turnouts,
@@ -260,36 +276,16 @@ static inline void updateNeededReservations(struct Train *train) {
             train->track.pathing ? train->track.pathCurrent : 0,
             edges,
             true
-            );
+        );
         assert(len < 50);
-        for (int i = 0; i < (len - 1); ++i) {
 
-            int already_needed = edgeInArray(
-                r->needed,
-                r->needed_count,
-                edges[i]
-                );
-
-            if(!already_needed){
-                train->messaging.notifyNeededReservations = true;
-                r->needed[r->needed_count++] = edges[i];
-                assert(r->needed_count <= TRACK_RESERVATION_EDGES);
-            }
-
-            int already_granted = edgeInArray(
-                r->granted,
-                r->granted_count,
-                edges[i]
-                );
-
-            if (!already_granted) {
-                train->track.fullyReserved = false;
-            }
-        }
+        writeNeededReservations(train, edges, len - 1);
     }
 
     {
+        struct TrackReservations *r = &train->reservations;
         struct TrackEdge *moreEdges[50];
+
         // More edges (efficiency margin)
         int len = alongTrack(
             train->track.turnouts,
@@ -300,7 +296,7 @@ static inline void updateNeededReservations(struct Train *train) {
             train->track.pathing ? train->track.pathCurrent : 0,
             moreEdges,
             false
-            );
+        );
         assert(len < 50);
 
         for (int i = 0; i < (len - 1); ++i) {
@@ -308,16 +304,18 @@ static inline void updateNeededReservations(struct Train *train) {
                 r->needed,
                 r->needed_count,
                 moreEdges[i]
-                );
+            );
 
             if (!already_needed) {
                 r->needed[r->needed_count++] = moreEdges[i];
                 assert(r->needed_count <= TRACK_RESERVATION_EDGES);
+
                 int already_granted = edgeInArray(
                     r->granted,
                     r->granted_count,
                     moreEdges[i]
-                    );
+                );
+
                 if(!already_granted){
                     train->messaging.notifyNeededReservations = true;
                     // *Don't* set fully reserved to false, these are for safety.
