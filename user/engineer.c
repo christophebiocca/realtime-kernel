@@ -740,8 +740,29 @@ static inline void updatePosition(struct Train *train, struct Position *pos){
                 break;
             }
         }
+        // Account for reverse overshoots.
         if(!found){
-            logC("Messed up, recalc");
+            for(int i = 0; i < 5 && train->track.pathCurrent[i-1] != train->track.goal.node; ++i){
+                if(train->track.pathCurrent[i] == pos->node->edge[DIR_AHEAD].dest){
+                    found = true;
+                    break;
+                }
+            }
+        }
+        if(!found){
+            struct String s;
+            sinit(&s);
+            sputstr(&s, "[");
+            sputstr(&s, pos->node->name);
+            sputc(&s, '@');
+            sputint(&s, pos->offset, 10);
+            sputstr(&s, "] </= [");
+            logS(&s);
+            for(int i = 0; i < 5 && train->track.pathCurrent[i-1] != train->track.goal.node; ++i){
+                logC(train->track.pathCurrent[i]->name);
+            }
+            logC("], recalc.");
+
             trainNavigate(train, &train->track.goal);
         }
     }
