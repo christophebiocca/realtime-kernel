@@ -45,11 +45,11 @@ __attribute__((always_inline, noreturn)) static inline void __assert_fail (__con
 
         unsigned int *pc = (unsigned int *) fp[0];
         unsigned int *toppc = pc;
-        while ((toppc[-1] & 0xff000000) != 0xff000000) {
+        while ((toppc[0] & 0xff000000) != 0xff000000) {
             --toppc;
         }
 
-        char *fn = ((char *) (toppc - 1)) - (toppc[-1] & 0x00ffffff);
+        char *fn = ((char *) toppc) - (toppc[0] & 0x00ffffff);
         bwprintf(COM2, "%s @ %x\r\n", fn, pc);
 
         if (toppc == (unsigned int *) &trampoline) {

@@ -90,7 +90,7 @@ static void dispatchSyscall(struct TaskDescriptor *task,
 static void undefined_instr(void) {
     DUMPSAVE;
 
-    unsigned int lr;
+    unsigned int *lr;
     asm volatile("mov %0, lr\n\t" : "=r"(lr));
 
     bwprintf(COM2, "\r\n*** UNDEFINED INSTRUCTION: 0x%x\r\n", lr);
@@ -111,6 +111,13 @@ static void undefined_instr(void) {
     DUMPR(r1);
     DUMPR(r0);
 
+    unsigned int *pc = lr;
+    while ((pc[0] & 0xff000000) != 0xff000000) {
+        --pc;
+    }
+    char *fn = ((char *) pc) - (pc[0] & 0x00ffffff);
+    bwprintf(COM2, "*** UNDEFINED INSTRUCTION: %s(): %x\r\n", fn, lr);
+
     // loop forever
     while (1);
 }
@@ -118,7 +125,7 @@ static void undefined_instr(void) {
 static void abort_prefetch(void) {
     DUMPSAVE;
 
-    unsigned int lr;
+    unsigned int *lr;
     asm volatile("mov %0, lr\n\t" : "=r"(lr));
 
     bwprintf(COM2, "\r\n*** ABORT PREFETCH: 0x%x\r\n", lr);
@@ -139,6 +146,13 @@ static void abort_prefetch(void) {
     DUMPR(r1);
     DUMPR(r0);
 
+    unsigned int *pc = lr;
+    while ((pc[0] & 0xff000000) != 0xff000000) {
+        --pc;
+    }
+    char *fn = ((char *) pc) - (pc[0] & 0x00ffffff);
+    bwprintf(COM2, "*** PREFECTH ABORT: %s(): %x\r\n", fn, lr);
+
     // loop forever
     while (1);
 }
@@ -146,7 +160,7 @@ static void abort_prefetch(void) {
 static void abort_data(void) {
     DUMPSAVE;
 
-    unsigned int lr;
+    unsigned int *lr;
     asm volatile("mov %0, lr\n\t" : "=r"(lr));
 
     bwprintf(COM2, "\r\n*** ABORT DATA: 0x%x\r\n", lr);
@@ -166,6 +180,13 @@ static void abort_data(void) {
     DUMPR(r2);
     DUMPR(r1);
     DUMPR(r0);
+
+    unsigned int *pc = lr;
+    while ((pc[0] & 0xff000000) != 0xff000000) {
+        --pc;
+    }
+    char *fn = ((char *) pc) - (pc[0] & 0x00ffffff);
+    bwprintf(COM2, "*** DATA ABORT: %s(): %x\r\n", fn, lr);
 
     // loop forever
     while (1);
