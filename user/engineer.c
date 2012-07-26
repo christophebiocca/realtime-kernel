@@ -629,18 +629,21 @@ static inline void adjustTargetSpeed(struct Train *train){
 
 static inline void updateTurnouts(struct Train *train){
     if(train->track.pathing){
-        struct TrackNode **t = train->track.pathCurrent;
-        struct TrackNode **end = alongPath(t, train->kinematics.stop/1000 + train->track.position.offset,
-            train->track.next_stop.node, true);
-        for(; t <= end && *t != train->track.next_stop.node; ++t){
-            if((*t)->type == NODE_BRANCH){
+        struct TrackNode *nodes[50];
+        int len = alongTrack(train->track.turnouts,
+            &train->track.position,
+            train->kinematics.stop/1000 + train->track.position.offset,
+            0, nodes, train->track.pathCurrent, 0, false);
+        assert(len < 50);
+        for(int i = 0; i < len-1; ++i){
+            if(nodes[i]->type == NODE_BRANCH){
                 // Find the first time we hit this branch
                 // How should it be set?
                 // Make the branch match expectations
-                if((*t)->edge[DIR_STRAIGHT].dest == t[1]){
-                    turnoutStraight((*t)->num, &train->track.turnouts);
-                } else if((*t)->edge[DIR_CURVED].dest == t[1]){
-                    turnoutCurve((*t)->num, &train->track.turnouts);
+                if(nodes[i]->edge[DIR_STRAIGHT].dest == nodes[i+1]){
+                    turnoutStraight(nodes[i]->num, &train->track.turnouts);
+                } else if((nodes[i])->edge[DIR_CURVED].dest == nodes[i+1]){
+                    turnoutCurve((nodes[i])->num, &train->track.turnouts);
                 }
             }
         }
