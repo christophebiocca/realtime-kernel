@@ -19,6 +19,8 @@ struct Kinematics {
     int maxAccel;
     int transition1;
     int transition2;
+    int forwardStopping;
+    int backwardStopping;
 };
 
 void kinematicsInit(struct Kinematics *k, int trainID);

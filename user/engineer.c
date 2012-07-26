@@ -158,12 +158,23 @@ static inline void reverse(struct Train *train){
     train->kinematics.orientation = (train->kinematics.orientation == FORWARD)
         ? BACKWARD : FORWARD;
     TIMER_WORST(train->tio);
+    logC("Sent reverse command");
 }
 
 static inline void setSpeed(struct Train *train, int speed){
-    logC("SetSpeed");
     assert(0 <= train->id && train->id <= 80);
     assert(0 <= speed && speed <= 14);
+    {
+
+        struct String s;
+        sinit(&s);
+        sputstr(&s, "SetSpeed:");
+        sputuint(&s, train->kinematics.ideal_speed[speed],10);
+        sputc(&s, '(');
+        sputuint(&s, speed,10);
+        sputc(&s, ')');
+        logS(&s);
+    }
     if(train->kinematics.target_speed == train->kinematics.ideal_speed[speed]){
         return;
     }
@@ -171,13 +182,6 @@ static inline void setSpeed(struct Train *train, int speed){
     TIMER_START(train->kinematicsFuckery);
     computeAcceleration(&train->kinematics);
     TIMER_WORST(train->kinematicsFuckery);
-    {
-        struct String s;
-        sinit(&s);
-        sputstr(&s, "ts:");
-        sputuint(&s, train->kinematics.target_speed,10);
-        logS(&s);
-    }
     TIMER_START(train->tio);
     struct String s;
     sinit(&s);
@@ -571,11 +575,15 @@ static inline void adjustTargetSpeed(struct Train *train){
         {
             struct String s;
             sinit(&s);
-            sputstr(&s, "Dist: ");
-            sputint(&s, dist, 10);
-            sputstr(&s, " Stop: ");
+            sputstr(&s, "D: ");
+            if(dist == 0x7FFFFFFF){
+                sputstr(&s, "Max");
+            } else {
+                sputint(&s, dist, 10);
+            }
+            sputstr(&s, " S: ");
             sputint(&s, train->kinematics.stop, 10);
-            sputstr(&s, " Pos:");
+            sputstr(&s, " P:");
             sputstr(&s, train->track.position.node->name);
             sputc(&s, '@');
             sputint(&s, train->track.position.offset, 10);
@@ -592,11 +600,15 @@ static inline void adjustTargetSpeed(struct Train *train){
         {
             struct String s;
             sinit(&s);
-            sputstr(&s, "Dist: ");
-            sputint(&s, dist, 10);
-            sputstr(&s, " Stop: ");
+            sputstr(&s, "D: ");
+            if(dist == 0x7FFFFFFF){
+                sputstr(&s, "Max");
+            } else {
+                sputint(&s, dist, 10);
+            }
+            sputstr(&s, " S: ");
             sputint(&s, train->kinematics.stop, 10);
-            sputstr(&s, " Pos:");
+            sputstr(&s, " P:");
             sputstr(&s, train->track.position.node->name);
             sputc(&s, '@');
             sputint(&s, train->track.position.offset, 10);
@@ -736,8 +748,29 @@ static inline void updatePosition(struct Train *train, struct Position *pos){
                 break;
             }
         }
+        // Account for reverse overshoots.
         if(!found){
-            logC("Messed up, recalc");
+            for(int i = 0; i < 5 && train->track.pathCurrent[i-1] != train->track.goal.node; ++i){
+                if(train->track.pathCurrent[i] == pos->node->edge[DIR_AHEAD].dest){
+                    found = true;
+                    break;
+                }
+            }
+        }
+        if(!found){
+            struct String s;
+            sinit(&s);
+            sputstr(&s, "[");
+            sputstr(&s, pos->node->name);
+            sputc(&s, '@');
+            sputint(&s, pos->offset, 10);
+            sputstr(&s, "] </= [");
+            logS(&s);
+            for(int i = 0; i < 5 && train->track.pathCurrent[i-1] != train->track.goal.node; ++i){
+                logC(train->track.pathCurrent[i]->name);
+            }
+            logC("], recalc.");
+
             trainNavigate(train, &train->track.goal);
         }
     }

@@ -1,6 +1,7 @@
 #include <stdbool.h>
 
 #include <user/log.h>
+#include <user/clock.h>
 #include <user/mio.h>
 #include <user/priorities.h>
 #include <user/string.h>
@@ -50,6 +51,8 @@ static void logServer(void) {
                 sinit(&s);
                 if (who >= 0) {
                     sconcat(&s, &assocs[who].name);
+                    sputc(&s, '@');
+                    sputint(&s, Time(), 10);
                     sputstr(&s, ": ");
                 }
                 sconcat(&s, &request);

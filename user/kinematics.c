@@ -2,8 +2,6 @@
 #include <debug.h>
 #include <user/log.h>
 
-// TODO: Confirm this actually works for train 44.
-
 // if (abs(current_speed - expected_speed) < threshold) acceleration = 0
 #define SPEED_THRESHOLD                     (5)
 
@@ -20,12 +18,16 @@ void kinematicsInit(struct Kinematics *k, int trainID){
     k->distance = 0;
     k->orientation = FORWARD;
     switch(trainID){
+        case 39:
         default:
+            // Calibrated for train 39
             logC("Default Kinematics");
-            k->minAccel = 7;
+            k->minAccel = 5;
             k->maxAccel = 26;
-            k->transition1 = 300;
+            k->transition1 = 600;
             k->transition2 = 1600;
+            k->forwardStopping = 149;
+            k->backwardStopping = 176;
     }
 }
 
@@ -49,29 +51,7 @@ void computeAcceleration(struct Kinematics *k) {
 }
 
 static inline void computeStop(struct Kinematics *k) {
-    if (k->acceleration == 0 && k->target_speed == 0) {
-        k->stop = 0;
-    }
-
-    int speed = k->current_speed;
-    int travelled = 0;
-
-    // TODO: Bust out the algebra, make this computation simpler.
-
-    while(speed > k->transition2){
-        speed -= k->maxAccel;
-        travelled += speed;
-    }
-    while(speed > k->transition1){
-        speed -= k->minAccel + (k->target_speed-k->transition1)/(k->transition2-k->transition1);
-        travelled += speed;
-    }
-    while(speed > 0){
-        speed -= k->minAccel;
-        travelled += speed;
-    }
-
-    k->stop = travelled;
+    k->stop = (k->orientation == FORWARD ? k->forwardStopping : k->backwardStopping) * k->current_speed;
 }
 
 void tick(struct Kinematics *k, int time){
