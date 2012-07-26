@@ -31,7 +31,7 @@ int heuristic(struct TrackNode *here, struct TrackNode *goal){
 
 int planPath(struct TrackNode *list, int train_id,
         struct TrackNode *start, struct TrackNode *goal,
-        struct TrackNode **output) {
+        struct TrackNode **output, int *output_cost) {
 
     struct PathNode nodes[TRACK_MAX];
     for(int i = 0; i < TRACK_MAX; ++i){
@@ -103,6 +103,10 @@ int planPath(struct TrackNode *list, int train_id,
     }
 
     // At this point, the current goal node has the shortest path made out of back-pointers.
+    if (output_cost != NULLPTR) {
+        *output_cost = goalNode->cost;
+    }
+
     int solutionCount = 0;
     for(struct PathNode *n = goalNode; n != 0; n=n->from){
         ++solutionCount;
@@ -291,15 +295,23 @@ char c = src[i];
     assert(destNode);
 
     struct TrackNode *route[50];
+    int cost;
     // use an invalid train id for planning purposes
-    int count = planPath(nodes, 82, srcNode, destNode, route);
+    int count = planPath(nodes, 82, srcNode, destNode, route, &cost);
+    struct String s;
+
     for(int i = 0; i < count; ++i){
-        struct String s;
         sinit(&s);
         sputstr(&s, "-> ");
         sputstr(&s,route[i]->name);
         logS(&s);
     }
+
+    sinit(&s);
+    sputstr(&s, "Cost: ");
+    sputint(&s, cost, 10);
+    logS(&s);
+
 }
 
 struct TrackNode **nextReverse(struct TrackNode **path, struct TrackNode *end){

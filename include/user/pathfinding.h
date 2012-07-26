@@ -17,7 +17,8 @@ int planPath(
     int train_id,
     struct TrackNode *start,
     struct TrackNode *goal,
-    struct TrackNode **output
+    struct TrackNode **output,
+    int *output_cost
 );
 
 // Puts in ret the new position after traveling dist from start,
