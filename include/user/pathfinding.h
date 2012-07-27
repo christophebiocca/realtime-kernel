@@ -34,12 +34,6 @@ int alongTrack(
     bool beyond
 );
 
-// Returns a count of nodes along the path until either dist < 0 or end is reached.
-struct TrackNode **alongPath(
-    struct TrackNode **path,
-    int distance,
-    struct TrackNode *end, bool beyond);
-
 // Returns the first node involved in a reverse, or the end if there isn't one.
 struct TrackNode **nextReverse(struct TrackNode **path, struct TrackNode *end);
 
