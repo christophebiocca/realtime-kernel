@@ -1120,8 +1120,8 @@ void engineer(int trainID){
             // Act on the outside world.
             notifyPosition(&train);
             notifyExpectation(&train);
-            notifyNeededReservations(&train);
             notifyDoNotWantReservations(&train);
+            notifyNeededReservations(&train);
 
             if (!train.track.pathing) {
                 struct TrackNode *dest = NULLPTR;
