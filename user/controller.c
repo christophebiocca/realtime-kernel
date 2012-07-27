@@ -245,6 +245,8 @@ static void controllerServer(void) {
                     (mode == ENGINEER_MODE_USER) ? "User" :
                     (mode == ENGINEER_MODE_CIRCLE1) ? "Circle 1" :
                     (mode == ENGINEER_MODE_CIRCLE2) ? "Circle 2" :
+                    (mode == ENGINEER_MODE_FREIGHT_SEARCHING) ? "Search" :
+                    (mode == ENGINEER_MODE_FREIGHT_DELIVERING) ? "Deliver" :
                     /* Random */ "Random"
                 );
 
