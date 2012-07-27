@@ -343,11 +343,6 @@ static inline void updateGrantedReservations(struct Train *train) {
         --r->needed_count;
         --i;
 
-        if(r->needed_count == 0) {
-            train->messaging.notifyNeededReservations = false;
-            train->track.fullyReserved = true;
-        }
-
         int edge_exists = edgeInArray(
             r->granted,
             r->granted_count,
@@ -357,6 +352,11 @@ static inline void updateGrantedReservations(struct Train *train) {
             r->granted[r->granted_count++] = edge;
             assert(r->granted_count <= TRACK_RESERVATION_EDGES);
         }
+    }
+
+    if(r->needed_count == 0) {
+        train->messaging.notifyNeededReservations = false;
+        train->track.fullyReserved = true;
     }
 }
 
