@@ -474,7 +474,7 @@ node MR17:
   reverse BR17
   ahead E14
 node BR18:
-  branch_curved 18
+  branch_straight 18
   reverse MR18
   straight C8
   curved MR6
