@@ -278,48 +278,6 @@ static inline void updateNeededReservations(struct Train *train) {
 
         writeNeededReservations(train, edges, len - 1);
     }
-
-    {
-        struct TrackReservations *r = &train->reservations;
-        struct TrackEdge *moreEdges[50];
-
-        // More edges (efficiency margin)
-        int len = alongTrack(
-            train->track.turnouts,
-            &end,
-            350,
-            &end,
-            path,
-            train->track.pathing ? train->track.pathCurrent : 0,
-            moreEdges,
-            false
-        );
-        assert(len < 50);
-
-        for (int i = 0; i < (len - 1); ++i) {
-            int already_needed = edgeInArray(
-                r->needed,
-                r->needed_count,
-                moreEdges[i]
-            );
-
-            if (!already_needed) {
-                r->needed[r->needed_count++] = moreEdges[i];
-                assert(r->needed_count <= TRACK_RESERVATION_EDGES);
-
-                int already_granted = edgeInArray(
-                    r->granted,
-                    r->granted_count,
-                    moreEdges[i]
-                );
-
-                if(!already_granted){
-                    train->messaging.notifyNeededReservations = true;
-                    // *Don't* set fully reserved to false, these are for safety.
-                }
-            }
-        }
-    }
 }
 
 static inline void updateGrantedReservations(struct Train *train) {
