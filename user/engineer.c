@@ -454,6 +454,10 @@ static inline void notifyDoNotWantReservations(struct Train *train) {
             }
         }
 
+        if(r->donotwant_count == 0){
+            train->messaging.notifyDoNotWantReservations = false;
+        }
+
         if (j > 0) {
             for (; j < 5; ++j) {
                 edges[j] = NULLPTR;
