@@ -848,6 +848,7 @@ static inline void timerPositionUpdate(struct Train *train, int time){
                 int nextDist = distance(train->track.turnouts, &pos, &next);
                 if(pos.offset >= nextDist){
                     pos.offset = nextDist - 1;
+                    train->kinematics.current_speed >>= 1;
                 }
                 if(pos.offset < 0){
                     pos.offset = 0;
