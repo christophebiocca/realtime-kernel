@@ -12,10 +12,10 @@
 //      - The size of the structure is a multiple of 16 bytes (4 words) so a
 //        String can be efficiently memcpy16()'d.
 // tag is included to allow a String to be used with Send/Receive.
-#define STRING_MAX_BUFFER_LEN   63
+#define STRING_MAX_BUFFER_LEN   254
 struct String {
     unsigned tag : 2;
-    unsigned offset : 6;
+    unsigned offset : 8;
     char buffer[STRING_MAX_BUFFER_LEN];
 };
 
