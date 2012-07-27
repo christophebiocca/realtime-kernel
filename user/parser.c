@@ -39,6 +39,10 @@ union ParserData {
         int dest_index;
     } sendTrain;
 
+    struct Reverse {
+        int train;
+    } reverse;
+
     struct Reservation {
         enum {
             RESERVE,
@@ -89,6 +93,9 @@ struct Parser {
         F_tid,
         L_L,
         R_R,
+        R_RV,
+        RV_firstSpace,
+        RV_train,
         LR_firstSpace,
         LR_src,
         LR_secondSpace,
@@ -310,13 +317,36 @@ bool parse(struct Parser *parser, char c){
                 break;
 
             case R_R:
-                for(int i = 0; i < 5; ++i){
-                    parser->data.reservation.src[i] = 0;
-                    parser->data.reservation.dest[i] = 0;
-                }
+                if (c == 'v') {
+                    parser->state = R_RV;
+                } else {
+                    for(int i = 0; i < 5; ++i){
+                        parser->data.reservation.src[i] = 0;
+                        parser->data.reservation.dest[i] = 0;
+                    }
 
-                parser->data.reservation.op = RESERVE;
-                EXPECT_EXACT(' ', LR_firstSpace);
+                    parser->data.reservation.op = RESERVE;
+                    EXPECT_EXACT(' ', LR_firstSpace);
+                }
+                break;
+            
+            case R_RV:
+                parser->data.reverse.train = 0;
+                EXPECT_EXACT(' ', RV_firstSpace);
+                break;
+
+            case RV_firstSpace:
+                if(appendDecDigit(c, &parser->data.reverse.train)){
+                    parser->state = RV_train;
+                } else {
+                    parser->state = ErrorState;
+                }
+                break;
+
+            case RV_train:
+                if (!appendDecDigit(c, &parser->data.reverse.train)) {
+                    parser->state = ErrorState;
+                }
                 break;
 
             case LR_firstSpace:
@@ -636,6 +666,14 @@ bool parse(struct Parser *parser, char c){
                 break;
             }
 
+            case RV_train: {
+                struct String s;
+                sinit(&s);
+                sputc(&s, 15);
+                sputc(&s, parser->data.reverse.train);
+                tioPrint(&s);
+                break;
+            }
 
             case SW_S_Or_C:
                 {
