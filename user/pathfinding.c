@@ -52,7 +52,6 @@ int planPath(struct TrackNode *list, int train_id,
     }
     PathHeapPush(&heap, &nodes[start->idx]);
 
-    if(start->type != NODE_MERGE)// Start Node, reverse direction
     {
         nodes[start->reverse->idx].cost = 0;
         nodes[start->reverse->idx].total = heuristic(start->reverse, goal);
