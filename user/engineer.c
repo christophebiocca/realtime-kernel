@@ -619,7 +619,7 @@ static inline void updateTurnouts(struct Train *train){
         struct TrackNode *nodes[50];
         int len = alongTrack(train->track.turnouts,
             &train->track.position,
-            train->kinematics.stop/1000 + train->track.position.offset,
+            train->kinematics.stop/1000 + train->track.position.offset + 150,
             0, nodes, train->track.pathCurrent, NULLPTR, NULLPTR, false);
         assert(len < 50);
         for(int i = 0; i < len-1; ++i){
@@ -640,7 +640,7 @@ static inline void updateTurnouts(struct Train *train){
     struct TrackNode *path[50];
     struct TrackNode **sweep = path;
     int len = alongTrack(train->track.turnouts, &train->track.position,
-        train->kinematics.stop/1000, &end, path,
+        train->kinematics.stop/1000 + 100, &end, path,
         (train->track.pathing ? train->track.pathCurrent : 0), NULLPTR, NULLPTR, false);
     (void) len;
     assert(len <= 50);
@@ -848,6 +848,9 @@ static inline void timerPositionUpdate(struct Train *train, int time){
                 int nextDist = distance(train->track.turnouts, &pos, &next);
                 if(pos.offset >= nextDist){
                     pos.offset = nextDist - 1;
+                }
+                if(pos.offset < 0){
+                    pos.offset = 0;
                 }
             }
             break;
