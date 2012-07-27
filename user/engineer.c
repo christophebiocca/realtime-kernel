@@ -664,11 +664,11 @@ static inline void findNextStop(struct Train *train){
     } else if((*(next+1))->reverse == train->track.goal.node){
         train->track.next_stop.offset = -train->track.next_stop.offset;
     } else if((*next)->type & (NODE_BRANCH | NODE_MERGE | NODE_BRANCH_STRAIGHT | NODE_BRANCH_CURVED)){
-        train->track.next_stop.offset = 150 +
+        train->track.next_stop.offset = 250 +
             ((train->kinematics.orientation == FORWARD) ?
             TRAIN_TAIL_PICKUP_FRONT : TRAIN_TAIL_PICKUP_BACK);
     } else {
-        train->track.next_stop.offset =
+        train->track.next_stop.offset = 50 +
             ((train->kinematics.orientation == FORWARD) ?
             TRAIN_TAIL_PICKUP_FRONT : TRAIN_TAIL_PICKUP_BACK);
     }
