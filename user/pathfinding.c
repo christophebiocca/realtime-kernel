@@ -139,9 +139,9 @@ int alongTrack(TurnoutTable turnouts, struct Position *start,
     int j = 0;
 
     while (dist >= 0 && pos->type != NODE_EXIT) {
-        for(int i = 0; follow && (i < 5); ++i){
-            if(follow[i] == pos){
-                follow += i;
+        for(int k = 0; follow && (k < 5); ++k){
+            if(follow[k] == pos){
+                follow += k;
             }
         }
         last_dist = dist;
