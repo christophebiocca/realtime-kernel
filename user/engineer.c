@@ -704,6 +704,9 @@ static inline void handleReversals(struct Train *train){
                     TRAIN_PICKUP_LENGTH, &pos, 0, train->track.pathCurrent, NULLPTR, NULLPTR, true);
                 train->track.position.node = pos.node->reverse;
                 train->track.position.offset = -pos.offset;
+                if(train->track.position.offset < 0){
+                    train->track.position.offset = 0;
+                }
                 {
                     struct String s;
                     sinit(&s);
