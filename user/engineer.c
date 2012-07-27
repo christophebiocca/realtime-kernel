@@ -725,6 +725,24 @@ static inline void handleReversals(struct Train *train){
     }
 }
 
+static inline void declareVictory(struct Train *train){
+    // Are we winning?
+    if(!train->track.pathing){
+        return;
+    }
+    int dist = distance(train->track.turnouts,
+        &train->track.position,
+        &train->track.goal);
+    int invdist = distance(train->track.turnouts,
+        &train->track.next_stop,
+        &train->track.goal);
+    if(train->kinematics.target_speed == 0 &&
+        train->kinematics.current_speed == 0 &&
+        (dist < 50 || invdist < 50)){
+        train->track.pathing = false;
+    }
+}
+
 static inline void trainNavigate(struct Train *train, struct Position *dest);
 
 static inline void updatePosition(struct Train *train, struct Position *pos){
@@ -793,6 +811,7 @@ static inline void updatePosition(struct Train *train, struct Position *pos){
     TIMER_START(train->handleReversals);
     handleReversals(train);
     TIMER_WORST(train->handleReversals);
+    declareVictory(train);
 }
 
 static inline void sensorUpdate(struct Train *train, Sensor sensor){
