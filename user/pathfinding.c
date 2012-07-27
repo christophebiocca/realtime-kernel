@@ -197,7 +197,7 @@ int alongTrack(TurnoutTable turnouts, struct Position *start,
         pos = pos->edge[dir].dest;
     }
 
-    if (path) {
+    if (path && (dist >= 0 || beyond)) {
         path[i++] = pos;
     }
 
@@ -211,7 +211,6 @@ int alongTrack(TurnoutTable turnouts, struct Position *start,
     } else {
         end->node = last_pos;
         end->offset = last_dist;
-        --i;
     }
 
     return i;
