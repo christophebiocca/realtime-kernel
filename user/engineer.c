@@ -668,7 +668,7 @@ static inline void findNextStop(struct Train *train){
     } else if((*(next+1))->reverse == train->track.goal.node){
         train->track.next_stop.offset = -train->track.next_stop.offset;
     } else {
-        train->track.next_stop.offset = 200 +
+        train->track.next_stop.offset =
             ((train->kinematics.orientation == FORWARD) ?
             TRAIN_TAIL_PICKUP_FRONT : TRAIN_TAIL_PICKUP_BACK);
     }
