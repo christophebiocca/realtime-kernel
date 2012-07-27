@@ -41,6 +41,8 @@ static void freightServer(void) {
 
     struct Freight next;
     next.id = false;
+    next.src = NULLPTR;
+    next.dest = NULLPTR;
 
     int tid;
     struct FreightCommand cmd;

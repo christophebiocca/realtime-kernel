@@ -1152,7 +1152,7 @@ void engineer(int trainID){
 
                     case ENGINEER_MODE_FREIGHT_SEARCHING: {
                         int min_cost = 0x7fffffff;
-                        int min_index;
+                        int min_index = 0;
 
                         for (int i = 0; i < NUM_FREIGHTS; ++i) {
                             int cost;
