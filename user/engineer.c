@@ -77,8 +77,6 @@ struct TrackControl {
     struct TrackNode *expectedSensor;
     struct TrackNode *secondarySensor;
 
-    bool fullyReserved;
-
     // Only applicable when pathing.
     bool pathing;
     struct Position next_stop;
@@ -229,7 +227,6 @@ static inline void writeNeededReservations(struct Train *train,
         );
 
         if (!already_granted) {
-            train->track.fullyReserved = false;
         }
     }
 }
@@ -356,7 +353,6 @@ static inline void updateGrantedReservations(struct Train *train) {
 
     if(r->needed_count == 0) {
         train->messaging.notifyNeededReservations = false;
-        train->track.fullyReserved = true;
     }
 }
 
@@ -567,10 +563,37 @@ static inline void adjustTargetSpeed(struct Train *train){
         &train->track.next_stop,
         &train->track.position);
     int stop = train->kinematics.stop/1000;
-    if(!stopping && ((stop > dist && dist != 0x7FFFFFFF) || !train->track.fullyReserved)){
+
+    bool fullyReserved = true;
+    {
+        struct TrackEdge *edges[50];
+        int len = alongTrack(train->track.turnouts,
+            &train->track.position, stop, 0, 0, train->track.pathCurrent,
+            edges, false);
+        assert(len < 50);
+        for(int i = 0; i < len-1; ++i){
+            if(edges[i]->reserved == train->id && edges[i]->reverse->reserved == train->id){
+                // Yay
+            } else {
+                {
+                    struct String s;
+                    sinit(&s);
+                    sputstr(&s, "FRNeed:");
+                    sputstr(&s, edges[i]->src->name);
+                    sputc(&s, '-');
+                    sputstr(&s, edges[i]->dest->name);
+                    logS(&s);
+                }
+                fullyReserved = false;
+                break;
+            }
+        }
+    }
+
+    if(!stopping && ((stop > dist && dist != 0x7FFFFFFF) || !fullyReserved)){
         if(stop > dist && dist != 0x7FFFFFFF){
             logC("Stopping (over)");
-        } else if(!train->track.fullyReserved){
+        } else if(!fullyReserved){
             logC("Stopping (reserve)");
         }
         setSpeed(train,0);
@@ -596,7 +619,7 @@ static inline void adjustTargetSpeed(struct Train *train){
             train->track.pathing = false;
         }
     } else if(stopping && (((invdist >= dist) && (stop <= dist)) ||
-        (invdist >= 200 && dist == 0x7FFFFFFF)) && train->track.fullyReserved){
+        (invdist >= 200 && dist == 0x7FFFFFFF)) && fullyReserved){
         setSpeed(train,14);
         train->timing.replan = 0x7FFFFFFF;
         {
@@ -617,7 +640,7 @@ static inline void adjustTargetSpeed(struct Train *train){
             logS(&s);
         }
     }
-    if(!train->track.fullyReserved && train->timing.replan == 0x7FFFFFFF){
+    if(!fullyReserved && train->timing.replan == 0x7FFFFFFF){
         train->timing.replan = Time() + 800 + ((train->id - 35) * 50);
         {
             struct String s;
