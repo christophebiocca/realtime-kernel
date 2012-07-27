@@ -955,8 +955,8 @@ void engineer(int trainID){
         char name[5];
         name[0] = 'e';
         name[1] = 'n';
-        name[2] = '0' + (trainID % 10);
-        name[3] = '0' + (trainID / 10);
+        name[2] = '0' + (trainID / 10);
+        name[3] = '0' + (trainID % 10);
         name[4] = 0;
 
         logAssoc(name);
