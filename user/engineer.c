@@ -144,7 +144,7 @@ static inline void courierUsed(struct Train *train){
     train->messaging.courierReady = false;
 }
 
-#define UPDATE_INTERVAL 5
+#define UPDATE_INTERVAL 10
 
 static inline void reverse(struct Train *train){
     TIMER_START(train->tio);
