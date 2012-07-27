@@ -207,6 +207,7 @@ int alongTrack(TurnoutTable turnouts, struct Position *start,
     } else {
         end->node = last_pos;
         end->offset = last_dist;
+        --i;
     }
 
     return i;
