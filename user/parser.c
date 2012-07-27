@@ -669,7 +669,7 @@ bool parse(struct Parser *parser, char c){
             case RV_train: {
                 struct String s;
                 sinit(&s);
-                sputc(&s, 15);
+                sputc(&s, 31);
                 sputc(&s, parser->data.reverse.train);
                 tioPrint(&s);
                 break;

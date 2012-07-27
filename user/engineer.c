@@ -150,7 +150,7 @@ static inline void reverse(struct Train *train){
     TIMER_START(train->tio);
     struct String s;
     sinit(&s);
-    sputc(&s, 15);
+    sputc(&s, 31);
     sputc(&s, train->id);
     tioPrint(&s);
     train->kinematics.orientation = (train->kinematics.orientation == FORWARD)
@@ -183,7 +183,7 @@ static inline void setSpeed(struct Train *train, int speed){
     TIMER_START(train->tio);
     struct String s;
     sinit(&s);
-    sputc(&s, speed);
+    sputc(&s, speed + 16);
     sputc(&s, train->id);
     tioPrint(&s);
     TIMER_WORST(train->tio);
