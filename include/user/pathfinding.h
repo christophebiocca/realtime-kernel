@@ -31,6 +31,7 @@ int alongTrack(
     struct TrackNode **path,
     struct TrackNode **follow,
     struct TrackEdge **edges,
+    int *edgeCount,
     bool beyond
 );
 

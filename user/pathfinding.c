@@ -126,7 +126,7 @@ int planPath(struct TrackNode *list, int train_id,
 int alongTrack(TurnoutTable turnouts, struct Position *start,
     int dist, struct Position *end, struct TrackNode **path,
     struct TrackNode **follow,
-    struct TrackEdge **edges, bool beyond){
+    struct TrackEdge **edges, int *edgeCount, bool beyond){
 
     dist = dist + start->offset;
 
@@ -199,6 +199,10 @@ int alongTrack(TurnoutTable turnouts, struct Position *start,
 
     if (path) {
         path[i++] = pos;
+    }
+
+    if(edgeCount){
+        *edgeCount = j;
     }
 
     if(dist >= 0 || beyond){
